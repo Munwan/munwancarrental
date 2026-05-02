@@ -3,7 +3,7 @@
 
 {% block title %}{{ vehicle.name }} for Hire in Nairobi Kenya | ${{ vehicle.price_usd }}/day | DriveKenya{% endblock %}
 {% block meta_description %}Hire {{ vehicle.name }} in Nairobi from ${{ vehicle.price_usd }}/day. {{ vehicle.seats }}-seater {{ vehicle.get_fuel_display|default:"fuel-efficient" }} car with full insurance, GPS &amp; free JKIA airport delivery. Perfect for {% if 'Prado' in vehicle.name or 'Cruiser' in vehicle.name or 'X-Trail' in vehicle.name or 'Forester' in vehicle.name or 'Rav4' in vehicle.name %}Maasai Mara safaris{% else %}city &amp; road trips in Kenya{% endif %}. Book with M-Pesa, card or PayPal.{% endblock %}
-{% block canonical %}https://yourdomain.com{% url 'vehicle_detail' slug=vehicle.slug %}{% endblock %}
+{% block canonical %}https://munwancarrental.com{% url 'vehicle_detail' slug=vehicle.slug %}{% endblock %}
 {% block og_title %}{{ vehicle.name }} Rental in Kenya — ${{ vehicle.price_usd }}/day{% endblock %}
 {% block og_desc %}Hire a {{ vehicle.name }} in Nairobi with full insurance, GPS &amp; airport delivery. Self-drive or with driver.{% endblock %}
 
@@ -16,11 +16,11 @@
   "@type": "Product",
   "name": "{{ vehicle.name }} — Car Hire in Nairobi",
   "description": "Rent a {{ vehicle.name }} in Nairobi, Kenya. {{ vehicle.seats }}-seater with full insurance, GPS and airport delivery.",
-  "image": "{% if vehicle.image %}https://yourdomain.com{{ vehicle.image.url }}{% else %}https://yourdomain.com/static/images/cars/placeholder.jpg{% endif %}",
+  "image": "{% if vehicle.image %}https://munwancarrental.com{{ vehicle.image.url }}{% else %}https://yourdomain.com/static/images/cars/placeholder.jpg{% endif %}",
   "brand": {"@type": "Brand", "name": "DriveKenya"},
   "offers": {
     "@type": "Offer",
-    "url": "https://yourdomain.com{% url 'vehicle_detail' slug=vehicle.slug %}",
+    "url": "https://munwancarrental.com{% url 'vehicle_detail' slug=vehicle.slug %}",
     "priceCurrency": "USD",
     "price": "{{ vehicle.price_usd }}",
     "priceValidUntil": "2026-12-31",
