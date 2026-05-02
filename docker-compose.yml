@@ -1,0 +1,103 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Munwan Car Rental — Production Docker Compose
+# ─────────────────────────────────────────────────────────────────────────────
+#  Three services:
+#    db     — PostgreSQL 16 with persistent volume
+#    web    — Django + gunicorn (this Dockerfile)
+#    proxy  — Caddy: handles TLS via Let's Encrypt + reverse proxies → web:8000
+#
+#  Usage:
+#    docker compose up -d                    # start everything
+#    docker compose logs -f web              # tail web logs
+#    docker compose exec web python manage.py createsuperuser
+#    docker compose exec web python manage.py shell
+#    docker compose down                     # stop everything (data persists)
+#    docker compose down -v                  # stop AND wipe volumes (danger)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ─── PostgreSQL ────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-munwan}
+      POSTGRES_USER:     ${POSTGRES_USER:-munwan}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-munwan}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Don't expose 5432 publicly — only the web container needs it
+    expose:
+      - "5432"
+
+  # ─── Django app ────────────────────────────────────────────
+  web:
+    build: .
+    image: munwan:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Override DATABASE_URL to use the docker-internal hostname 'db'
+      DATABASE_URL: postgres://${POSTGRES_USER:-munwan}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-munwan}
+      DB_SSLMODE:   disable
+    volumes:
+      - media_files:/app/media        # persistent uploads (vehicle images)
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ─── Caddy reverse proxy + automatic TLS ──────────────────
+  # Caddy auto-provisions Let's Encrypt certs. Zero-config TLS.
+  # If Cloudflare is in front, set proxy mode to "Full (strict)".
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+  # ─── Cron worker — runs management commands on schedule ──
+  # Replaces Appliku's "Scheduled Tasks". Same image, different command.
+  cron:
+    build: .
+    image: munwan:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-munwan}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-munwan}
+      DB_SSLMODE:   disable
+    volumes:
+      - media_files:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    # Run send_payment_reminders every 5 minutes via a simple shell loop.
+    # No cron daemon needed — single foreground process restarts on failure.
+    command: >
+      sh -c "while true; do
+        python manage.py send_payment_reminders;
+        sleep 300;
+      done"
+
+
+volumes:
+  postgres_data:        # database survives container rebuilds
+  media_files:          # uploaded vehicle images
+  caddy_data:           # Let's Encrypt certs + ACME state
+  caddy_config:         # Caddy admin API state

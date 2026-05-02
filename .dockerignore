@@ -1,0 +1,71 @@
+# ─── Secrets (NEVER bake into image) ───────────────────────
+.env
+.env.*
+*.pem
+*.key
+
+# ─── Local dev databases ───────────────────────────────────
+db.sqlite3
+db.sqlite3-journal
+*.sqlite3
+
+# ─── Python ────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+
+# ─── Virtual environments ──────────────────────────────────
+venv/
+env/
+ENV/
+.venv/
+
+# ─── User uploads (mount as a volume in production) ────────
+media/
+
+# ─── Static cache (regenerated inside container) ───────────
+staticfiles/
+collected-static/
+
+# ─── Image backups + dev scripts not needed in prod ────────
+static/images_original/
+compress_images.py
+create_placeholder.py
+
+# ─── Editors / IDEs ────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Docs not needed at runtime ────────────────────────────
+README.md
+DEPLOYMENT.md
+
+# ─── Git ───────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ─── Build outputs ─────────────────────────────────────────
+build/
+dist/
+*.zip
+*.log
+
+# ─── Test/coverage artifacts ───────────────────────────────
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+
+# ─── Procfile + runtime.txt are Heroku/Appliku-specific ────
+Procfile
+runtime.txt
