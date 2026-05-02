@@ -1,0 +1,53 @@
+{% extends 'core/base.html' %}
+{% block title %}Create Account – DriveKenya{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <a href="{% url 'home' %}" class="logo" style="display:block;margin-bottom:28px">Drive<span>Kenya</span></a>
+    <h1 class="auth-title">Create your account</h1>
+    <p class="auth-sub">Save details for faster future bookings</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="frow">
+        <div class="fg">
+          <label>First Name</label>
+          <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}" placeholder="John" required/>
+          {% if form.first_name.errors %}<div class="ferr">{{ form.first_name.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="fg">
+          <label>Last Name</label>
+          <input type="text" name="last_name" value="{{ form.last_name.value|default:'' }}" placeholder="Smith" required/>
+          {% if form.last_name.errors %}<div class="ferr">{{ form.last_name.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:14px">
+        <label>Email Address</label>
+        <input type="email" name="email" value="{{ form.email.value|default:'' }}" placeholder="john@example.com" required/>
+        {% if form.email.errors %}<div class="ferr">{{ form.email.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="fg" style="margin-bottom:14px">
+        <label>Username</label>
+        <input type="text" name="username" value="{{ form.username.value|default:'' }}" placeholder="Choose a username" required/>
+        {% if form.username.errors %}<div class="ferr">{{ form.username.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="frow" style="margin-bottom:20px">
+        <div class="fg">
+          <label>Password</label>
+          <input type="password" name="password1" placeholder="Min. 8 characters" required/>
+          {% if form.password1.errors %}<div class="ferr">{{ form.password1.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="fg">
+          <label>Confirm Password</label>
+          <input type="password" name="password2" placeholder="Repeat password" required/>
+          {% if form.password2.errors %}<div class="ferr">{{ form.password2.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+      <button type="submit" class="auth-btn">Create Account</button>
+    </form>
+
+    <p class="auth-link">Already have an account? <a href="{% url 'login' %}">Sign in</a></p>
+    <p class="auth-link"><a href="{% url 'home' %}">← Back to Home</a></p>
+  </div>
+</div>
+{% endblock %}

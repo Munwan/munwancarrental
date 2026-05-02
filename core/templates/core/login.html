@@ -1,0 +1,49 @@
+{% extends 'core/base.html' %}
+{% block title %}Sign In – Munwan Car Rental{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <a href="{% url 'home' %}" class="logo" style="display:block;margin-bottom:28px">Munwan<span>CarRental</span></a>
+    <h1 class="auth-title">Welcome back</h1>
+    <p class="auth-sub">Sign in to manage your bookings</p>
+
+    {% if form.non_field_errors %}
+    <div class="auth-error">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    {% if lockout_error %}
+    <div class="auth-lockout" style="background:#FEE2E2;border:1px solid #FCA5A5;border-radius:10px;padding:14px 18px;margin-bottom:18px;font-size:.86rem;color:#991B1B;line-height:1.55">
+      🔒 {{ lockout_error }}
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'login' %}?next={{ request.GET.next|default:'' }}">
+      {% csrf_token %}
+      <!-- Honeypot — hidden via inline style, bots fill it, humans don't see it -->
+      <input type="text" name="website" value="" tabindex="-1" autocomplete="off"
+             style="position:absolute;left:-9999px;height:0;width:0;opacity:0" aria-hidden="true"/>
+      <input type="hidden" name="form_started_at" id="login_form_started_at" value=""/>
+      <div class="fg" style="margin-bottom:14px">
+        <label>Username or Email</label>
+        <input type="text" name="username" placeholder="your@email.com" value="{{ form.username.value|default:'' }}" required autofocus autocomplete="username"/>
+        {% if form.username.errors %}<div class="ferr">{{ form.username.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="fg" style="margin-bottom:20px">
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Your password" required autocomplete="current-password"/>
+        {% if form.password.errors %}<div class="ferr">{{ form.password.errors.0 }}</div>{% endif %}
+      </div>
+      {% if form.non_field_errors %}<div class="ferr" style="margin-bottom:14px">{{ form.non_field_errors.0 }}</div>{% endif %}
+      <button type="submit" class="auth-btn">Sign In</button>
+    </form>
+
+    <script>
+      // Stamp the form open time for the time-trap (humans take >1.5s)
+      document.getElementById('login_form_started_at').value = String(Date.now());
+    </script>
+
+    <p class="auth-link">Don't have an account? <a href="{% url 'register' %}">Create one</a></p>
+    <p class="auth-link"><a href="{% url 'home' %}">← Back to Home</a></p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends 'core/base.html' %}
+{% block title %}Server Error – DriveKenya{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div class="error-code">500</div>
+  <h1>Something went wrong</h1>
+  <p>We've been notified and are working on a fix. Please try again shortly.</p>
+  <a href="{% url 'home' %}" class="auth-btn" style="display:inline-block;text-decoration:none;margin-top:20px">Go Home</a>
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ loc.title }}{% endblock %}
+{% block meta_description %}{{ loc.meta_description }}{% endblock %}
+{% block canonical %}https://yourdomain.com{% url loc.url_name %}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/location.css' %}?v=1"/>
+<!-- LocalBusiness schema for location-specific ranking -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CarRental",
+  "name": "DriveKenya — {{ loc.h1 }}",
+  "description": "{{ loc.meta_description }}",
+  "url": "https://yourdomain.com{% url loc.url_name %}",
+  "telephone": "+254727745907",
+   "
+  "priceRange": "$28 - $120",
+  "currenciesAccepted": "USD, KES, GBP, EUR",
+  "paymentAccepted": "Cash, M-Pesa, Visa, Mastercard, PayPal",
+  "areaServed": {"@type": "Place", "name": "Kenya"},
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "{% if loc.key == 'mombasa' or loc.key == 'diani' %}Mombasa{% else %}Nairobi{% endif %}",
+    "addressCountry": "KE"
+  }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="location-page">
+
+  <!-- Hero -->
+  <section class="location-hero">
+    <div class="location-hero-inner">
+      <div class="location-hero-icon">{{ loc.hero_icon }}</div>
+      <div class="location-eyebrow">Kenya Car Rental</div>
+      <h1>{{ loc.h1 }}</h1>
+      <p class="location-tagline">{{ loc.tagline }}</p>
+      <div class="location-hero-cta">
+        <button class="location-btn location-btn-primary" onclick="openBookingModal()">🚗 Book a Car Now</button>
+        <a href="{% url 'fleet' %}" class="location-btn location-btn-secondary">View Fleet →</a>
+      </div>
+      <div class="location-hero-trust">
+        <span>✅ From $28/day</span>
+        <span>✅ Free delivery</span>
+        <span>✅ Full insurance</span>
+        <span>✅ M-Pesa accepted</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="location-content">
+
+    <!-- Intro -->
+    <section class="location-section">
+      <h2>About Car Rental in {% if loc.key == 'jkia' %}JKIA Nairobi{% else %}{{ loc.h1|cut:"Car Rental in "|cut:"Car Hire at " }}{% endif %}</h2>
+      <p>{{ loc.intro_p1|safe }}</p>
+      <p>{{ loc.intro_p2|safe }}</p>
+    </section>
+
+    <!-- Delivery locations -->
+    <section class="location-section">
+      <h2>Where We Deliver in {{ loc.h1|slice:"15:"|default:"This Area" }}</h2>
+      <p>DriveKenya offers <strong>free delivery</strong> to the following spots:</p>
+      <div class="location-delivery-grid">
+        {% for spot in loc.delivery_spots %}
+        <div class="location-delivery-card">
+          <div class="ldc-icon">{{ spot.0 }}</div>
+          <div class="ldc-body">
+            <strong>{{ spot.1|safe }}</strong>
+            <p>{{ spot.2|safe }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Popular trips -->
+    <section class="location-section">
+      <h2>Popular Trips from {% if loc.key == 'jkia' %}JKIA{% else %}{{ loc.h1|cut:"Car Rental in "|cut:"Car Hire at "|cut:", Kenya" }}{% endif %}</h2>
+      <div class="location-trips">
+        {% for trip in loc.popular_trips %}
+        <div class="location-trip">
+          <div class="ltrip-route">{{ trip.0 }}</div>
+          <div class="ltrip-time">{{ trip.1|safe }}</div>
+          <div class="ltrip-dist">{{ trip.2|safe }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Recommended cars -->
+    <section class="location-section">
+      <h2>Recommended Cars for {% if loc.key == 'jkia' %}JKIA Pickup{% else %}{{ loc.h1|cut:"Car Rental in "|cut:"Car Hire at " }}{% endif %}</h2>
+      <p>These are the most popular DriveKenya vehicles for this location:</p>
+      <ul class="location-recommended">
+        {% for car_name in loc.best_cars %}
+        <li>{{ car_name }}</li>
+        {% endfor %}
+      </ul>
+
+      <div class="location-fleet">
+        {% for v in vehicles %}
+        <a href="{% url 'vehicle_detail' slug=v.slug %}" class="location-fleet-card">
+          <div class="lfc-img">
+            <img src="{{ v.image_url }}" alt="{{ v.name }} for hire in {{ loc.h1 }}"
+                 onerror="this.src='{% static 'images/cars/placeholder.jpg' %}'"/>
+          </div>
+          <div class="lfc-body">
+            <strong>{{ v.name }}</strong>
+            <div class="lfc-price">${{ v.price_usd }}/day</div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- How to book -->
+    <section class="location-section">
+      <h2>How to Rent a Car in {% if loc.key == 'jkia' %}Nairobi from JKIA{% else %}{{ loc.h1|cut:"Car Rental in "|cut:"Car Hire at " }}{% endif %}</h2>
+      <ol class="location-steps">
+        <li><strong>Choose your car &amp; dates</strong> — Browse our fleet or click "Book a Car" to open the booking form.</li>
+        <li><strong>Enter pickup location</strong> — Select "{% if loc.key == 'jkia' %}Jomo Kenyatta Airport{% elif loc.key == 'mombasa' %}Mombasa Airport{% elif loc.key == 'diani' %}Hotel Delivery{% else %}Nairobi CBD or Hotel Delivery{% endif %}" and enter your address if applicable.</li>
+        <li><strong>Pay securely</strong> — Use M-Pesa, Visa, Mastercard, or PayPal. Pay in USD, KES, EUR or GBP.</li>
+        <li><strong>Get confirmation</strong> — Instant booking reference. We'll WhatsApp you 24 hours before pickup.</li>
+      </ol>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="location-final-cta">
+      <h2>Ready to Book Your {% if loc.key == 'jkia' %}Airport{% else %}{{ loc.key|title }}{% endif %} Rental?</h2>
+      <p>Free cancellation up to 48 hours before pickup. No hidden fees. Pay your way.</p>
+      <button class="location-btn location-btn-primary location-btn-lg" onclick="openBookingModal()">🚗 Book Now — from $28/day</button>
+      <a href="https://wa.me/{{ whatsapp_number }}" target="_blank" class="location-wa-link">
+        💬 Or WhatsApp us: +254 727745907
+      </a>
+    </section>
+
+  </div>
+</div>
+{% endblock %}

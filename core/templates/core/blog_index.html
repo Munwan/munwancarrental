@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}DriveKenya Blog — Travel Guides &amp; Tips for Driving in Kenya{% endblock %}
+{% block meta_description %}Expert guides on self-drive vs chauffeur, road trips from Nairobi to Maasai Mara, the best safari vehicles, and everything tourists need to know about driving in Kenya.{% endblock %}
+{% block canonical %}https://drivekenya.co.ke/blog/{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/blog.css' %}?v=1"/>
+{% endblock %}
+
+{% block content %}
+<div class="blog-page">
+
+  <section class="blog-hero">
+    <div class="blog-hero-inner">
+      <div class="hero-eyebrow">DriveKenya Journal</div>
+      <h1>Travel Guides &amp; Tips for Driving in Kenya</h1>
+      <p>Honest advice from people who actually drive these routes — for tourists, residents, and everyone in between.</p>
+    </div>
+  </section>
+
+  <div class="blog-grid">
+    {% for p in posts %}
+    <a href="{% url 'blog_post' slug=p.slug %}" class="blog-card">
+      <div class="blog-card-image">
+        <span class="blog-card-emoji">{{ p.hero_emoji }}</span>
+      </div>
+      <div class="blog-card-body">
+        <div class="blog-card-meta">
+          <span class="blog-card-cat">{{ p.category }}</span>
+          <span class="blog-card-dot">·</span>
+          <span class="blog-card-time">{{ p.read_time }}</span>
+        </div>
+        <h2>{{ p.title }}</h2>
+        <p>{{ p.excerpt }}</p>
+        <div class="blog-card-cta">Read article →</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

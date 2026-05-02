@@ -1,0 +1,48 @@
+{% extends 'core/base.html' %}
+{% block title %}Check Booking – Munwan Car Rental{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card" style="max-width:520px">
+    <a href="{% url 'home' %}" class="logo" style="display:block;margin-bottom:28px">Munwan<span>CarRental</span></a>
+    <h1 class="auth-title">Check Your Booking</h1>
+    <p class="auth-sub">Enter your reference number to view booking details</p>
+
+    <form method="get">
+      <div class="fg" style="margin-bottom:16px">
+        <label>Booking Reference</label>
+        <input type="text" name="reference" placeholder="DK-2025-XXXXXX"
+               value="{{ form.reference.value|default:'' }}"
+               style="text-transform:uppercase;font-weight:700;letter-spacing:0.1em"/>
+        {% if form.reference.errors %}<div class="ferr">{{ form.reference.errors.0 }}</div>{% endif %}
+      </div>
+      <button type="submit" class="auth-btn">🔍 Look Up Booking</button>
+    </form>
+
+    {% if booking %}
+    <div class="booking-result-card" style="margin-top:24px">
+      <div style="font-size:1.8rem;margin-bottom:10px">✅</div>
+      <div style="font-weight:800;font-size:1rem;margin-bottom:14px">Booking Found</div>
+      <div class="result-row"><span class="rl">Reference</span><span class="rv">{{ booking.reference }}</span></div>
+      <div class="result-row"><span class="rl">Vehicle</span><span class="rv">{{ booking.vehicle.name }}</span></div>
+      <div class="result-row"><span class="rl">Pick-up</span><span class="rv">{{ booking.get_pickup_location_display }} · {{ booking.pickup_date|date:"d M Y" }}</span></div>
+      <div class="result-row"><span class="rl">Return</span><span class="rv">{{ booking.return_date|date:"d M Y" }}</span></div>
+      <div class="result-row"><span class="rl">Status</span><span class="rv status-ok">{{ booking.get_status_display }}</span></div>
+      <div class="result-row"><span class="rl">Payment</span><span class="rv">{{ booking.get_payment_status_display }}</span></div>
+      <div class="result-row"><span class="rl">Total</span><span class="rv">${{ booking.total_usd }} (KES {{ booking.total_kes }})</span></div>
+
+      {% if booking.payment_status == 'unpaid' %}
+      <a href="{% url 'home' %}?resume={{ booking.reference }}#booking"
+         style="display:block;margin-top:18px;padding:14px 20px;background:linear-gradient(135deg,#1565FF,#0B47C2);color:#fff;text-align:center;font-weight:700;border-radius:10px;text-decoration:none;font-size:.92rem;box-shadow:0 4px 12px rgba(21,101,255,.25)">
+        💳 Complete Payment
+      </a>
+      <div style="font-size:.74rem;color:#6B7280;text-align:center;margin-top:8px">
+        Pay via M-Pesa, Card, or PayPal — your booking is reserved.
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <p class="auth-link" style="margin-top:20px"><a href="{% url 'home' %}">← Back to Home</a></p>
+  </div>
+</div>
+{% endblock %}

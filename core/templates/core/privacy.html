@@ -1,0 +1,205 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Privacy Policy | Munwan Car Rental{% endblock %}
+{% block meta_description %}Munwan Car Rental privacy policy. How we collect, use, store, and protect your personal data in compliance with Kenya's Data Protection Act 2019 and international standards.{% endblock %}
+{% block canonical %}https://munwancarrental.com/privacy/{% endblock %}
+
+{% block content %}
+<div class="support-page">
+  <div class="support-hero">
+    <div class="hero-eyebrow">Legal</div>
+    <h1>Privacy Policy</h1>
+    <p>How we collect, use, store, and protect your personal data — in plain English. We comply with Kenya's Data Protection Act 2019 and international standards.</p>
+  </div>
+
+  <div class="support-grid">
+
+    <!-- Left: quick nav cards -->
+    <div class="support-cards">
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-collect').scrollIntoView({behavior:'smooth'})">
+        <div class="s-card-icon">📥</div><div class="s-card-title">What We Collect</div>
+        <div class="s-card-val">Booking, contact &amp; payment data</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-use').scrollIntoView({behavior:'smooth'})">
+        <div class="s-card-icon">🎯</div><div class="s-card-title">How We Use It</div>
+        <div class="s-card-val">Bookings, support, legal compliance</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-share').scrollIntoView({behavior:'smooth'})">
+        <div class="s-card-icon">🤝</div><div class="s-card-title">Sharing</div>
+        <div class="s-card-val">Payment processors only — no ads</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-rights').scrollIntoView({behavior:'smooth'})">
+        <div class="s-card-icon">⚖️</div><div class="s-card-title">Your Rights</div>
+        <div class="s-card-val">Access, delete, export, complain</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-security').scrollIntoView({behavior:'smooth'})">
+        <div class="s-card-icon">🔒</div><div class="s-card-title">Security</div>
+        <div class="s-card-val">HTTPS, hashed passwords, EU servers</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-cookies').scrollIntoView({behavior:'smooth'})">
+        <div class="s-card-icon">🍪</div><div class="s-card-title">Cookies</div>
+        <div class="s-card-val">Essential only — no ad trackers</div>
+      </div>
+      <div class="s-card">
+        <div class="s-card-icon">📋</div><div class="s-card-title">Related Docs</div>
+        <div class="s-card-val">
+          <a href="{% url 'terms' %}">Terms &amp; Conditions →</a><br/>
+          <a href="{% url 'cancellation' %}">Cancellation Policy →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: full Privacy Policy content -->
+    <div class="support-form-wrap">
+      <p class="terms-effective">Last updated: January 2025 &nbsp;·&nbsp; Effective: 1 January 2025 &nbsp;·&nbsp; Munwan Car Rental Ltd</p>
+
+      <!-- 1. Who we are -->
+      <section class="terms-section">
+        <h2>1. Who We Are</h2>
+        <p>This Privacy Policy describes how <strong>Munwan Car Rental Ltd</strong> ("Munwan Car Rental", "we", "us") collects, uses, and protects personal data of users ("you") of our website <strong>munwancarrental.com</strong>, our booking platform, and our customer support channels.</p>
+        <p>We are registered in Kenya and committed to protecting your privacy in accordance with the <strong>Kenya Data Protection Act, 2019</strong> and, where applicable, the EU General Data Protection Regulation (GDPR) and the UK Data Protection Act.</p>
+      </section>
+
+      <!-- 2. What we collect -->
+      <section id="sec-collect" class="terms-section">
+        <h2>2. Information We Collect</h2>
+        <p>We collect only the data we genuinely need to operate our service:</p>
+        <p><strong>Information you give us directly:</strong></p>
+        <ul>
+          <li><strong>Booking details</strong>: full name, email, phone number, pickup and return location, dates, vehicle preferences</li>
+          <li><strong>Identification</strong> (collected at vehicle pickup, not online): driver's licence, passport, International Driving Permit</li>
+          <li><strong>Payment data</strong>: card details are <strong>never stored on our servers</strong> — they are processed directly by Paystack and PayPal under their own security standards. We retain only the last 4 digits of the card and the transaction reference.</li>
+          <li><strong>Account information</strong>: username (your email), encrypted password, communication preferences</li>
+          <li><strong>Support correspondence</strong>: messages sent via our contact form, WhatsApp, or email</li>
+        </ul>
+        <p><strong>Information collected automatically:</strong></p>
+        <ul>
+          <li><strong>Usage data</strong>: pages visited, vehicles viewed, time spent, referrer (anonymised)</li>
+          <li><strong>Device data</strong>: browser type, operating system, screen resolution, IP address (truncated for analytics)</li>
+          <li><strong>Cookies</strong>: session cookies (essential for login and bookings), preference cookies (remembering your currency and locale), and analytics cookies (aggregate site performance via Google Analytics 4)</li>
+        </ul>
+      </section>
+
+      <!-- 3. How we use it -->
+      <section id="sec-use" class="terms-section">
+        <h2>3. How We Use Your Information</h2>
+        <p>We use your data only for the following clearly defined purposes:</p>
+        <ul>
+          <li><strong>To process your booking</strong>: confirming reservations, communicating pickup details, sending receipts, and providing rental documents</li>
+          <li><strong>To verify identity at pickup</strong>: matching the booking to the customer, confirming licence validity, fraud prevention</li>
+          <li><strong>To process payments</strong>: routing your payment through Paystack, PayPal, or M-Pesa (we never see your full card number)</li>
+          <li><strong>To provide customer support</strong>: responding to enquiries, handling disputes, processing refunds</li>
+          <li><strong>To send service messages</strong>: booking reminders, vehicle changes, urgent operational notices (these are essential, not marketing)</li>
+          <li><strong>To improve our service</strong>: anonymous analytics on which pages are most useful, which vehicles are most popular</li>
+          <li><strong>To comply with the law</strong>: tax records, accident reports, regulatory enquiries from KRA, NTSA, or police</li>
+        </ul>
+        <p><strong>We will never use your data to send unsolicited marketing without your explicit opt-in. We do not sell your data to advertisers, ever.</strong></p>
+      </section>
+
+      <!-- 4. Sharing -->
+      <section id="sec-share" class="terms-section">
+        <h2>4. Who We Share Your Data With</h2>
+        <p>Your data is only shared with the following parties, strictly for the purposes listed:</p>
+        <ul>
+          <li><strong>Paystack &amp; PayPal</strong>: to process card payments. They handle PCI-DSS compliant card data directly, bound by their own privacy policies and Kenyan/international data protection law.</li>
+          <li><strong>Safaricom (M-Pesa)</strong>: when you pay via M-Pesa, your phone number and amount are transmitted to Safaricom's Daraja API for the STK push.</li>
+          <li><strong>Insurance providers</strong>: in the event of an accident or claim, your name, licence details, and incident report may be shared with our insurance partner.</li>
+          <li><strong>Authorities</strong>: if legally required (police investigation, court order, KRA tax audit), we will disclose data to the extent demanded by law.</li>
+          <li><strong>Service providers</strong>: hosting (Hetzner via Appliku), email delivery, analytics (Google Analytics 4), error monitoring. All are bound by data processing agreements.</li>
+        </ul>
+        <p><strong>We do not share your data with marketing companies, ad networks, or data brokers.</strong></p>
+      </section>
+
+      <!-- 5. Storage and retention -->
+      <section class="terms-section">
+        <h2>5. How Long We Keep Your Data</h2>
+        <ul>
+          <li><strong>Booking records</strong>: kept for <strong>7 years</strong> as required by Kenya Revenue Authority for tax purposes</li>
+          <li><strong>Account data</strong>: kept until you delete your account; you can delete from your account dashboard at any time</li>
+          <li><strong>Payment records</strong>: kept for <strong>7 years</strong> for accounting compliance</li>
+          <li><strong>Support correspondence</strong>: kept for <strong>2 years</strong> after the last interaction</li>
+          <li><strong>Analytics data</strong>: retained for <strong>14 months</strong>, anonymised after 90 days</li>
+          <li><strong>CCTV at our offices</strong>: footage is retained for <strong>30 days</strong> then auto-deleted</li>
+        </ul>
+        <p>If you delete your account, we anonymise your booking history (replace name and contact details with "Former Customer") rather than deleting the booking record entirely, so that our accounting and legal records remain intact. The booking can no longer be linked to you personally.</p>
+      </section>
+
+      <!-- 6. Security -->
+      <section id="sec-security" class="terms-section">
+        <h2>6. How We Protect Your Data</h2>
+        <ul>
+          <li>All data transmitted between your device and our servers is encrypted with <strong>HTTPS / TLS 1.3</strong></li>
+          <li>Passwords are hashed using <strong>PBKDF2</strong> with a salt — even Munwan Car Rental staff cannot read your password</li>
+          <li>Access to customer data is limited to authorised staff on a need-to-know basis</li>
+          <li>Our servers are hosted in <strong>secure EU-tier data centres (Hetzner, Germany)</strong> with 24/7 physical and network security</li>
+          <li>Database backups are encrypted at rest</li>
+          <li>We never transmit card numbers, CVVs, or full bank details — these are handled exclusively by our PCI-DSS compliant payment processors</li>
+          <li>Our systems are regularly tested for security vulnerabilities</li>
+        </ul>
+        <p>If we ever discover a data breach affecting your information, we will notify you and the Kenya Office of the Data Protection Commissioner within <strong>72 hours</strong> as required by law.</p>
+      </section>
+
+      <!-- 7. Your rights -->
+      <section id="sec-rights" class="terms-section">
+        <h2>7. Your Rights</h2>
+        <p>Under the Kenya Data Protection Act 2019 (and GDPR if you are an EU/UK resident), you have the right to:</p>
+        <ul>
+          <li><strong>Access</strong> the personal data we hold about you</li>
+          <li><strong>Correct</strong> any inaccurate or outdated information</li>
+          <li><strong>Delete</strong> your account and personal data (subject to legal retention requirements)</li>
+          <li><strong>Export</strong> your data in a portable, machine-readable format</li>
+          <li><strong>Object</strong> to processing for direct marketing (we don't do this anyway)</li>
+          <li><strong>Restrict</strong> processing while a complaint is being investigated</li>
+          <li><strong>Withdraw consent</strong> at any time for any optional processing</li>
+          <li><strong>Lodge a complaint</strong> with the Kenya Office of the Data Protection Commissioner (<a href="https://www.odpc.go.ke" target="_blank" rel="noopener">odpc.go.ke</a>)</li>
+        </ul>
+        <p>To exercise any of these rights, email us at <a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=info@munwancarrental.com" target="_blank" rel="noopener"><strong>info@munwancarrental.com</strong></a> or message us on WhatsApp. We respond within <strong>5 working days</strong>.</p>
+      </section>
+
+      <!-- 8. Cookies -->
+      <section id="sec-cookies" class="terms-section">
+        <h2>8. Cookies</h2>
+        <p>We use a minimum of cookies, all categorised as follows:</p>
+        <ul>
+          <li><strong>Strictly necessary</strong>: session cookie (login state), CSRF token (security), language preference. These cannot be disabled — the site won't work without them.</li>
+          <li><strong>Functional</strong>: remembering your preferred currency, last viewed vehicle. You can clear these at any time via your browser.</li>
+          <li><strong>Analytics</strong>: Google Analytics 4 tracks anonymous, aggregated usage data. We've enabled IP anonymisation, and you can opt out via your browser's "Do Not Track" setting or by installing the Google Analytics opt-out extension.</li>
+        </ul>
+        <p>We do not use third-party advertising cookies, retargeting pixels, or social media trackers.</p>
+      </section>
+
+      <!-- 9. Children -->
+      <section class="terms-section">
+        <h2>9. Children's Privacy</h2>
+        <p>Our service is intended for adults. The minimum age to rent a vehicle from Munwan Car Rental is <strong>23 years</strong>. We do not knowingly collect data from anyone under <strong>18</strong>. If you become aware that a minor has provided us with personal data, please contact us and we will delete it promptly.</p>
+      </section>
+
+      <!-- 10. International transfers -->
+      <section class="terms-section">
+        <h2>10. International Data Transfers</h2>
+        <p>Some of our service providers (Google Analytics, payment processors) may process your data outside Kenya. We only use providers that meet international data protection standards (GDPR adequacy or equivalent). Your data is never sold or transferred to jurisdictions with weaker data protection than Kenya's.</p>
+      </section>
+
+      <!-- 11. Updates -->
+      <section class="terms-section">
+        <h2>11. Changes to This Policy</h2>
+        <p>We may update this Privacy Policy from time to time to reflect changes in our practices or the law. We will post the updated policy on this page with a new "Last updated" date. For material changes, we will notify registered users by email at least 14 days before they take effect.</p>
+      </section>
+
+      <!-- 12. Contact -->
+      <section class="terms-section">
+        <h2>12. Contact Us</h2>
+        <p>For any questions, complaints, or to exercise your rights:</p>
+        <p style="background:#F0F4FF;border-radius:10px;padding:16px 20px;line-height:2;color:#374151">
+          ✉️ <a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=info@munwancarrental.com" target="_blank" rel="noopener"><strong>info@munwancarrental.com</strong></a><br/>
+          📞 <strong>+254 727 745 907</strong> (WhatsApp &amp; phone)<br/>
+          📍 Munwan Car Rental Ltd, Nairobi
+        </p>
+        <p>For complaints we cannot resolve, you may contact the <strong>Office of the Data Protection Commissioner</strong>, Britam Tower, 9th Floor, Hospital Road, Upper Hill, Nairobi — or visit <a href="https://www.odpc.go.ke" target="_blank" rel="noopener">odpc.go.ke</a>.</p>
+      </section>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <!-- ═══ SEO META ═══ -->
+  <meta name="description" content="{% block meta_description %}Munwan Car Rental – Affordable car hire in Nairobi, Mombasa & across Kenya. Self-drive, with driver, safari packages. M-Pesa, card & PayPal. Full insurance included.{% endblock %}"/>
+  <meta name="keywords" content="car hire Kenya, car rental Nairobi, self drive Kenya, hire a car Nairobi, car hire Mombasa, safari car hire, car hire JKIA, car rental Kenya affordable, Kenya self drive rental, car hire with driver Kenya"/>
+  <meta name="robots" content="index, follow"/>
+  <link rel="canonical" href="{% block canonical %}https://yourdomain.com{% endblock %}"/>
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website"/>
+  <meta property="og:site_name"   content="Munwan Car Rental"/>
+  <meta property="og:title"       content="{% block og_title %}Munwan Car Rental – Car Hire for Everyone in Kenya{% endblock %}"/>
+  <meta property="og:description" content="{% block og_desc %}Hire a car in Kenya from $28/day. Airport pickup, full insurance, GPS. Pay by M-Pesa, card or PayPal.{% endblock %}"/>
+  <meta property="og:image"       content="{% block og_image %}https://yourdomain.com/static/images/og-cover.jpg{% endblock %}"/>
+  <meta property="og:url"         content="{% block og_url %}https://yourdomain.com{% endblock %}"/>
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image"/>
+  <meta name="twitter:title"       content="{% block tw_title %}Munwan Car Rental – Car Hire for Everyone in Kenya{% endblock %}"/>
+  <meta name="twitter:description" content="{% block tw_desc %}Hire a car in Kenya from $28/day. Airport pickup, full insurance, M-Pesa accepted.{% endblock %}"/>
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CarRental",
+    "name": "Munwan Car Rental",
+    "description": "Car hire for everyone in Kenya. Self-drive, with driver and safari packages. Airport delivery, full insurance.",
+    "url": "https://yourdomain.com",
+    "telephone": "+254727745907",
+    "email": "info@munwancarrental.com",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Westlands",
+      "addressLocality": "Nairobi",
+      "addressCountry": "KE"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": -1.2921,
+      "longitude": 36.8219
+    },
+    "openingHours": "Mo-Su 06:00-22:00",
+    "priceRange": "$28 - $120 per day",
+    "paymentAccepted": "Cash, Credit Card, M-Pesa, PayPal",
+    "currenciesAccepted": "USD, KES, GBP, EUR",
+    "areaServed": "Kenya"
+  }
+  </script>
+
+  <meta name="csrf-token" content="{{ csrf_token }}"/>
+  <title>{% block title %}Munwan Car Rental – Car Hire for Everyone in Kenya{% endblock %}</title>
+  {% load static %}
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/main.css' %}"/>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="mainNav">
+  <a href="{% url 'home' %}" class="logo logo-with-img">
+    <img src="{% static 'images/logo.png' %}" alt="Munwan Car Rental" class="logo-img"/>
+    <span class="logo-stack">
+      <span class="logo-top">Munwan</span>
+      <span class="logo-bot">CarRental</span>
+    </span>
+  </a>
+
+  <!-- Desktop nav links -->
+  <ul class="nav-links">
+    <li><a href="{% url 'home' %}#fleet">Fleet</a></li>
+    <li><a href="{% url 'home' %}#services">Services</a></li>
+    <li><a href="{% url 'home' %}#reviews">Reviews</a></li>
+    <li><a href="{% url 'blog_index' %}">Blog</a></li>
+    <li><a href="{% url 'support' %}">Contact</a></li>
+    {% if user.is_authenticated %}
+      <li><a href="{% url 'dashboard' %}" class="nav-link-account">👤 My Account</a></li>
+    {% endif %}
+  </ul>
+
+  <!-- Right side: Sign In (desktop only) + Book Now (always visible) -->
+  <div class="nav-right">
+    {% if not user.is_authenticated %}
+      <a href="{% url 'login' %}" class="nav-sign nav-hide-mobile">Sign In</a>
+    {% endif %}
+    <button class="nav-cta" onclick="openBookingModal()">Book Now</button>
+  </div>
+
+  <button class="nav-burger" onclick="toggleMobileMenu()" aria-label="Menu">☰</button>
+</nav>
+
+<!-- Mobile Menu — full nav lives here (FAQs and Cancellation removed) -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="{% url 'home' %}#fleet"    onclick="closeMobileMenu()">🚗 Fleet</a>
+  <a href="{% url 'home' %}#services" onclick="closeMobileMenu()">⚙️ Services</a>
+  <a href="{% url 'home' %}#reviews"  onclick="closeMobileMenu()">💬 Reviews</a>
+  <a href="{% url 'blog_index' %}"    onclick="closeMobileMenu()">📰 Blog</a>
+  <a href="{% url 'support' %}"       onclick="closeMobileMenu()">📞 Contact</a>
+  <div class="mob-divider"></div>
+  {% if user.is_authenticated %}
+    <a href="{% url 'dashboard' %}"   onclick="closeMobileMenu()">👤 My Account</a>
+    <a href="{% url 'logout' %}"      onclick="closeMobileMenu()">🚪 Sign Out</a>
+  {% else %}
+    <a href="{% url 'login' %}"       onclick="closeMobileMenu()">🔑 Sign In</a>
+    <a href="{% url 'register' %}"    onclick="closeMobileMenu()">👤 Create Account</a>
+  {% endif %}
+  <div class="mob-divider"></div>
+  <button class="mob-check-btn" onclick="openCheckModal();closeMobileMenu()">📋 Check My Booking</button>
+</div>
+
+{% block content %}{% endblock %}
+
+{% block footer %}{% endblock %}
+
+<!-- WhatsApp FAB -->
+<a href="https://wa.me/{{ whatsapp_number|default:'254727745907' }}?text=Hello%20Munwan Car Rental%2C%20I%20need%20help%20with%20car%20hire."
+   class="whatsapp-fab" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="26" height="26">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+  <span>Chat with us</span>
+</a>
+
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

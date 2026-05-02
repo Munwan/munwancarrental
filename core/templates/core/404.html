@@ -1,0 +1,10 @@
+{% extends 'core/base.html' %}
+{% block title %}Page Not Found – DriveKenya{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div class="error-code">404</div>
+  <h1>Page not found</h1>
+  <p>The page you're looking for doesn't exist or has moved.</p>
+  <a href="{% url 'home' %}" class="auth-btn" style="display:inline-block;text-decoration:none;margin-top:20px">Go Home</a>
+</div>
+{% endblock %}

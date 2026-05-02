@@ -1,0 +1,73 @@
+{% extends 'core/base.html' %}
+{% block title %}Contact & Support – Munwan Car Rental{% endblock %}
+{% block content %}
+<div class="support-page">
+  <div class="support-hero">
+    <div class="hero-eyebrow">We're here to help</div>
+    <h1>Contact &amp; Support</h1>
+    <p>Get in touch via the form, WhatsApp, or email. We aim to respond within 24 hours.</p>
+  </div>
+
+  <div class="support-grid">
+    <!-- Contact info cards -->
+    <div class="support-cards">
+      <div class="s-card"><div class="s-card-icon">📞</div><div class="s-card-title">Phone</div><div class="s-card-val"><a href="tel:+254727745907">+254 727 745 907</a></div></div>
+      <div class="s-card"><div class="s-card-icon">💬</div><div class="s-card-title">WhatsApp</div><div class="s-card-val"><a href="https://wa.me/254727745907" target="_blank">Chat now</a></div></div>
+      <div class="s-card"><div class="s-card-icon">✉️</div><div class="s-card-title">Email</div><div class="s-card-val"><a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=info@munwancarrental.com" target="_blank" rel="noopener">info@munwancarrental.com</a></div></div>
+      <div class="s-card"><div class="s-card-icon">📍</div><div class="s-card-title">Office</div><div class="s-card-val">Nairobi<br/>Mon–Sat 7am–8pm</div></div>
+    </div>
+
+    <!-- Contact form -->
+    <div class="support-form-wrap">
+      {% if submitted %}
+      <div class="support-success">
+        <div style="font-size:2.5rem;margin-bottom:12px">✅</div>
+        <h3>Message sent!</h3>
+        <p>We'll reply to your email within 24 hours. For urgent matters, <a href="https://wa.me/254727745907">WhatsApp us</a>.</p>
+      </div>
+      {% else %}
+      <h2 class="support-form-title">Send a Message</h2>
+      <form method="post" id="supportForm">
+        {% csrf_token %}
+        <!-- Honeypot -->
+        <input type="text" name="website" style="display:none" tabindex="-1" autocomplete="off"/>
+
+        <div class="frow">
+          <div class="fg">
+            <label>Full Name <span class="req">*</span></label>
+            <input type="text" name="name" value="{{ form.name.value|default:'' }}" placeholder="Your full name" required/>
+            {% if form.name.errors %}<div class="ferr">{{ form.name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="fg">
+            <label>Email <span class="req">*</span></label>
+            <input type="email" name="email" value="{{ form.email.value|default:'' }}" placeholder="your@email.com" required/>
+            {% if form.email.errors %}<div class="ferr">{{ form.email.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <label>Phone</label>
+            <input type="tel" name="phone" value="{{ form.phone.value|default:'' }}" placeholder="+254 7XX XXX XXX"/>
+          </div>
+          <div class="fg">
+            <label>Booking Reference</label>
+            <input type="text" name="booking_ref" value="{{ form.booking_ref.value|default:'' }}" placeholder="DK-2025-XXXXX"/>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:14px">
+          <label>Subject <span class="req">*</span></label>
+          <input type="text" name="subject" value="{{ form.subject.value|default:'' }}" placeholder="How can we help?" required/>
+          {% if form.subject.errors %}<div class="ferr">{{ form.subject.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="fg" style="margin-bottom:20px">
+          <label>Message <span class="req">*</span></label>
+          <textarea name="message" rows="5" placeholder="Describe your issue or question..." required>{{ form.message.value|default:'' }}</textarea>
+          {% if form.message.errors %}<div class="ferr">{{ form.message.errors.0 }}</div>{% endif %}
+        </div>
+        <button type="submit" class="auth-btn">Send Message</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

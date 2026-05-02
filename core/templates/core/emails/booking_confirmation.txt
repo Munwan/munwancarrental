@@ -1,0 +1,39 @@
+DriveKenya – Booking Confirmation
+==================================
+
+Hi {{ booking.first_name }},
+
+Your booking is CONFIRMED! 🎉
+
+Booking Reference : {{ booking.reference }}
+Vehicle           : {{ booking.vehicle.name }}
+Hire Type         : {{ booking.get_hire_type_display }}
+With Driver       : {% if booking.with_driver %}Yes{% else %}No{% endif %}
+
+Pick-up           : {{ booking.pickup_date|date:"D, d M Y" }} at {{ booking.pickup_time|time:"H:i" }}
+                    {{ booking.get_pickup_location_display }}{% if booking.hotel_address %} – {{ booking.hotel_address }}{% endif %}
+Return            : {{ booking.return_date|date:"D, d M Y" }} at {{ booking.return_time|time:"H:i" }}
+Duration          : {{ booking.days }} day{% if booking.days != 1 %}s{% endif %}
+
+──────────────────────────────────
+PAYMENT SUMMARY
+──────────────────────────────────
+Vehicle rate      : ${{ booking.base_price_usd }}
+{% if booking.with_driver %}Driver fee        : ${{ booking.driver_fee_usd }}
+{% endif %}Total (USD)       : ${{ booking.total_usd }}
+Total (KES)       : KES {{ booking.total_kes }}
+Payment method    : {{ booking.get_payment_method_display }}
+Payment status    : {{ booking.get_payment_status_display }}
+──────────────────────────────────
+
+FREE CANCELLATION up to 48 hours before pick-up.
+
+Need to make changes?
+  WhatsApp : +254 700 000 000
+  Email    : info@drivekenya.co.ke
+
+Our team will send you a WhatsApp message 24 hours before your pick-up to confirm all details.
+
+Safe travels!
+DriveKenya Team
+https://drivekenya.co.ke

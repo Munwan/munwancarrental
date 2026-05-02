@@ -1,0 +1,220 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ vehicle.name }} for Hire in Nairobi Kenya | ${{ vehicle.price_usd }}/day | DriveKenya{% endblock %}
+{% block meta_description %}Hire {{ vehicle.name }} in Nairobi from ${{ vehicle.price_usd }}/day. {{ vehicle.seats }}-seater {{ vehicle.get_fuel_display|default:"fuel-efficient" }} car with full insurance, GPS &amp; free JKIA airport delivery. Perfect for {% if 'Prado' in vehicle.name or 'Cruiser' in vehicle.name or 'X-Trail' in vehicle.name or 'Forester' in vehicle.name or 'Rav4' in vehicle.name %}Maasai Mara safaris{% else %}city &amp; road trips in Kenya{% endif %}. Book with M-Pesa, card or PayPal.{% endblock %}
+{% block canonical %}https://yourdomain.com{% url 'vehicle_detail' slug=vehicle.slug %}{% endblock %}
+{% block og_title %}{{ vehicle.name }} Rental in Kenya — ${{ vehicle.price_usd }}/day{% endblock %}
+{% block og_desc %}Hire a {{ vehicle.name }} in Nairobi with full insurance, GPS &amp; airport delivery. Self-drive or with driver.{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/vehicle.css' %}?v=1"/>
+<!-- Vehicle Product schema — helps Google show price + reviews in search -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "{{ vehicle.name }} — Car Hire in Nairobi",
+  "description": "Rent a {{ vehicle.name }} in Nairobi, Kenya. {{ vehicle.seats }}-seater with full insurance, GPS and airport delivery.",
+  "image": "{% if vehicle.image %}https://yourdomain.com{{ vehicle.image.url }}{% else %}https://yourdomain.com/static/images/cars/placeholder.jpg{% endif %}",
+  "brand": {"@type": "Brand", "name": "DriveKenya"},
+  "offers": {
+    "@type": "Offer",
+    "url": "https://yourdomain.com{% url 'vehicle_detail' slug=vehicle.slug %}",
+    "priceCurrency": "USD",
+    "price": "{{ vehicle.price_usd }}",
+    "priceValidUntil": "2026-12-31",
+    "availability": "https://schema.org/InStock",
+    "itemCondition": "https://schema.org/NewCondition"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "reviewCount": "127",
+    "bestRating": "5",
+    "worstRating": "1"
+  }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="vehicle-page">
+
+  <!-- Breadcrumb for SEO -->
+  <nav class="vehicle-breadcrumb" aria-label="breadcrumb">
+    <a href="{% url 'home' %}">Home</a> <span>›</span>
+    <a href="{% url 'fleet' %}">Fleet</a> <span>›</span>
+    <span class="crumb-current">{{ vehicle.name }}</span>
+  </nav>
+
+  <div class="vehicle-hero">
+    <div class="vehicle-hero-left">
+      <div class="vehicle-img-wrap">
+        <img src="{{ vehicle.image_url }}" alt="{{ vehicle.name }} for hire in Nairobi Kenya"
+             onerror="this.src='{% static 'images/cars/placeholder.jpg' %}'"/>
+        {% if vehicle.badge %}
+        <div class="vehicle-badge chip-{{ vehicle.badge }}">{{ vehicle.get_badge_display }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="vehicle-hero-right">
+      <div class="vehicle-eyebrow">Car Hire in Nairobi</div>
+      <h1>{{ vehicle.name }} for Hire in Nairobi</h1>
+      <p class="vehicle-tagline">{{ vehicle.description }}</p>
+
+      <div class="vehicle-price-box">
+        <div class="vehicle-price-main">
+          <span class="vp-usd">${{ vehicle.price_usd }}</span>
+          <span class="vp-per">/ day</span>
+        </div>
+        <div class="vehicle-price-alt">
+          €{{ vehicle.price_eur }} · KES {{ vehicle.price_kes }}
+        </div>
+      </div>
+
+      <div class="vehicle-specs-grid">
+        {% for spec in vehicle.specs_display %}
+        <div class="vspec">{{ spec }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="vehicle-cta-row">
+        <button class="vehicle-book-btn" onclick="openBookingModalForCar('{{ vehicle.id }}', '{{ vehicle.name }}')">
+          🚗 Book {{ vehicle.name }} Now
+        </button>
+        <a href="https://wa.me/{{ whatsapp_number|default:'254727745907' }}?text=Hi%20DriveKenya%2C%20I'd%20like%20to%20hire%20the%20{{ vehicle.name|urlencode }}"
+           class="vehicle-wa-btn" target="_blank" rel="noopener">
+          💬 Ask on WhatsApp
+        </a>
+      </div>
+
+      <div class="vehicle-trust-row">
+        <span>✅ Full insurance</span>
+        <span>📍 Free GPS</span>
+        <span>✈️ JKIA pickup</span>
+        <span>💳 M-Pesa &amp; PayPal</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEO-rich content sections -->
+  <div class="vehicle-content">
+
+    <section class="vehicle-section">
+      <h2>Why Rent the {{ vehicle.name }} in Kenya?</h2>
+      <p>The <strong>{{ vehicle.name }}</strong> is one of our most popular rental vehicles in Nairobi, favoured by both international tourists and Kenyan business travellers.
+      {% if 'Prado' in vehicle.name or 'Cruiser' in vehicle.name %}
+        This rugged 4×4 SUV is built for Kenya's toughest terrain — from the rough tracks of the Maasai Mara National Reserve to the dusty trails of Amboseli National Park. With high ground clearance, a powerful diesel engine, and a roof hatch perfect for game viewing, it's the ultimate safari-ready vehicle.
+      {% elif 'X-Trail' in vehicle.name or 'Forester' in vehicle.name or 'Rav4' in vehicle.name or 'CX5' in vehicle.name or 'Harrier' in vehicle.name %}
+        A compact, comfortable SUV ideal for weekend trips from Nairobi to Naivasha, Nakuru, or the coastal region around Diani Beach. Excellent fuel economy makes it perfect for extended road trips, while 4WD capability handles rough park roads with ease.
+      {% elif 'Alphard' in vehicle.name or 'Noah' in vehicle.name or 'Esquire' in vehicle.name %}
+        A spacious executive van perfect for family trips, corporate transfers, or group safaris. Premium interior comfort for long drives, sliding doors for easy access, and ample luggage space for airport pickups.
+      {% elif 'Fielder' in vehicle.name or 'Demio' in vehicle.name or 'Note' in vehicle.name %}
+        A fuel-efficient economy car ideal for Nairobi city driving, short business trips, and cost-conscious tourists. Easy to park, economical to run, and comfortable for short-to-medium journeys across Kenya.
+      {% else %}
+        A reliable choice for exploring Kenya — from city driving in Nairobi to weekend getaways along the coast. Comfortable, well-maintained, and fully insured for peace of mind on every journey.
+      {% endif %}
+      </p>
+    </section>
+
+    <section class="vehicle-section">
+      <h2>{{ vehicle.name }} Rental Features</h2>
+      <div class="vehicle-features">
+        <div class="vfeature">
+          <div class="vfeature-icon">👥</div>
+          <div><strong>Seats {{ vehicle.seats }}</strong><span>Comfortable for all passengers</span></div>
+        </div>
+        <div class="vfeature">
+          <div class="vfeature-icon">⛽</div>
+          <div><strong>{{ vehicle.get_fuel_display|default:"Petrol" }}</strong><span>Fuel-efficient engine</span></div>
+        </div>
+        <div class="vfeature">
+          <div class="vfeature-icon">🛡️</div>
+          <div><strong>Full Insurance</strong><span>Comprehensive cover included</span></div>
+        </div>
+        <div class="vfeature">
+          <div class="vfeature-icon">📍</div>
+          <div><strong>Live GPS</strong><span>Navigate with confidence</span></div>
+        </div>
+        <div class="vfeature">
+          <div class="vfeature-icon">✈️</div>
+          <div><strong>Airport Delivery</strong><span>Free pickup at JKIA &amp; Wilson</span></div>
+        </div>
+        <div class="vfeature">
+          <div class="vfeature-icon">📞</div>
+          <div><strong>24/7 Support</strong><span>WhatsApp &amp; phone anytime</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="vehicle-section">
+      <h2>How to Book the {{ vehicle.name }} for Car Hire in Kenya</h2>
+      <ol class="vehicle-steps">
+        <li><strong>Click "Book Now"</strong> — Select your pickup and return dates, and choose JKIA airport, hotel delivery, or Nairobi CBD.</li>
+        <li><strong>Complete your details</strong> — Provide your name, contact, and driving licence information (International Driving Permit required for tourists).</li>
+        <li><strong>Pay securely</strong> — Use M-Pesa STK Push, Visa, Mastercard, Verve (via Paystack), or PayPal. Pay in USD, KES, EUR or GBP.</li>
+        <li><strong>Get instant confirmation</strong> — Receive your booking reference by email. Our team will WhatsApp you 24 hours before pickup to confirm details.</li>
+      </ol>
+    </section>
+
+    <section class="vehicle-section">
+      <h2>Pricing &amp; What's Included</h2>
+      <div class="vehicle-pricing-table">
+        <div class="vpt-row"><span>Daily rate</span><strong>${{ vehicle.price_usd }} / €{{ vehicle.price_eur }} / KES {{ vehicle.price_kes }}</strong></div>
+        <div class="vpt-row"><span>With driver (optional)</span><strong>+ ${{ vehicle.driver_fee_usd }}/day</strong></div>
+        <div class="vpt-row vpt-ok"><span>Comprehensive insurance</span><strong>✓ Included</strong></div>
+        <div class="vpt-row vpt-ok"><span>GPS tracking</span><strong>✓ Included</strong></div>
+        <div class="vpt-row vpt-ok"><span>Unlimited mileage in Kenya</span><strong>✓ Included</strong></div>
+        <div class="vpt-row vpt-ok"><span>JKIA / Wilson / Mombasa airport pickup</span><strong>✓ Free</strong></div>
+        <div class="vpt-row vpt-ok"><span>24/7 roadside assistance</span><strong>✓ Included</strong></div>
+        <div class="vpt-row vpt-warn"><span>Fuel</span><strong>Pay as you use</strong></div>
+        <div class="vpt-row vpt-warn"><span>Cross-border travel</span><strong>+ $75 (Uganda/Tanzania)</strong></div>
+      </div>
+    </section>
+
+    <!-- Related vehicles -->
+    {% if related %}
+    <section class="vehicle-section">
+      <h2>Other Cars for Hire in Nairobi You Might Like</h2>
+      <div class="vehicle-related-grid">
+        {% for r in related %}
+        <a href="{% url 'vehicle_detail' slug=r.slug %}" class="vrelated-card">
+          <div class="vrelated-img">
+            <img src="{{ r.image_url }}" alt="{{ r.name }} car hire Kenya"
+                 onerror="this.src='{% static 'images/cars/placeholder.jpg' %}'"/>
+          </div>
+          <div class="vrelated-body">
+            <div class="vrelated-name">{{ r.name }}</div>
+            <div class="vrelated-price">${{ r.price_usd }}/day</div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- CTA block -->
+    <section class="vehicle-final-cta">
+      <h2>Ready to Hire the {{ vehicle.name }}?</h2>
+      <p>Book now for guaranteed availability. Free cancellation up to 48 hours before pickup.</p>
+      <button class="vehicle-book-btn vehicle-book-btn-lg" onclick="openBookingModalForCar('{{ vehicle.id }}', '{{ vehicle.name }}')">
+        🚗 Book {{ vehicle.name }} — ${{ vehicle.price_usd }}/day
+      </button>
+    </section>
+
+  </div>
+</div>
+
+<input type="hidden" id="paystackPk" value="{{ paystack_pk }}"/>
+<input type="hidden" id="paypalClientId" value="{{ paypal_client_id }}"/>
+
+<script type="application/json" id="vehicleData">
+[{"id":{{ vehicle.id }},"name":"{{ vehicle.name }}","usd":{{ vehicle.price_usd }},"eur":{{ vehicle.price_eur }},"kes":{{ vehicle.price_kes }},"driver":{{ vehicle.driver_fee_usd }}}]
+</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://js.paystack.co/v1/inline.js" defer></script>
+{% endblock %}

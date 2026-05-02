@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+  <rect width="600" height="400" fill="#F0F4FF"/>
+  <rect x="150" y="145" width="300" height="130" rx="22" fill="#D6E0F5"/>
+  <rect x="195" y="118" width="210" height="65" rx="12" fill="#B8C8EE"/>
+  <circle cx="215" cy="285" r="32" fill="#7888A8"/>
+  <circle cx="215" cy="285" r="16" fill="#D6E0F5"/>
+  <circle cx="385" cy="285" r="32" fill="#7888A8"/>
+  <circle cx="385" cy="285" r="16" fill="#D6E0F5"/>
+  <text x="300" y="348" font-family="Poppins,sans-serif" font-size="13" fill="#7888A8" text-anchor="middle">Add image via Admin</text>
+</svg>

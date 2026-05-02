@@ -1,0 +1,340 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ post.title }} | DriveKenya Blog{% endblock %}
+{% block meta_description %}{{ post.meta_desc }}{% endblock %}
+{% block canonical %}https://drivekenya.co.ke{% url 'blog_post' slug=post.slug %}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/blog.css' %}?v=1"/>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "{{ post.title }}",
+  "description": "{{ post.meta_desc }}",
+  "datePublished": "{{ post.date }}",
+  "author": {"@type": "Organization", "name": "DriveKenya"},
+  "publisher": {"@type": "Organization", "name": "DriveKenya"}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<article class="blog-post">
+
+  <header class="blog-post-hero">
+    <a href="{% url 'blog_index' %}" class="blog-back">← Back to all articles</a>
+    <div class="blog-post-meta">
+      <span class="blog-post-cat">{{ post.category }}</span>
+      <span class="blog-card-dot">·</span>
+      <span>{{ post.date }}</span>
+      <span class="blog-card-dot">·</span>
+      <span>{{ post.read_time }}</span>
+    </div>
+    <h1>{{ post.title }}</h1>
+    <div class="blog-post-emoji">{{ post.hero_emoji }}</div>
+  </header>
+
+  <div class="blog-post-body">
+
+    {# ───────── Article 1: Self-Drive vs With-Driver ───────── #}
+    {% if post.slug == 'self-drive-vs-with-driver-kenya' %}
+    <p class="blog-lede">If you're booking a car in Kenya for the first time, the decision between self-drive and chauffeured rental shapes everything — your budget, your itinerary, and how much you'll actually relax. Here's a frank breakdown from someone who's done both, dozens of times.</p>
+
+    <h2>The short answer</h2>
+    <p>If you've never driven on the left side of the road and don't enjoy navigating heavy traffic, <strong>get a driver</strong>. If you're a confident driver from the UK, India, Australia, or Southern Africa and you want freedom to stop anywhere, <strong>go self-drive</strong>. The middle ground — confident drivers from right-hand-drive countries — often start with a driver for the first 2 days, then switch to self-drive once they're comfortable.</p>
+
+    <h2>Self-Drive in Kenya: the honest pros and cons</h2>
+    <p><strong>Pros:</strong></p>
+    <ul>
+      <li><strong>Costs ~30% less.</strong> A self-drive Toyota Rav4 in Nairobi runs about $50/day. Add a driver and you're at $70–$80.</li>
+      <li><strong>Total flexibility.</strong> Stop at every viewpoint. Detour to that random village. Spend 4 hours photographing zebras instead of 90 minutes.</li>
+      <li><strong>Privacy.</strong> Long road trips with a stranger in the front seat aren't for everyone.</li>
+      <li><strong>The drive itself is part of the trip.</strong> The descent into the Rift Valley, the drive through the Mara plains — these are unforgettable when you're behind the wheel.</li>
+    </ul>
+
+    <p><strong>Cons:</strong></p>
+    <ul>
+      <li><strong>Left-hand traffic.</strong> Kenya drives on the left. If you're used to right-side driving (US, EU mainland), you'll spend the first day fighting your instincts. Roundabouts are particularly disorienting.</li>
+      <li><strong>Nairobi traffic is heavy.</strong> Friday evenings on Mombasa Road or Thika Road can sit still for an hour. Frustrating if you're not used to it.</li>
+      <li><strong>Safari park roads.</strong> The Maasai Mara, Amboseli, and Samburu have deeply rutted tracks. You need a real 4×4 and the confidence to drive it through mud and water crossings.</li>
+      <li><strong>You handle problems.</strong> Flat tyres, mechanical issues, traffic stops by police — all on you. We provide 24/7 support, but you're still the first responder.</li>
+      <li><strong>You miss things.</strong> A driver-guide knows where the lions sleep at 2pm. You probably don't.</li>
+    </ul>
+
+    <h2>With-Driver in Kenya: the honest pros and cons</h2>
+    <p><strong>Pros:</strong></p>
+    <ul>
+      <li><strong>Zero stress.</strong> You sit, look out the window, take photos, sleep if you want.</li>
+      <li><strong>Local knowledge.</strong> Our drivers know which Mara gates have shorter queues, which fuel station has clean toilets, which rest stop has the best chapati.</li>
+      <li><strong>Faster game viewing.</strong> A good driver-guide can spot a leopard in a tree from 200 metres. You probably won't.</li>
+      <li><strong>Translation.</strong> If you're stopping at small upcountry markets or interacting with rangers, a Swahili-speaking driver makes everything smoother.</li>
+      <li><strong>You can drink.</strong> Want a Tusker at lunch in Naivasha? With a driver, no problem.</li>
+    </ul>
+
+    <p><strong>Cons:</strong></p>
+    <ul>
+      <li><strong>Costs more.</strong> About $20–$25/day extra, plus the driver's accommodation and food on multi-day trips (typically KES 1,500–2,500/day).</li>
+      <li><strong>Less spontaneity.</strong> Drivers have schedules and homes. Spontaneous "let's go to Lake Naivasha tomorrow" works less well.</li>
+      <li><strong>Privacy.</strong> They're in your car all day. Some people find this awkward.</li>
+      <li><strong>Quality varies.</strong> Not every driver is a great guide. We vet ours, but personality clicks aren't guaranteed.</li>
+    </ul>
+
+    <h2>Cost breakdown: a realistic 5-day Mara trip</h2>
+    <p>Let's compare a 5-day Nairobi → Maasai Mara → Nairobi trip in a Toyota Land Cruiser Prado.</p>
+
+    <p><strong>Self-Drive:</strong></p>
+    <ul>
+      <li>5 × $92 vehicle = $460</li>
+      <li>~$120 fuel</li>
+      <li>~$20 in tolls and parking</li>
+      <li><strong>Total: $600</strong></li>
+    </ul>
+
+    <p><strong>With Driver:</strong></p>
+    <ul>
+      <li>5 × $112 (vehicle + driver) = $560</li>
+      <li>~$120 fuel</li>
+      <li>~$30 driver allowance (food + lodging at park staff quarters)</li>
+      <li>~$20 tolls/parking</li>
+      <li><strong>Total: $730</strong></li>
+    </ul>
+
+    <p>Difference: <strong>$130 over 5 days, or $26/day</strong>. Whether that's worth it for you depends on how much you value the freedom-vs-comfort trade.</p>
+
+    <h2>Who should pick what</h2>
+    <p><strong>Pick self-drive if you are:</strong></p>
+    <ul>
+      <li>From a left-hand-drive country (UK, Ireland, Australia, NZ, India, South Africa, Japan)</li>
+      <li>Confident with manual transmission (most of our self-drive fleet is automatic, but you have more options if you can drive both)</li>
+      <li>Travelling as a couple or solo and wanting maximum spontaneity</li>
+      <li>Planning longer than 7 days (the savings really compound)</li>
+    </ul>
+
+    <p><strong>Pick with-driver if you are:</strong></p>
+    <ul>
+      <li>From a right-hand-drive country and short on time to adapt (anything under 4 days)</li>
+      <li>A family with kids — second adult can manage the kids while driver focuses on the road</li>
+      <li>Visiting safari parks — the navigation help and animal-spotting skill are worth the cost</li>
+      <li>Travelling for business — focus on your meetings, not the traffic</li>
+      <li>Over 65 or with mobility issues</li>
+    </ul>
+
+    <h2>The hybrid option (most experienced visitors do this)</h2>
+    <p>Book a driver for the first 2 days while you adapt to traffic and roads. Then switch to self-drive for the rest. We can swap at any of our pickup points or even at your hotel. About 30% of our repeat international customers do this.</p>
+
+    <h2>What about Uber and Bolt?</h2>
+    <p>Both work in Nairobi and Mombasa for short trips. Cheaper than a chauffeured rental for in-city movement. But they don't go to safari parks, won't wait for you for 8 hours, and aren't insured for what we are. Use them for nights out and airport transfers; not for serious trips.</p>
+
+    <h2>Bottom line</h2>
+    <p>There's no wrong answer — both options work. But the most expensive mistake we see is tourists picking self-drive because it's cheaper, getting overwhelmed by Nairobi traffic on Day 1, and spending the rest of their trip stressed. If in doubt, get a driver. You can always switch later.</p>
+
+    {# ───────── Article 2: Nairobi to Mara ───────── #}
+    {% elif post.slug == 'nairobi-to-maasai-mara-driving-guide' %}
+    <p class="blog-lede">The drive from Nairobi to the Maasai Mara is 270km that most people stretch into 5–6 hours. Here's what to actually expect: route options, fuel stops, where the road turns rough, and what type of vehicle handles it without drama.</p>
+
+    <h2>Pick a route — there are two</h2>
+    <p>You have two realistic options:</p>
+
+    <p><strong>Route 1: Narok road (most common)</strong></p>
+    <ul>
+      <li>Nairobi → Mai Mahiu (descent into Rift Valley) → Narok → Sekenani Gate</li>
+      <li>~270 km</li>
+      <li>5–6 hours including stops</li>
+      <li>Tarmac for ~80% of the way; the last 80km from Narok onwards is unpaved and rough</li>
+    </ul>
+
+    <p><strong>Route 2: Lemek Conservancy access (via Mau)</strong></p>
+    <ul>
+      <li>Longer (~320km), much rougher</li>
+      <li>Only worth it if you're staying in a Lemek-area lodge</li>
+      <li>Requires a serious 4×4 — Prado, Land Cruiser, or similar</li>
+    </ul>
+
+    <p>For 95% of visitors, Route 1 via Narok is the right answer.</p>
+
+    <h2>Hour-by-hour: what to expect on the Narok route</h2>
+
+    <p><strong>Hour 1: Nairobi to Mai Mahiu (50km)</strong></p>
+    <p>The first leg leaves Nairobi via the A104 (Nairobi-Naivasha highway). Heavy traffic up to Limuru. Then the road climbs out of Nairobi and you reach the famous viewpoint at the Rift Valley descent — pull over, take photos, this is the view in every Kenyan tourism brochure. The descent itself is winding; brake carefully.</p>
+
+    <p><strong>Hour 2: Mai Mahiu to Narok (90km)</strong></p>
+    <p>Smooth tarmac through wide-open Rift Valley plains. Watch for matatus (minibus taxis) — they overtake aggressively. Speed limit is 80km/h but traffic flows around 90–100. Just before Narok, you'll pass the toll station (~KES 100 for cars).</p>
+
+    <p><strong>Hour 3: Narok town (fuel stop)</strong></p>
+    <p>Stop here. Narok is the last town with reliable fuel, ATMs and clean toilets before the park. Fuel up to FULL even if you don't think you need to. Use the Total or Shell stations on the main road — avoid the smaller backstreet ones. Prado/Land Cruiser drivers, you'll need at least 60L for the round trip.</p>
+
+    <p><strong>Hours 4–6: Narok to Sekenani Gate (130km)</strong></p>
+    <p>This is where it gets real. The road from Narok to the Mara is partially paved for the first 30km, then becomes graded dirt for the rest. In dry season it's washboard rough — your teeth will rattle. In rainy season (April–May, November) it can be impassable for low-clearance vehicles.</p>
+
+    <p>Plan for a slow average — 30–40 km/h. There are no fuel stations, no shops, just rolling Maasai grasslands with herds of goats and the occasional zebra crossing.</p>
+
+    <h2>What vehicle do you actually need?</h2>
+    <p><strong>Wet season (April–May, November):</strong> Toyota Prado, Land Cruiser, or similar. High clearance and 4WD are non-negotiable.</p>
+    <p><strong>Dry season (June–March):</strong> A Toyota Rav4 or Nissan X-Trail will get you there, but the ride is brutal. A Prado-class vehicle is far more comfortable and adds confidence in the park itself where roads are even worse.</p>
+    <p><strong>Saloon cars:</strong> Don't. Just don't. We've seen tourists try with Mazda Demios and end up with broken sumps 50km from anywhere.</p>
+
+    <h2>Where to stop for food</h2>
+    <p><strong>Mai Mahiu junction:</strong> The Mai Mahiu Country Club has decent matoke and chapati. Clean toilets. About 90 minutes out of Nairobi.</p>
+    <p><strong>Narok town:</strong> Galaxy Restaurant on the main road serves the best Kenyan plates between Nairobi and the Mara. Plan a 30-minute lunch stop here.</p>
+    <p><strong>After Narok:</strong> Nothing. Carry water and snacks.</p>
+
+    <h2>Cash, fuel, and connectivity</h2>
+    <p><strong>Cash:</strong> Withdraw KES at the Equity ATM in Narok. Park entry fees and lodge tips are easier in cash.</p>
+    <p><strong>Fuel:</strong> Diesel and petrol both available in Narok at standard pump prices (~KES 200/L for diesel as of 2025).</p>
+    <p><strong>Cell signal:</strong> Solid Safaricom 4G all the way to Narok. After Narok it's patchy. Inside the park, expect signal only at major lodges.</p>
+
+    <h2>What time should you leave Nairobi?</h2>
+    <p>Leave Nairobi between 6:30am and 7:30am. This gets you out before peak traffic, gives you a daytime drive (you should NOT drive the Narok-Mara stretch in the dark), and arrives at your lodge by 1pm — in time for lunch and an afternoon game drive.</p>
+
+    <p>If you can't leave that early, aim for noon at the latest. Don't start later — the unpaved section after Narok is dangerous after sunset (livestock on the road, no streetlights, deep ruts you can't see).</p>
+
+    <h2>Park entry fees (2025)</h2>
+    <p>Maasai Mara entry fees per person per 24-hour period:</p>
+    <ul>
+      <li>Non-resident adult: USD 100</li>
+      <li>Non-resident child (3–17): USD 50</li>
+      <li>East African resident adult: KES 1,500</li>
+      <li>Kenya citizen adult: KES 1,500</li>
+    </ul>
+    <p>Pay at the gate by card (Mara Triangle accepts Visa/Mastercard) or cash. M-Pesa accepted at most gates now too.</p>
+
+    <h2>Driving inside the park</h2>
+    <p>Strict 50 km/h speed limit. Stay on roads — going off-road in the Mara Reserve (the eastern, government-run side) is a fineable offence. Conservancies on the perimeter (Olare Motorogi, Mara North) allow off-road driving, which is why they're often preferred for self-drive safari photographers.</p>
+
+    <h2>Common mistakes</h2>
+    <ul>
+      <li><strong>Trusting Google Maps blindly.</strong> Maps will sometimes route you through unsealed shortcuts that are impassable. Stick to the main route via Narok.</li>
+      <li><strong>Not fuelling up at Narok.</strong> "I'll fuel at the park gate" — there is no fuel at the park gate.</li>
+      <li><strong>Driving at night.</strong> Don't.</li>
+      <li><strong>Underestimating the unpaved section.</strong> 130km at 30-40 km/h is over 3 hours of bumpy driving. Plan for it.</li>
+    </ul>
+
+    <h2>Booking the right vehicle</h2>
+    <p>For Nairobi-to-Mara trips, our most-rented vehicle is the Toyota Prado TXL — high clearance, comfortable on rough roads, great for game viewing thanks to the pop-top roof. Self-drive from $92/day, with driver from $112/day.</p>
+
+    {# ───────── Article 3: Best safari cars ───────── #}
+    {% elif post.slug == 'best-cars-for-kenyan-safari' %}
+    <p class="blog-lede">Renting the wrong vehicle for a Kenyan safari is the most common — and most painful — mistake we see. A 2-day Mara trip in a saloon car will haunt you for years. Here's a frank ranking of the cars actually worth renting.</p>
+
+    <h2>The shortlist</h2>
+    <p>For Kenyan safaris, only five vehicle classes are worth considering:</p>
+    <ol>
+      <li>Toyota Land Cruiser Prado (TXL or TZ)</li>
+      <li>Toyota Land Cruiser V8</li>
+      <li>Nissan X-Trail (T31 or T32)</li>
+      <li>Toyota Rav4 (4th gen and newer)</li>
+      <li>Toyota Hilux Surf / 4Runner</li>
+    </ol>
+    <p>Anything else — Demios, Fielders, Vitz, Notes — leave for the city. We won't even rent them out for safari trips because we know how the trip will end.</p>
+
+    <h2>1. Toyota Land Cruiser Prado — The default choice</h2>
+    <p><strong>Daily rate:</strong> $92–$120 (self-drive) / $112–$140 (with driver)</p>
+    <p><strong>Why it wins:</strong></p>
+    <ul>
+      <li>Pop-top roof for unobstructed game viewing</li>
+      <li>250mm ground clearance handles every track</li>
+      <li>Fuel-efficient 3.0L diesel — about 9L/100km</li>
+      <li>Comfortable for 5 passengers + luggage</li>
+      <li>Air conditioning that actually works in 35°C</li>
+      <li>Diff lock for serious mud</li>
+    </ul>
+    <p><strong>Why it might not be:</strong> Larger turning radius makes it harder to manoeuvre on tight tracks (rare, but happens around Lake Nakuru). At ~$100/day it's pricier than the alternatives.</p>
+    <p><strong>Best for:</strong> First-time safari-goers, families, photographers, anyone going to Mara/Amboseli/Samburu.</p>
+
+    <h2>2. Toyota Land Cruiser V8 — The luxury option</h2>
+    <p><strong>Daily rate:</strong> $150–$200</p>
+    <p>Massive vehicle, massive comfort, massive fuel bill. The 4.5L V8 diesel will sip 14L/100km on highway and worse on safari tracks.</p>
+    <p><strong>Why it wins:</strong> Unmatched comfort. 8 seats. Whisper-quiet. Loved by tour operators.</p>
+    <p><strong>Why it might not be:</strong> Overkill for couples or solo travellers. The fuel cost can match the rental cost on a 5-day trip — budget another $250 for diesel.</p>
+    <p><strong>Best for:</strong> Groups of 6–8, special occasions, repeat visitors who want the upgrade.</p>
+
+    <h2>3. Nissan X-Trail — The budget hero</h2>
+    <p><strong>Daily rate:</strong> $50–$65</p>
+    <p>Don't underestimate the X-Trail. Kenyans use these as everyday vehicles, including on rough roads. The T31 (2007–2013 model) in particular is bulletproof.</p>
+    <p><strong>Why it wins:</strong></p>
+    <ul>
+      <li>2.0L petrol or 2.5L diesel — both economical</li>
+      <li>Surprisingly capable in 4WD mode</li>
+      <li>Half the rental cost of a Prado</li>
+      <li>Easier to park, easier to drive in Nairobi</li>
+    </ul>
+    <p><strong>Why it might not be:</strong> No pop-top — game viewing is from windows only, which is fine but less iconic. Lower clearance than a Prado — careful in the Mara during wet season.</p>
+    <p><strong>Best for:</strong> Budget-conscious couples, dry-season trips, mixed itineraries (city + 1–2 days safari).</p>
+
+    <h2>4. Toyota Rav4 — The compromise</h2>
+    <p><strong>Daily rate:</strong> $50–$70</p>
+    <p>The Rav4 is a great car, just not as great for safaris as the others on this list. It's where you'd land if you wanted the cheapest 4WD that doesn't feel like a punishment.</p>
+    <p><strong>Why it wins:</strong> Excellent fuel economy (8L/100km). Smooth ride. Comfortable AC. Reliable.</p>
+    <p><strong>Why it might not be:</strong> The 4WD is more "all-wheel-drive" than "real four-wheel-drive". It will get you through Mara roads in dry season but it'll struggle in mud. Ground clearance is lower than X-Trail.</p>
+    <p><strong>Best for:</strong> Dry-season Mara trips with a confident driver, weekend Naivasha trips, road trips to the coast.</p>
+
+    <h2>5. Toyota Hilux Surf / 4Runner — The underrated choice</h2>
+    <p><strong>Daily rate:</strong> $75–$95</p>
+    <p>Older vehicle, basically a smaller, cheaper Land Cruiser. Strong frame, real 4WD, good clearance.</p>
+    <p><strong>Why it wins:</strong> Tougher than an X-Trail, cheaper than a Prado. Great middle ground.</p>
+    <p><strong>Why it might not be:</strong> Older interiors, less polished. AC sometimes weak. Fewer of these in good condition.</p>
+    <p><strong>Best for:</strong> Adventure travellers, photographers prioritizing capability over comfort.</p>
+
+    <h2>What about the cars you should NEVER rent for safari</h2>
+    <p><strong>Mazda Demio, Toyota Vitz, Nissan March:</strong> 13cm of ground clearance. You'll high-centre on the first rut.</p>
+    <p><strong>Toyota Fielder, Toyota Axio:</strong> Saloon cars. Same problem. Even worse with a load.</p>
+    <p><strong>Subaru Forester (older models):</strong> The CVT transmission overheats on rough corrugated roads. Replacement costs more than the trip.</p>
+    <p><strong>Toyota Voxy / Noah:</strong> Vans for city use. Body roll on rough roads is dangerous.</p>
+
+    <h2>The honest recommendation matrix</h2>
+    <table class="blog-table">
+      <thead>
+        <tr><th>Trip type</th><th>Best vehicle</th><th>Budget alt</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Mara, 4+ days, photography</td><td>Prado TXL</td><td>X-Trail</td></tr>
+        <tr><td>Mara, 2–3 days, dry season</td><td>X-Trail</td><td>Rav4</td></tr>
+        <tr><td>Amboseli + Tsavo combo</td><td>Land Cruiser V8</td><td>Prado</td></tr>
+        <tr><td>Samburu / Lewa</td><td>Prado</td><td>Hilux Surf</td></tr>
+        <tr><td>Lake Naivasha day trip</td><td>Rav4</td><td>X-Trail</td></tr>
+        <tr><td>Family of 6, Mara</td><td>Land Cruiser V8</td><td>2× Prados</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Bottom line</h2>
+    <p>If you can stretch the budget, get a Prado. It's the right answer 80% of the time and you'll never regret it. If you can't, the X-Trail is the smartest discount choice. Everything else is a compromise — sometimes worth it, sometimes painful.</p>
+    {% endif %}
+
+    <!-- Booking CTA -->
+    <div class="blog-cta">
+      <h3>Ready to book?</h3>
+      <p>All our cars include full insurance, GPS, unlimited mileage and 24/7 roadside support. Self-drive or with driver.</p>
+      <a href="{% url 'home' %}?book=1#booking" class="blog-cta-btn">🚗 Book a Car Now</a>
+    </div>
+
+  </div>
+
+  <!-- Read next -->
+  {% if others %}
+  <section class="blog-others">
+    <h3>Read next</h3>
+    <div class="blog-others-grid">
+      {% for o in others %}
+      <a href="{% url 'blog_post' slug=o.slug %}" class="blog-card">
+        <div class="blog-card-image">
+          <span class="blog-card-emoji">{{ o.hero_emoji }}</span>
+        </div>
+        <div class="blog-card-body">
+          <div class="blog-card-meta">
+            <span class="blog-card-cat">{{ o.category }}</span>
+            <span class="blog-card-dot">·</span>
+            <span>{{ o.read_time }}</span>
+          </div>
+          <h2>{{ o.title }}</h2>
+          <p>{{ o.excerpt }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+</article>
+{% endblock %}

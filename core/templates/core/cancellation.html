@@ -1,0 +1,82 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Cancellation Policy – Munwan Car Rental Car Hire Kenya{% endblock %}
+{% block meta_description %}Munwan Car Rental cancellation and refund policy. Full refund 48+ hours before pickup, 80% refund within 24 hours. We always refund — no zero-refund situations.{% endblock %}
+
+{% block content %}
+<div class="support-page">
+  <div class="support-hero">
+    <div class="hero-eyebrow">Flexible &amp; Fair</div>
+    <h1>Cancellation &amp; Refund Policy</h1>
+    <p>We understand plans change. Here is exactly how our policy works so you can book with confidence.</p>
+  </div>
+
+  <div class="support-grid">
+    <!-- Left summary cards — same style as support page -->
+    <div class="support-cards">
+      <div class="s-card policy-card-green">
+        <div class="s-card-icon">✅</div><div class="s-card-title">Full Refund</div><div class="s-card-val">Cancel 48+ hrs before pick-up</div>
+      </div>
+      <div class="s-card policy-card-yellow">
+        <div class="s-card-icon">⚠️</div><div class="s-card-title">80% Refund</div><div class="s-card-val">Cancel within 24 hrs of pick-up</div>
+      </div>
+      <div class="s-card policy-card-blue">
+        <div class="s-card-icon">✏️</div><div class="s-card-title">Free Changes</div><div class="s-card-val">Date/time changes up to 24 hrs before</div>
+      </div>
+      <div class="s-card">
+        <div class="s-card-icon">💬</div><div class="s-card-title">Need to Cancel?</div>
+        <div class="s-card-val">
+          <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp +254 727 745 907</a><br/>
+          <a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=info@munwancarrental.com" target="_blank" rel="noopener">info@munwancarrental.com</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: full policy detail in support-form-wrap -->
+    <div class="support-form-wrap">
+      <h2 class="support-form-title">Full Policy Details</h2>
+
+      <div class="policy-tier policy-tier-green">
+        <div class="policy-tier-hdr"><span class="policy-tier-icon">✅</span>
+          <div><div class="policy-tier-title">Full Refund — Cancel 48+ hours before pick-up</div><span class="policy-tier-tag ptag-green">100% Refunded</span></div>
+        </div>
+        <div class="policy-tier-body">Cancel more than 48 hours before your scheduled pick-up time and receive a <strong>full 100% refund</strong> to your original payment method within 3–5 business days. M-Pesa refunds are sent to the originating number within 48 hours.</div>
+      </div>
+
+      <div class="policy-tier policy-tier-yellow">
+        <div class="policy-tier-hdr"><span class="policy-tier-icon">⚠️</span>
+          <div><div class="policy-tier-title">80% Refund — Cancel within 24 hours of pick-up</div><span class="policy-tier-tag ptag-yellow">80% Refunded</span></div>
+        </div>
+        <div class="policy-tier-body">If you cancel within 24 hours of pick-up — including same-day cancellations and no-shows — you still receive an <strong>80% refund</strong>. The remaining 20% covers preparation, fuel, and operational costs already incurred. <strong>We never charge you the full amount</strong> regardless of how late the cancellation is.</div>
+      </div>
+
+      <div class="policy-tier policy-tier-blue">
+        <div class="policy-tier-hdr"><span class="policy-tier-icon">✏️</span>
+          <div><div class="policy-tier-title">Free Date &amp; Time Changes</div><span class="policy-tier-tag ptag-blue">No Charge</span></div>
+        </div>
+        <div class="policy-tier-body">You may change pick-up and return dates or times free of charge up to 24 hours before pick-up, subject to vehicle availability. Upgrades may incur a difference in daily rate.</div>
+      </div>
+
+      <div class="policy-how-to">
+        <h3 class="policy-how-title">How to Cancel or Change Your Booking</h3>
+        <div class="policy-steps">
+          <div class="policy-step"><div class="policy-step-num">1</div><div class="policy-step-text">Have your booking reference ready (format: DK-YYYY-XXXXXX — in your confirmation email).</div></div>
+          <div class="policy-step"><div class="policy-step-num">2</div><div class="policy-step-text">Contact us via WhatsApp on <strong>+254 727 745 907</strong> or email <a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=info@munwancarrental.com" target="_blank" rel="noopener"><strong>info@munwancarrental.com</strong></a>.</div></div>
+          <div class="policy-step"><div class="policy-step-num">3</div><div class="policy-step-text">We'll confirm in writing and process any eligible refund immediately.</div></div>
+        </div>
+      </div>
+
+      <div class="policy-notes">
+        <div class="policy-notes-title">Additional Notes</div>
+        <ul>
+          <li>Refunds are always returned to the original payment method — no cash payments.</li>
+          <li>For disputes, contact us within 7 days of your rental end date.</li>
+          <li>Force majeure events (natural disasters, government travel bans) are handled case-by-case with full consideration for the customer.</li>
+          <li>Safari and long-term packages may have separate terms stated at booking.</li>
+          <li>This policy is governed by the laws of Kenya.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,399 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Car Rental FAQs in Nairobi, Kenya for Tourists | Munwan Car Rental{% endblock %}
+{% block meta_description %}Frequently asked questions about car rental in Nairobi and Kenya. Learn about international driving permits, M-Pesa payments, airport pickup at JKIA, safari vehicles, and self-drive safety for tourists.{% endblock %}
+{% block canonical %}https://yourdomain.com/faqs/{% endblock %}
+
+{% block extra_head %}
+<!-- FAQ JSON-LD Schema: helps Google show answers directly in search results -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"Do I need an international driving permit to rent a car in Kenya?","acceptedAnswer":{"@type":"Answer","text":"Yes. Tourists and foreign visitors driving in Kenya must hold a valid International Driving Permit (IDP) issued in their home country, alongside their original national driving licence. Both documents must be presented at vehicle pickup. Kenyan residents only need their national driving licence."}},
+    {"@type":"Question","name":"Can tourists rent a car in Kenya?","acceptedAnswer":{"@type":"Answer","text":"Absolutely. Munwan Car Rental welcomes international tourists. You'll need a valid passport, an International Driving Permit with your national licence, and a credit/debit card or M-Pesa for payment. We can meet you at Jomo Kenyatta International Airport (JKIA) with a name board the moment you land."}},
+    {"@type":"Question","name":"What documents are required to rent a car in Kenya?","acceptedAnswer":{"@type":"Answer","text":"You'll need: (1) A valid driving licence — national licence for residents, or national licence plus an International Driving Permit for tourists. (2) A passport or national ID. (3) A payment method — card, M-Pesa, or PayPal. No notarisation or translation is required for licences in English."}},
+    {"@type":"Question","name":"What is the minimum age to rent a car in Kenya?","acceptedAnswer":{"@type":"Answer","text":"The minimum age to rent a car with Munwan Car Rental is 23 years old, with at least 2 years of driving experience. Drivers under 25 may pay a small young-driver surcharge. The maximum age is 75 subject to a valid licence and health."}},
+    {"@type":"Question","name":"Can I rent a car in Kenya with a foreign license?","acceptedAnswer":{"@type":"Answer","text":"Yes, provided your foreign licence is accompanied by an International Driving Permit (IDP). Licences in English may be accepted for short rentals — please confirm with our team via WhatsApp before arrival."}},
+    {"@type":"Question","name":"How much does it cost to rent a car in Kenya per day?","acceptedAnswer":{"@type":"Answer","text":"Car rental in Kenya starts from $28/day for economy saloons (Mazda Demio, Toyota Fielder), $50–$85/day for SUVs (Toyota Rav4, Harrier), and $92–$120/day for premium 4x4s and executive vans (Toyota Prado, Alphard). All prices include full insurance, GPS tracking, and unlimited mileage within Kenya."}},
+    {"@type":"Question","name":"Are there hidden charges in Munwan Car Rental car rental?","acceptedAnswer":{"@type":"Answer","text":"No hidden charges. Our daily rate includes comprehensive insurance, GPS, 24/7 roadside assistance, airport/hotel delivery within Nairobi and Mombasa, and unlimited mileage. There is no security deposit. Optional extras (additional driver, child seat, driver hire) are clearly priced before checkout."}},
+    {"@type":"Question","name":"Do you accept M-Pesa, card, or PayPal?","acceptedAnswer":{"@type":"Answer","text":"Yes. Munwan Car Rental accepts M-Pesa (Safaricom STK Push), Visa, Mastercard, Verve (via Paystack secure checkout), and PayPal. You can pay in USD, KES, GBP, or EUR. No extra FX charges."}},
+    {"@type":"Question","name":"Is a deposit required when renting a car?","acceptedAnswer":{"@type":"Answer","text":"No. Munwan Car Rental does not require a security deposit. Your booking total is what you pay — there is no surprise hold on your card or M-Pesa. We rely on full insurance and verified ID to protect both parties."}},
+    {"@type":"Question","name":"Can I pay in USD or EUR?","acceptedAnswer":{"@type":"Answer","text":"Yes. Munwan Car Rental accepts payment in USD, EUR, GBP and KES. All currencies are processed securely through Paystack or PayPal with no hidden FX markup. M-Pesa transactions are settled in KES at the published daily rate."}},
+    {"@type":"Question","name":"Can I drive a rental car from Nairobi to Maasai Mara?","acceptedAnswer":{"@type":"Answer","text":"Yes. Our 4x4 safari vehicles (Toyota Prado, Land Cruiser) are designed for the Nairobi to Maasai Mara National Reserve route. The journey is approximately 5–6 hours and includes unpaved sections, so we strongly recommend a 4x4. Unlimited mileage applies within Kenya."}},
+    {"@type":"Question","name":"Are Munwan Car Rental vehicles suitable for safaris?","acceptedAnswer":{"@type":"Answer","text":"Yes. Our safari fleet includes Toyota Prado, Land Cruiser Prado TXL, and similar 4x4 SUVs, all equipped with roof hatches for game viewing, high clearance for rough roads in Maasai Mara, Amboseli, Samburu, and Tsavo, plus long-range fuel tanks."}},
+    {"@type":"Question","name":"Do you offer 4x4 vehicles for rough roads?","acceptedAnswer":{"@type":"Answer","text":"Yes. We offer a range of 4x4 vehicles suitable for Kenya's rough and unpaved roads, including Toyota Prado, Nissan X-Trail, and Toyota Rav4. All 4x4s include comprehensive insurance, a spare tyre, jack, and 24/7 breakdown support."}},
+    {"@type":"Question","name":"Is insurance included in the rental price?","acceptedAnswer":{"@type":"Answer","text":"Yes. All Munwan Car Rental rentals include comprehensive insurance: third-party liability, theft protection, and passenger cover at no extra cost. A standard excess applies in the event of an accident. You may upgrade to zero-excess cover at checkout."}},
+    {"@type":"Question","name":"What happens if the car breaks down?","acceptedAnswer":{"@type":"Answer","text":"All vehicles have live GPS tracking and we operate 24/7 roadside assistance across Kenya. Call or WhatsApp us immediately on +254 117 262 350 — we will dispatch a mechanic or arrange a replacement vehicle at no cost to you, anywhere from Nairobi to remote safari parks."}},
+    {"@type":"Question","name":"Do you offer airport pickup in Nairobi?","acceptedAnswer":{"@type":"Answer","text":"Yes. Munwan Car Rental offers free meet-and-greet at Jomo Kenyatta International Airport (JKIA), Wilson Airport, and Mombasa's Moi International Airport. A representative waits at arrivals with a name board from the moment you land. You can also request hotel or Airbnb delivery across Nairobi and Mombasa."}},
+    {"@type":"Question","name":"Can I pick up a car at Jomo Kenyatta International Airport (JKIA)?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pickup at Jomo Kenyatta International Airport is available 24/7 at both Terminal 1 (international) and Terminal 2 (domestic). Our representative holds a Munwan Car Rental name board at the arrivals exit and assists with luggage. The service is included at no extra charge."}},
+    {"@type":"Question","name":"Do you deliver cars to hotels or Airbnb?","acceptedAnswer":{"@type":"Answer","text":"Yes. We deliver cars free of charge to any hotel or Airbnb within Nairobi city limits and Mombasa. Simply choose \"Hotel Delivery\" at booking and enter your address. Delivery to upcountry destinations (Naivasha, Nakuru, Diani Beach) can be arranged with a small fee quoted before confirmation."}},
+    {"@type":"Question","name":"Is one-way rental available in Kenya?","acceptedAnswer":{"@type":"Answer","text":"Yes. One-way rentals are available between Nairobi, Mombasa, Diani Beach, and Kisumu. A one-way drop-off fee applies (typically $30–$80 depending on distance) and must be confirmed at booking. Minimum rental period for one-way is 3 days."}},
+    {"@type":"Question","name":"Is it safe to drive in Kenya as a tourist?","acceptedAnswer":{"@type":"Answer","text":"Yes, Kenya is generally safe for tourist self-drive, especially main routes between Nairobi, Maasai Mara, Amboseli, and the coastal region. Observe speed limits, avoid night driving on highways, fuel up before long trips, and keep doors locked in traffic. All Munwan Car Rental vehicles have GPS tracking and 24/7 emergency support for peace of mind."}},
+    {"@type":"Question","name":"Which side of the road do people drive on in Kenya?","acceptedAnswer":{"@type":"Answer","text":"Kenya drives on the left side of the road (like the UK, Australia, India, and South Africa). Right-hand-drive vehicles are standard. Roundabouts give way to traffic from the right. If you're from a right-side-driving country, allow a little time to adjust — our with-driver option is ideal for your first day."}},
+    {"@type":"Question","name":"Are roads in Kenya good for self-drive?","acceptedAnswer":{"@type":"Answer","text":"Main highways in Kenya (Nairobi to Mombasa, Nairobi to Naivasha, Nairobi to Nyeri) are paved and well-signposted. Roads into national parks like Maasai Mara or Samburu are unpaved and sometimes rough — a 4x4 is essential. Urban Nairobi traffic can be heavy during rush hours; our GPS helps you navigate alternate routes."}},
+    {"@type":"Question","name":"Do I need a driver or can I self-drive in Kenya?","acceptedAnswer":{"@type":"Answer","text":"Both options are available. Self-drive is popular with confident drivers used to left-hand traffic and manual/automatic transmissions. With-driver hire is recommended if you're unfamiliar with Kenya's roads, plan complex safari itineraries, or want to fully enjoy the scenery. Our vetted professional drivers start from $20/day extra."}},
+    {"@type":"Question","name":"How does M-Pesa payment work for car rental?","acceptedAnswer":{"@type":"Answer","text":"After booking, select \"M-Pesa\" at checkout and enter your Safaricom phone number. You'll receive an STK Push prompt on your phone — enter your M-Pesa PIN to confirm payment. The transaction is instant, processed by Safaricom's secure Daraja API, and the booking is confirmed immediately."}},
+    {"@type":"Question","name":"Will I receive an STK push on my phone?","acceptedAnswer":{"@type":"Answer","text":"Yes. After you enter your Safaricom number and click \"Pay with M-Pesa\", an STK Push prompt appears on your phone within a few seconds. Enter your 4-digit M-Pesa PIN to complete payment. If the prompt doesn't arrive, try the alternate manual Paybill option: Paybill 522533, Account: DK-BOOKING."}},
+    {"@type":"Question","name":"Can I pay using a foreign number with M-Pesa?","acceptedAnswer":{"@type":"Answer","text":"M-Pesa STK Push works only with Safaricom numbers in Kenya. International visitors can use Visa, Mastercard, Verve (via Paystack), or PayPal — these accept foreign cards in USD, EUR, GBP, or KES with no hidden FX fees."}},
+    {"@type":"Question","name":"What happens if my payment fails?","acceptedAnswer":{"@type":"Answer","text":"If payment fails, your booking remains saved as \"Pending\" and the vehicle is held for 30 minutes. You'll receive a clear error message and can retry with a different method (e.g. switch from M-Pesa to card). From your My Account page, click \"Continue Payment\" anytime to finish a pending booking."}},
+    {"@type":"Question","name":"Can I cross borders with a rental car into Uganda or Tanzania?","acceptedAnswer":{"@type":"Answer","text":"No. Munwan Car Rental vehicles are not permitted to leave Kenya. Cross-border travel to Uganda, Tanzania, Rwanda, Ethiopia, Somalia or South Sudan is strictly prohibited under the rental agreement. Our insurance covers Kenya only."}},
+    {"@type":"Question","name":"Do you offer unlimited mileage?","acceptedAnswer":{"@type":"Answer","text":"Yes. All Munwan Car Rental rentals include unlimited mileage within Kenya at no extra charge. Safari packages and long-term rentals may have specific mileage terms stated on your rental agreement."}},
+    {"@type":"Question","name":"Is fuel included in the rental price?","acceptedAnswer":{"@type":"Answer","text":"No, fuel is not included in the rental price — you pay for your own fuel. Vehicles are delivered with a full tank and must be returned full. If the tank is not full at return, a refuelling fee at pump rate plus a KES 500 service charge applies. Petrol stations are widely available across Kenya."}},
+    {"@type":"Question","name":"What type of cars are best for safaris in Kenya?","acceptedAnswer":{"@type":"Answer","text":"For safaris, we recommend 4x4 SUVs with roof hatches: Toyota Land Cruiser Prado, Toyota Prado TXL, or Nissan X-Trail. These have high clearance for rough tracks in Maasai Mara, Amboseli, Samburu, and Tsavo, plus the pop-up roof is essential for game viewing without leaving the vehicle."}},
+    {"@type":"Question","name":"Can I rent a car without a credit card in Kenya?","acceptedAnswer":{"@type":"Answer","text":"Yes. Munwan Car Rental accepts M-Pesa, PayPal, and debit cards in addition to credit cards. There is no security deposit required, so a physical credit card is not necessary. Pay your full booking total with whichever method you prefer."}},
+    {"@type":"Question","name":"Do you offer chauffeur services?","acceptedAnswer":{"@type":"Answer","text":"Yes. Our professional chauffeur service is available for airport transfers, business hire, safari trips, and city tours. Drivers are licensed, English-speaking, and knowledgeable about Nairobi, Mombasa, Diani Beach, and Kenya's major safari parks. Rates start from $20/day additional. Choose \"With Driver\" when booking."}},
+    {"@type":"Question","name":"What happens in case of an accident?","acceptedAnswer":{"@type":"Answer","text":"Ensure everyone is safe, then call Munwan Car Rental immediately on +254 117 262 350 and the police if needed. Take photos of the scene and the other vehicle's details. Do not admit fault. We'll guide you through the insurance claim, dispatch a replacement vehicle, and handle paperwork. A standard excess applies unless you upgraded to zero-excess cover."}},
+    {"@type":"Question","name":"How do I cancel or modify my Munwan Car Rental booking?","acceptedAnswer":{"@type":"Answer","text":"Cancellations made 48+ hours before pickup receive a full 100% refund. Cancellations within 24 hours of pickup receive an 80% refund — we always refund, no zero-refund situations. Date changes are free up to 24 hours before pickup, subject to availability. WhatsApp us on +254 117 262 350 with your booking reference."}},
+    {"@type":"Question","name":"Which side of the road do you drive on in Kenya?","acceptedAnswer":{"@type":"Answer","text":"Kenya drives on the left-hand side of the road, with the steering wheel on the right side of the vehicle. Same as the UK, Australia, India, South Africa, and Japan. Visitors from the US, EU, and most of South America should expect a 1-2 day adjustment period. Roundabouts move clockwise — yield to traffic from the right."}},
+    {"@type":"Question","name":"Is it safe for tourists to self-drive in Kenya?","acceptedAnswer":{"@type":"Answer","text":"Yes, with sensible precautions. Kenya has a well-developed network of fuel stations, mobile coverage on all major routes, and 24/7 emergency services. Stick to daylight driving, keep your fuel topped up, lock doors in city traffic, and avoid driving in flood-prone areas during heavy rain. Our 24/7 roadside assistance covers the entire country."}},
+    {"@type":"Question","name":"Can I drive in Kenya with my UK, US, EU or Australian licence?","acceptedAnswer":{"@type":"Answer","text":"Yes. Visitors from the UK, USA, EU countries, Australia, New Zealand, Canada, South Africa, India, and most Commonwealth nations can drive in Kenya for up to 90 days using their home country licence (must be in English) accompanied by an International Driving Permit. After 90 days, you'll need to convert to a Kenyan licence through NTSA."}},
+    {"@type":"Question","name":"Should I drive at night in Kenya?","acceptedAnswer":{"@type":"Answer","text":"We strongly recommend against night driving outside Nairobi and Mombasa city limits. Kenyan roads have unmarked livestock, pedestrians, potholes, and unlit broken-down trucks. National park access is also restricted after dusk. Plan to be at your destination by 6pm."}},
+    {"@type":"Question","name":"What are the speed limits in Kenya?","acceptedAnswer":{"@type":"Answer","text":"Kenyan speed limits: 50 km/h in urban areas and built-up zones, 80 km/h on open highways, 110 km/h on dual carriageways and expressways, 50 km/h in national parks (often lower near wildlife), 30-50 km/h in school and township zones. Speed cameras are common on Mombasa Road, Thika Road, and the Nairobi Expressway."}},
+    {"@type":"Question","name":"How much are Kenya national park entry fees in 2025?","acceptedAnswer":{"@type":"Answer","text":"Park entry fees are paid per person per 24-hour period at the gate. Approximate non-resident rates: Maasai Mara USD 100, Amboseli USD 60, Lake Nakuru USD 60, Tsavo East/West USD 52, Nairobi National Park USD 43, Hell's Gate USD 26. Pay by Visa/Mastercard at the gate or M-Pesa where supported."}},
+    {"@type":"Question","name":"How far in advance should I book a car for safari season?","acceptedAnswer":{"@type":"Answer","text":"For peak safari season (July-October for the Great Migration, December-early January for holidays), book at least 2-3 months ahead. Off-season (April-June, November), 2-3 weeks ahead is usually enough. Last-minute bookings are sometimes possible — message us on WhatsApp for live availability."}},
+    {"@type":"Question","name":"Will I have mobile signal and GPS in the parks?","acceptedAnswer":{"@type":"Answer","text":"Safaricom 4G covers all major roads and most park gates. Inside Maasai Mara, Amboseli, and Tsavo, signal is patchy but available at major lodges. Every Munwan Car Rental vehicle includes a GPS unit pre-loaded with offline Kenya maps. We recommend downloading Maps.me or Google Maps offline before your trip."}},
+    {"@type":"Question","name":"Where do I find fuel on safari routes?","acceptedAnswer":{"@type":"Answer","text":"Fuel is widely available on tarmac roads. Major brands: Total, Shell, Rubis, Vivo. Fuel up at the last town before entering a park — for the Mara, that's Narok. There is no fuel inside the parks. Carry a 20 L jerry can on multi-day safaris in remote areas."}},
+    {"@type":"Question","name":"Do I need a Kenya visa or eTA?","acceptedAnswer":{"@type":"Answer","text":"As of January 2024, Kenya replaced visas with the Electronic Travel Authorisation (eTA). All visitors except citizens of East African Community countries need an eTA. Apply at etakenya.go.ke at least 3 days before travel. Fee is USD 32.50, valid for 90 days."}},
+    {"@type":"Question","name":"What's included in the Munwan Car Rental rental price?","acceptedAnswer":{"@type":"Answer","text":"Comprehensive insurance, unlimited mileage within Kenya, GPS navigation unit with offline maps, 24/7 roadside assistance and replacement vehicle, free pickup and return at JKIA/Wilson/Mombasa Moi airports, spare tyre, jack, fire extinguisher, first aid kit, warning triangles. Not included: fuel, park entry fees, traffic fines, optional add-ons."}},
+    {"@type":"Question","name":"Is there a minimum rental period in Kenya?","acceptedAnswer":{"@type":"Answer","text":"Yes — the minimum rental period is 2 days. Same-day or 24-hour rentals are not available. For long-term rentals (7+ days), you qualify for our weekly discount of approximately 10-15% off the daily rate."}}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="support-page">
+  <div class="support-hero">
+    <div class="hero-eyebrow">Car Rental in Kenya — All Your Questions</div>
+    <h1>Frequently Asked Questions About Car Rental in Nairobi &amp; Kenya for Tourists</h1>
+    <p>Everything international visitors and Kenyan residents need to know about self-drive, payments, safaris, airport pickup and driving in Kenya safely.</p>
+  </div>
+
+  <div class="support-grid">
+
+    <!-- Left: category nav cards -->
+    <div class="support-cards">
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-booking').scrollIntoView({behavior:'smooth',block:'start'})">
+        <div class="s-card-icon">📋</div><div class="s-card-title">Booking &amp; Documents</div>
+        <div class="s-card-val">IDP, age limits, foreign licence, passport</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-pricing').scrollIntoView({behavior:'smooth',block:'start'})">
+        <div class="s-card-icon">💰</div><div class="s-card-title">Pricing &amp; Payments</div>
+        <div class="s-card-val">Daily rates, USD/EUR/KES, no hidden fees</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-vehicle').scrollIntoView({behavior:'smooth',block:'start'})">
+        <div class="s-card-icon">🚗</div><div class="s-card-title">Vehicles &amp; Travel Rules</div>
+        <div class="s-card-val">Safari 4x4s, Maasai Mara trips, insurance, breakdown</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-pickup').scrollIntoView({behavior:'smooth',block:'start'})">
+        <div class="s-card-icon">✈️</div><div class="s-card-title">Pickup, Delivery &amp; Airports</div>
+        <div class="s-card-val">JKIA pickup, hotel delivery, one-way rentals</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-safety').scrollIntoView({behavior:'smooth',block:'start'})">
+        <div class="s-card-icon">🧭</div><div class="s-card-title">Safety &amp; Driving in Kenya</div>
+        <div class="s-card-val">Left-hand traffic, road conditions, tourist tips</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-mpesa').scrollIntoView({behavior:'smooth',block:'start'})">
+        <div class="s-card-icon">📱</div><div class="s-card-title">M-Pesa &amp; Payments</div>
+        <div class="s-card-val">STK push, foreign cards, failed payments</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-intl').scrollIntoView({behavior:'smooth',block:'start'})">
+        <div class="s-card-icon">🌍</div><div class="s-card-title">International Travellers</div>
+        <div class="s-card-val">Cross-border (Uganda/Tanzania), mileage, fuel</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-booking-help').scrollIntoView({behavior:'smooth',block:'start'})">
+        <div class="s-card-icon">🎯</div><div class="s-card-title">Closing the Deal</div>
+        <div class="s-card-val">No credit card needed, chauffeur, accidents, cancel</div>
+      </div>
+      <div class="s-card">
+        <div class="s-card-icon">💬</div><div class="s-card-title">Still Need Help?</div>
+        <div class="s-card-val">
+          <a href="{% url 'support' %}">Contact our team</a><br/>
+          <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp +254 727 745 907</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: accordion FAQs -->
+    <div class="support-form-wrap faq-wrap">
+
+      <!-- ═══ 1. BOOKING & REQUIREMENTS ═══ -->
+      <div id="sec-booking" class="faq-group">
+        <div class="faq-group-title">📋 Booking &amp; Requirements for Tourists in Kenya</div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Do I need an international driving permit to rent a car in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. Tourists and foreign visitors driving in Kenya must hold a valid <strong>International Driving Permit (IDP)</strong> issued in their home country, alongside their original national driving licence. Both documents must be presented at vehicle pickup. Kenyan residents only need their national driving licence.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Can tourists rent a car in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Absolutely. Munwan Car Rental welcomes international tourists. You'll need a valid passport, an International Driving Permit with your national licence, and a credit/debit card or M-Pesa for payment. We can meet you at <strong>Jomo Kenyatta International Airport (JKIA)</strong> with a name board the moment you land.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">What documents are required to rent a car in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">You'll need three things:<br/><br/>
+          <strong>1.</strong> A valid driving licence — national licence for residents, or national licence <em>plus</em> an International Driving Permit for tourists.<br/>
+          <strong>2.</strong> A passport or national ID.<br/>
+          <strong>3.</strong> A payment method — card, M-Pesa, or PayPal.<br/><br/>
+          No notarisation or translation is required for licences issued in English.
+        </div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">What is the minimum age to rent a car in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">The minimum age to rent a car with Munwan Car Rental is <strong>23 years old</strong>, with at least 2 years of driving experience. Drivers under 25 may pay a small young-driver surcharge. The maximum age is 75 subject to a valid licence and health.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Can I rent a car in Kenya with a foreign license?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes, provided your foreign licence is accompanied by an <strong>International Driving Permit (IDP)</strong>. Licences issued in English may be accepted for short rentals without an IDP — please confirm with our team via WhatsApp before arrival to avoid any pickup delays.</div></div></div>
+      </div>
+
+      <!-- ═══ 2. PRICING & PAYMENTS ═══ -->
+      <div id="sec-pricing" class="faq-group">
+        <div class="faq-group-title">💰 Pricing &amp; Payments</div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">How much does it cost to rent a car in Kenya per day?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Car rental in Kenya starts from <strong>$28/day</strong> for economy saloons (Mazda Demio, Toyota Fielder), <strong>$50–$85/day</strong> for SUVs (Toyota Rav4, Harrier, Mazda CX5), and <strong>$92–$120/day</strong> for premium 4x4s and executive vans (Toyota Prado, Alphard). All prices include full insurance, GPS tracking, and unlimited mileage within Kenya.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Are there hidden charges in Munwan Car Rental car rental?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body"><strong>No hidden charges.</strong> Our daily rate includes comprehensive insurance, GPS, 24/7 roadside assistance, airport/hotel delivery within Nairobi and Mombasa, and unlimited mileage. <strong>There is no security deposit.</strong> Optional extras (additional driver, child seat, driver hire) are clearly priced before you confirm checkout.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Do you accept M-Pesa, card, or PayPal?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. Munwan Car Rental accepts:<br/><br/>
+          • <strong>M-Pesa</strong> (Safaricom STK Push)<br/>
+          • <strong>Visa, Mastercard, Verve</strong> (via Paystack secure checkout)<br/>
+          • <strong>PayPal</strong><br/><br/>
+          You can pay in USD, KES, GBP, or EUR. No extra FX charges. Card details are entered only on Paystack's PCI-DSS secured page — never on Munwan Car Rental.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Is a deposit required when renting a car in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body"><strong>No.</strong> Munwan Car Rental does not require a security deposit. Your booking total is what you pay — no surprise hold on your card or M-Pesa. We rely on full insurance and verified ID to protect both parties.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Can I pay in USD or EUR?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. Munwan Car Rental accepts payment in <strong>USD, EUR, GBP and KES</strong>. All currencies are processed securely through Paystack or PayPal with no hidden FX markup. M-Pesa transactions are settled in KES at the published daily rate.</div></div></div>
+      </div>
+
+      <!-- ═══ 3. VEHICLE USAGE & TRAVEL RULES ═══ -->
+      <div id="sec-vehicle" class="faq-group">
+        <div class="faq-group-title">🚗 Vehicles, Safaris &amp; Travel Rules</div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Can I drive a rental car from Nairobi to Maasai Mara?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. Our 4x4 safari vehicles (Toyota Prado, Land Cruiser) are designed for the <strong>Nairobi to Maasai Mara National Reserve</strong> route. The journey is approximately 5–6 hours and includes unpaved sections, so we strongly recommend a 4x4 rather than a saloon. Unlimited mileage applies within Kenya.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Are Munwan Car Rental vehicles suitable for safaris?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. Our safari fleet includes Toyota Prado, Land Cruiser Prado TXL, and similar 4x4 SUVs — all equipped with <strong>roof hatches for game viewing</strong>, high clearance for rough roads in <strong>Maasai Mara, Amboseli, Samburu, and Tsavo</strong>, plus long-range fuel tanks for remote park travel.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Do you offer 4x4 vehicles for rough roads?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. We offer a range of 4x4 vehicles suitable for Kenya's rough and unpaved roads, including <strong>Toyota Prado, Nissan X-Trail, Toyota Rav4 and Subaru Forester</strong>. All 4x4s include comprehensive insurance, a spare tyre, jack, wheel spanner, and 24/7 breakdown support.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Is insurance included in the rental price?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. All Munwan Car Rental rentals include <strong>comprehensive insurance</strong>: third-party liability, theft protection, and passenger cover at no extra cost. A standard excess applies in the event of an accident. You may upgrade to zero-excess cover for approximately $8/day at checkout.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">What happens if the car breaks down?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">All Munwan Car Rental vehicles have live GPS tracking and we operate <strong>24/7 roadside assistance</strong> across Kenya. Call or WhatsApp us immediately on <strong>+254 117 262 350</strong> — we will dispatch a mechanic or arrange a replacement vehicle at no cost to you, anywhere from Nairobi to remote safari parks like the Maasai Mara.</div></div></div>
+      </div>
+
+      <!-- ═══ 4. PICKUP, DELIVERY & AIRPORTS ═══ -->
+      <div id="sec-pickup" class="faq-group">
+        <div class="faq-group-title">✈️ Pickup, Delivery &amp; Airports</div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Do you offer airport pickup in Nairobi?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. Munwan Car Rental offers <strong>free meet-and-greet</strong> at Jomo Kenyatta International Airport (JKIA), Wilson Airport, and Mombasa's Moi International Airport. A representative waits at arrivals with a Munwan Car Rental name board from the moment you land. You can also request hotel or Airbnb delivery across Nairobi and Mombasa.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Can I pick up a car at Jomo Kenyatta International Airport (JKIA)?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. Pickup at <strong>Jomo Kenyatta International Airport</strong> is available 24/7 at both Terminal 1 (international) and Terminal 2 (domestic). Our representative holds a Munwan Car Rental name board at the arrivals exit and assists with luggage. The service is included at no extra charge.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Do you deliver cars to hotels or Airbnb?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. We deliver cars <strong>free of charge</strong> to any hotel or Airbnb within Nairobi city limits and Mombasa. Simply choose "Hotel Delivery" at booking and enter your address. Delivery to upcountry destinations (<strong>Naivasha, Nakuru, Diani Beach</strong>) can be arranged with a small fee quoted before confirmation.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Is one-way rental available in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. <strong>One-way rentals</strong> are available between Nairobi, Mombasa, Diani Beach, and Kisumu. A one-way drop-off fee applies (typically $30–$80 depending on distance) and must be confirmed at booking. Minimum rental period for one-way is 3 days.</div></div></div>
+      </div>
+
+      <!-- ═══ 5. SAFETY & DRIVING IN KENYA ═══ -->
+      <div id="sec-safety" class="faq-group">
+        <div class="faq-group-title">🧭 Safety &amp; Driving in Kenya (for Tourists)</div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Is it safe to drive in Kenya as a tourist?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes, Kenya is generally safe for tourist self-drive, especially main routes between Nairobi, Maasai Mara, Amboseli, and the coastal region. Key tips: observe speed limits, avoid night driving on highways, fuel up before long trips, keep doors locked in traffic, and keep valuables out of sight. All Munwan Car Rental vehicles have <strong>GPS tracking and 24/7 emergency support</strong> for peace of mind.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Which side of the road do people drive on in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Kenya drives on the <strong>left side of the road</strong> (like the UK, Australia, India, and South Africa). Right-hand-drive vehicles are standard. Roundabouts give way to traffic from the right. If you're from a right-side-driving country (US, Europe), allow a little time to adjust — our <em>with-driver</em> option is ideal for your first day to avoid stress.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Are roads in Kenya good for self-drive?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Main highways in Kenya (<strong>Nairobi to Mombasa, Nairobi to Naivasha, Nairobi to Nyeri</strong>) are paved and well-signposted. Roads into national parks like Maasai Mara or Samburu are unpaved and sometimes rough — a <strong>4x4 is essential</strong>. Urban Nairobi traffic can be heavy during rush hours; our GPS helps you navigate alternate routes.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Do I need a driver or can I self-drive in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Both options are available:<br/><br/>
+          • <strong>Self-drive</strong> is popular with confident drivers used to left-hand traffic and manual/automatic transmissions.<br/>
+          • <strong>With-driver</strong> is recommended if you're unfamiliar with Kenya's roads, plan complex safari itineraries, or want to fully enjoy the scenery.<br/><br/>
+          Our vetted professional drivers start from $20/day extra.</div></div></div>
+      </div>
+
+      <!-- ═══ 6. M-PESA & PAYMENT SPECIFIC ═══ -->
+      <div id="sec-mpesa" class="faq-group">
+        <div class="faq-group-title">📱 M-Pesa &amp; Payment-Specific Questions</div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">How does M-Pesa payment work for car rental?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">After booking, select "M-Pesa" at checkout and enter your Safaricom phone number. You'll receive an <strong>STK Push prompt</strong> on your phone — enter your M-Pesa PIN to confirm payment. The transaction is <strong>instant</strong>, processed by Safaricom's secure Daraja API, and the booking is confirmed immediately.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Will I receive an STK push on my phone?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. After you enter your Safaricom number and click "Pay with M-Pesa", an STK Push prompt appears on your phone within a few seconds. Enter your 4-digit M-Pesa PIN to complete payment.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Can I pay using a foreign number with M-Pesa?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">M-Pesa STK Push works only with <strong>Safaricom numbers in Kenya</strong>. International visitors can use Visa, Mastercard, Verve (via Paystack), or PayPal — these accept foreign cards in USD, EUR, GBP, or KES with no hidden FX fees.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">What happens if my payment fails?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">If payment fails, your booking remains saved as <strong>"Pending"</strong> and the vehicle is held for 30 minutes. You'll receive a clear error message and can retry with a different method (e.g. switch from M-Pesa to card). From your <strong>My Account</strong> page, click <strong>"Continue Payment"</strong> anytime to finish a pending booking — no need to start over.</div></div></div>
+      </div>
+
+      <!-- ═══ 7. INTERNATIONAL TRAVELLERS ═══ -->
+      <div id="sec-intl" class="faq-group">
+        <div class="faq-group-title">🌍 International Traveller Questions</div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Can I cross borders with a rental car into Uganda or Tanzania?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body"><strong>No.</strong> Munwan Car Rental vehicles are not permitted to leave Kenya. Cross-border travel to <strong>Uganda, Tanzania, Rwanda, Ethiopia, Somalia or South Sudan is strictly prohibited</strong> under the rental agreement. Our insurance covers Kenya only. If you wish to drive in another East African country, you'll need to arrange a separate rental there.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Do you offer unlimited mileage?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. All Munwan Car Rental rentals include <strong>unlimited mileage within Kenya</strong> at no extra charge. Safari packages and long-term rentals may have specific mileage terms stated on your rental agreement. Cross-border travel is subject to the country-specific mileage cap on your extended cover.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Is fuel included in the rental price?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body"><strong>No, fuel is not included</strong> in the rental price — you pay for your own fuel. Vehicles are delivered with a full tank and must be returned full. If the tank is not full at return, a refuelling fee at pump rate plus a KES 500 service charge applies. Petrol stations are widely available across Kenya.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">What type of cars are best for safaris in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">For safaris, we recommend <strong>4x4 SUVs with roof hatches</strong>: Toyota Land Cruiser Prado, Toyota Prado TXL, or Nissan X-Trail. These have high clearance for rough tracks in <strong>Maasai Mara, Amboseli, Samburu, and Tsavo</strong>, plus the pop-up roof is essential for game viewing without leaving the vehicle.</div></div></div>
+      </div>
+
+      <!-- ═══ 8. TOURIST TIPS — Real questions visitors ask ═══ -->
+      <div id="sec-tourist-tips" class="faq-group">
+        <div class="faq-group-title">🌍 Tourist Tips: What to Know Before You Drive</div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Which side of the road do you drive on in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Kenya drives on the <strong>left-hand side of the road</strong>, with the steering wheel on the right side of the vehicle. This is a legacy of British colonial influence and is the same as the UK, Australia, India, South Africa, and Japan. Visitors from the US, EU, and most of South America should expect a 1–2 day adjustment period. Roundabouts move clockwise — yield to traffic from the right.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Is it safe for tourists to self-drive in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes, with sensible precautions. Kenya has a well-developed network of fuel stations, mobile coverage on all major routes, and 24/7 emergency services. Stick to <strong>daylight driving</strong> (we strongly advise against night driving outside Nairobi), keep your fuel topped up, lock doors in city traffic, and avoid driving in flood-prone areas during heavy rain. Our 24/7 roadside assistance covers the entire country.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Can I drive in Kenya with my UK / US / EU / Australian licence?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. Visitors from the <strong>UK, USA, EU countries, Australia, New Zealand, Canada, South Africa, India, and most Commonwealth nations</strong> can drive in Kenya for up to 90 days using their home country licence (must be in English) accompanied by an International Driving Permit. Licences in non-Latin scripts must always be translated via an IDP. After 90 days, you'll need to convert to a Kenyan licence through NTSA.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">What happens if a police officer stops me at a checkpoint?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Police checkpoints are <strong>routine and usually quick</strong>. Pull over calmly, lower your window, and politely greet the officer (a "Habari" — hello — goes a long way). Have ready: your <strong>passport, IDP, home licence, and the vehicle's rental agreement &amp; insurance certificate</strong> (we provide these in your dashboard glove compartment). Most checks are documentary and last under a minute. Do not pay any "fines" on the spot — request a written ticket and call us if anything seems unusual.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Should I drive at night in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body"><strong>No, we strongly recommend against night driving outside Nairobi and Mombasa city limits.</strong> Kenyan roads have unmarked livestock, pedestrians, potholes, and unlit broken-down trucks. National park access is also restricted after dusk. Plan to be at your destination by 6pm. If you must drive at night, stay on well-lit highways like Mombasa Road or Thika Road, drive at moderate speed, and use full beams cautiously.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">What are the speed limits in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Kenyan speed limits in 2025:<br/><br/>
+          • <strong>Urban areas / built-up zones</strong>: 50 km/h<br/>
+          • <strong>Open highways</strong> (single carriageway): 80 km/h<br/>
+          • <strong>Dual carriageways &amp; expressways</strong> (Nairobi Expressway, Thika Road): 110 km/h<br/>
+          • <strong>National parks</strong>: 50 km/h, often lower near wildlife<br/>
+          • <strong>Schools &amp; townships</strong>: 30–50 km/h<br/><br/>
+          Speed cameras are common on Mombasa Road, Thika Road, and the Nairobi Expressway. Fines start at KES 10,000.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">How much are Kenya national park entry fees in 2025?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Park entry fees are paid <strong>per person, per 24-hour period</strong> at the gate, separate from your car rental. Approximate non-resident rates:<br/><br/>
+          • <strong>Maasai Mara National Reserve</strong>: USD 100/adult, USD 50/child<br/>
+          • <strong>Amboseli National Park</strong>: USD 60/adult<br/>
+          • <strong>Lake Nakuru National Park</strong>: USD 60/adult<br/>
+          • <strong>Tsavo East / West</strong>: USD 52/adult<br/>
+          • <strong>Nairobi National Park</strong>: USD 43/adult<br/>
+          • <strong>Hell's Gate / Lake Naivasha area</strong>: USD 26/adult<br/><br/>
+          Pay by Visa/Mastercard at the gate, or M-Pesa where supported. Carry your passport for non-resident verification.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">How far in advance should I book a car for safari season?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">For peak safari season (<strong>July–October</strong> for the Great Migration, and <strong>December–early January</strong> for holidays), book at least <strong>2–3 months ahead</strong>. Toyota Prados, Land Cruisers, and pop-top safari vehicles get reserved fastest. Off-season (April–June, November), 2–3 weeks ahead is usually enough. Last-minute bookings are sometimes possible — message us on WhatsApp for live availability.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Will I have mobile signal and GPS in the parks?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body"><strong>Safaricom 4G</strong> covers all major roads and most park gates. Inside Maasai Mara, Amboseli, and Tsavo, signal is patchy but available at major lodges and main tracks. Samburu and Lewa have weaker coverage. Every Munwan Car Rental vehicle includes a <strong>GPS unit pre-loaded with offline Kenya maps</strong>, so you can navigate even in low-signal zones. We also recommend downloading <em>Maps.me</em> or Google Maps offline before your trip.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Where do I find fuel on safari routes?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Fuel is widely available on tarmac roads. Major brands: <strong>Total, Shell, Rubis, Vivo</strong>. Fuel up at the last town before entering a park — for the Mara, that's <strong>Narok</strong> (90 km from the gate). For Amboseli, <strong>Emali</strong>. There is <strong>no fuel inside the parks</strong>. Carry a 20 L jerry can on multi-day safaris in remote areas. Petrol is "premium" or "regular"; diesel is widely available. Prices fluctuate monthly (KES 180–210/L typical in 2025).</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">What if I get a flat tyre or breakdown?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Every Munwan Car Rental vehicle carries a <strong>spare tyre, jack, wheel spanner, fire extinguisher, warning triangles, first aid kit</strong>, and a tyre pump. Our <strong>24/7 roadside assistance</strong> reaches anywhere in Kenya — call or WhatsApp <strong>+254 117 262 350</strong>. We dispatch a recovery vehicle or replacement car within hours (usually under 4 hours in Nairobi/Mombasa, 6–10 hours in remote areas). Mechanical repairs are at our cost; only damages caused by negligent driving are billed to you.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Can I drive in Kenya during the rainy season?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes, but with a 4×4. The "long rains" (<strong>March–May</strong>) and "short rains" (<strong>October–November</strong>) make tarmac slippery and turn dirt tracks to mud — especially around Maasai Mara, Amboseli, and the Aberdares. We recommend a <strong>Toyota Prado or Land Cruiser</strong> in these months. Avoid driving immediately after heavy rain (flash flooding on bridges in Tana and Athi River basins). Most highways stay passable; pause for the worst storms (1–2 hours).</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Do I need a Kenya visa or eTA?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">As of January 2024, Kenya replaced visas with the <strong>Electronic Travel Authorisation (eTA)</strong>. All visitors except citizens of East African Community countries (Kenya, Uganda, Tanzania, Rwanda, Burundi, South Sudan) need an eTA. Apply at <strong>etakenya.go.ke</strong> at least 3 days before travel. The fee is USD 32.50, valid for 90 days. You'll need: passport (6+ months validity), return ticket, proof of accommodation, and a digital photo. Approval is usually within 24–72 hours.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Can I add camping equipment to my rental?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. We offer <strong>rooftop tents, ground tents, sleeping bags, camp chairs, cooking sets, and gas cookers</strong> as add-ons. A 2-person rooftop tent with mattress is approximately <strong>USD 15/day</strong>. Full camping packages (tent + bedding + cooking + chairs + table) start at <strong>USD 30/day</strong>. Ideal for self-drive safaris to Tsavo, Samburu, and the conservancies around Maasai Mara. Mention "camping" when booking and we'll send the equipment list.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Can someone else drive the rental car?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes — additional drivers can be added to the rental agreement at <strong>no extra charge</strong>. Each additional driver must:<br/>• Be at least 23 years old<br/>• Hold a valid licence with 2+ years' experience<br/>• Present their licence + IDP at pickup<br/><br/>Insurance only covers <strong>named drivers</strong>. Letting an un-listed person drive voids your insurance for any incident — please add them at booking, not afterwards.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">What's included in the rental price?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Every Munwan Car Rental rental includes:<br/><br/>
+          • <strong>Comprehensive insurance</strong> (theft, third-party, collision damage waiver)<br/>
+          • <strong>Unlimited mileage</strong> within Kenya<br/>
+          • <strong>GPS navigation unit</strong> with offline Kenya maps<br/>
+          • <strong>24/7 roadside assistance</strong> &amp; replacement vehicle if needed<br/>
+          • <strong>Free pickup &amp; return</strong> at JKIA, Wilson, and Mombasa Moi airports<br/>
+          • <strong>Spare tyre, jack, fire extinguisher, first aid kit, warning triangles</strong> (all legally required)<br/>
+          • <strong>Vehicle inspection report</strong> at handover<br/><br/>
+          <strong>Not included</strong>: fuel (vehicle delivered full, return full), park entry fees, traffic fines, optional add-ons (driver, child seat, camping kit).</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Can I drop the car at a different location from where I picked it up?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes — <strong>one-way rentals</strong> within Kenya are supported. Drop your car at any of our locations: <strong>JKIA, Wilson Airport, Mombasa Moi Airport, Diani, Naivasha, or Nairobi CBD</strong>. A relocation fee applies based on distance: free between Nairobi and JKIA, USD 80–150 for Nairobi↔Mombasa, USD 50 for Nairobi↔Naivasha. One-way fees are quoted at booking.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Is there a minimum rental period?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes — the <strong>minimum rental period is 2 days</strong>. Same-day or 24-hour rentals are not available. For long-term rentals (7+ days), you qualify for our weekly discount of approximately 10–15% off the daily rate. 30+ day rentals get further preferential pricing — message us for a quote.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">What should I do in case of an accident?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Stay calm and follow these steps:<br/><br/>
+          <strong>1.</strong> Check for injuries. Call <strong>999</strong> (police/ambulance) if anyone is hurt.<br/>
+          <strong>2.</strong> Move the vehicle off the road if safe. Place warning triangles (50 m front and rear).<br/>
+          <strong>3.</strong> Do not admit fault or sign anything from the other party.<br/>
+          <strong>4.</strong> Take photos of the scene, both vehicles, both number plates, and any injuries.<br/>
+          <strong>5.</strong> Get the other driver's details: name, ID, phone, vehicle registration, insurance.<br/>
+          <strong>6.</strong> File a police report (P3 form) at the nearest station — required for insurance.<br/>
+          <strong>7.</strong> Call Munwan Car Rental immediately on <strong>+254 117 262 350</strong>. We handle the rest.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">What language do most Kenyans speak? Will the driver/staff understand me?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body"><strong>English is one of two official languages in Kenya</strong> (alongside Swahili) and is widely spoken — including by police, park rangers, fuel attendants, and lodge staff. Our entire Munwan Car Rental team speaks fluent English. Learning a few Swahili phrases like <em>"Habari"</em> (hello), <em>"Asante"</em> (thank you), and <em>"Pole pole"</em> (slowly) is appreciated but not necessary.</div></div></div>
+
+      </div>
+
+      <!-- ═══ 9. CLOSING THE DEAL ═══ -->
+      <div id="sec-booking-help" class="faq-group">
+        <div class="faq-group-title">🎯 Booking Help &amp; Edge Cases</div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Can I rent a car without a credit card in Kenya?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. Munwan Car Rental accepts <strong>M-Pesa, PayPal, and debit cards</strong> in addition to credit cards. There is no security deposit required, so a physical credit card is not necessary. Pay your full booking total with whichever method you prefer.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">Do you offer chauffeur services?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Yes. Our <strong>professional chauffeur service</strong> is available for airport transfers, business hire, safari trips, and city tours. Drivers are licensed, English-speaking, and knowledgeable about <strong>Nairobi, Mombasa, Diani Beach</strong>, and Kenya's major safari parks. Rates start from $20/day additional. Choose "With Driver" when booking.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">What happens in case of an accident?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Ensure everyone is safe, then:<br/><br/>
+          <strong>1.</strong> Call Munwan Car Rental immediately on <strong>+254 117 262 350</strong> and the police if needed.<br/>
+          <strong>2.</strong> Take photos of the scene and the other vehicle's details.<br/>
+          <strong>3.</strong> Do not admit fault to other parties.<br/><br/>
+          We'll guide you through the insurance claim, dispatch a replacement vehicle, and handle paperwork. A standard excess applies unless you upgraded to zero-excess cover.</div></div></div>
+
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-text">How do I cancel or modify my Munwan Car Rental booking?</span><span class="faq-arr">▾</span></div>
+        <div class="faq-a"><div class="faq-a-body">Our <a href="{% url 'cancellation' %}">cancellation policy</a> — <strong>we always refund, no zero-refund situations</strong>:<br/><br/>
+          • Cancellations <strong>48+ hours</strong> before pickup → <strong>100% refund</strong><br/>
+          • Cancellations <strong>within 24 hours</strong> of pickup (incl. same-day &amp; no-shows) → <strong>80% refund</strong><br/>
+          • <strong>Date changes are free</strong> up to 24 hours before pickup, subject to availability<br/><br/>
+          WhatsApp us on <strong>+254 727 745 907</strong> with your booking reference.</div></div></div>
+      </div>
+
+    </div><!-- /support-form-wrap -->
+  </div><!-- /support-grid -->
+</div>
+
+<script>
+function toggleFaq(btn) {
+  var item = btn.parentElement;
+  var isOpen = item.classList.contains('open');
+  // Collapse all FAQs in the same group, not the whole page
+  var group = item.parentElement;
+  if (group) {
+    var items = group.querySelectorAll('.faq-item.open');
+    items.forEach(function(i){ i.classList.remove('open'); });
+  }
+  if (!isOpen) item.classList.add('open');
+}
+</script>
+{% endblock %}

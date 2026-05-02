@@ -1,0 +1,33 @@
+{% extends 'core/base.html' %}
+{% block title %}Sign In – DriveKenya{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <a href="{% url 'home' %}" class="logo" style="display:block;margin-bottom:28px">Drive<span>Kenya</span></a>
+    <h1 class="auth-title">Welcome back</h1>
+    <p class="auth-sub">Sign in to manage your bookings</p>
+
+    {% if form.non_field_errors %}
+    <div class="auth-error">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post" action="{% url 'login' %}?next={{ request.GET.next|default:'' }}">
+      {% csrf_token %}
+      <div class="fg" style="margin-bottom:14px">
+        <label>Username or Email</label>
+        <input type="text" name="username" placeholder="your@email.com" value="{{ form.username.value|default:'' }}" required autofocus/>
+        {% if form.username.errors %}<div class="ferr">{{ form.username.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="fg" style="margin-bottom:20px">
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Your password" required/>
+        {% if form.password.errors %}<div class="ferr">{{ form.password.errors.0 }}</div>{% endif %}
+      </div>
+      <button type="submit" class="auth-btn">Sign In</button>
+    </form>
+
+    <p class="auth-link">Don't have an account? <a href="{% url 'register' %}">Create one</a></p>
+    <p class="auth-link"><a href="{% url 'home' %}">← Back to Home</a></p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Terms &amp; Conditions | Munwan Car Rental Car Rental Kenya{% endblock %}
+{% block meta_description %}Munwan Car Rental car rental terms and conditions for Kenya. Driver requirements, insurance, usage rules, liability, payment terms and customer obligations.{% endblock %}
+{% block canonical %}https://yourdomain.com/terms/{% endblock %}
+
+{% block content %}
+<div class="support-page">
+  <div class="support-hero">
+    <div class="hero-eyebrow">Legal</div>
+    <h1>Terms &amp; Conditions</h1>
+    <p>Please read these terms carefully before booking. By making a booking with Munwan Car Rental, you agree to the terms set out below.</p>
+  </div>
+
+  <div class="support-grid">
+
+    <!-- Left: quick nav cards -->
+    <div class="support-cards">
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-eligibility').scrollIntoView({behavior:'smooth'})">
+        <div class="s-card-icon">👤</div><div class="s-card-title">Eligibility</div>
+        <div class="s-card-val">Age, licence, documents required</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-use').scrollIntoView({behavior:'smooth'})">
+        <div class="s-card-icon">🚗</div><div class="s-card-title">Vehicle Use</div>
+        <div class="s-card-val">Approved drivers, mileage, restrictions</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-insurance').scrollIntoView({behavior:'smooth'})">
+        <div class="s-card-icon">🛡️</div><div class="s-card-title">Insurance &amp; Liability</div>
+        <div class="s-card-val">Coverage, excess, damage, theft</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-payment').scrollIntoView({behavior:'smooth'})">
+        <div class="s-card-icon">💳</div><div class="s-card-title">Payment</div>
+        <div class="s-card-val">Rates, fuel, fines, refunds</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-return').scrollIntoView({behavior:'smooth'})">
+        <div class="s-card-icon">🔑</div><div class="s-card-title">Pickup &amp; Return</div>
+        <div class="s-card-val">Condition, times, late returns</div>
+      </div>
+      <div class="s-card faq-nav-card" onclick="document.getElementById('sec-privacy').scrollIntoView({behavior:'smooth'})">
+        <div class="s-card-icon">🔒</div><div class="s-card-title">Privacy &amp; Data</div>
+        <div class="s-card-val">How we handle your information</div>
+      </div>
+      <div class="s-card">
+        <div class="s-card-icon">📋</div><div class="s-card-title">Related Docs</div>
+        <div class="s-card-val">
+          <a href="{% url 'cancellation' %}">Cancellation Policy →</a><br/>
+          <a href="{% url 'faqs' %}">FAQs →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: full T&C content -->
+    <div class="support-form-wrap">
+      <p class="terms-effective">Effective date: 1 January 2026 &nbsp;·&nbsp; Munwan Car Rental Ltd, Nairobi, Kenya</p>
+
+      <!-- 1. Eligibility -->
+      <section id="sec-eligibility" class="terms-section">
+        <h2>1. Eligibility &amp; Driver Requirements</h2>
+        <p>To rent a vehicle from Munwan Car Rental, the customer (and any additional driver) must:</p>
+        <ul>
+          <li>Be at least <strong>23 years old</strong> with a minimum of 2 years' driving experience. Drivers under 25 may pay a young-driver surcharge.</li>
+          <li>Hold a <strong>valid, unrestricted driving licence</strong> — Kenyan residents: national licence; international visitors: national licence plus a valid International Driving Permit (IDP).</li>
+          <li>Present a <strong>valid passport or national ID</strong> at pickup for identification.</li>
+          <li>Not be disqualified from driving by any court or medical authority.</li>
+          <li>Provide a mobile number reachable during the rental period.</li>
+        </ul>
+        <p>Only drivers registered with Munwan Car Rental at booking may operate the vehicle. Adding another driver mid-rental requires written approval.</p>
+      </section>
+
+      <!-- 2. Vehicle Use -->
+      <section id="sec-use" class="terms-section">
+        <h2>2. Vehicle Use &amp; Restrictions</h2>
+        <p>The vehicle may only be used for lawful, private transportation within Kenya, subject to these conditions:</p>
+        <ul>
+          <li><strong>Unlimited mileage</strong> applies within Kenya. The vehicle must remain within Kenyan borders for the entire rental period — <strong>cross-border travel is not permitted</strong>.</li>
+          <li>The vehicle must <strong>not be used</strong> for: commercial ride-sharing (Uber, Bolt, etc.), towing (unless vehicle specified), motor-sport, off-road use outside designated parks, instruction, or sub-hiring to third parties.</li>
+          <li><strong>Smoking is prohibited</strong> in all vehicles.</li>
+          <li>Carrying more passengers than the vehicle's licensed capacity is prohibited.</li>
+          <li>Any traffic fines, parking tickets, or toll-road charges incurred during the rental period are the customer's responsibility.</li>
+        </ul>
+      </section>
+
+      <!-- 3. Insurance & Liability -->
+      <section id="sec-insurance" class="terms-section">
+        <h2>3. Insurance &amp; Customer Liability</h2>
+        <p>All Munwan Car Rental rentals include <strong>comprehensive motor insurance</strong>:</p>
+        <ul>
+          <li>Third-party liability cover (bodily injury and property damage).</li>
+          <li>Theft protection (subject to police report and keys being returned).</li>
+          <li>Passenger accident cover.</li>
+        </ul>
+        <p><strong>Standard excess</strong> applies in the event of accident, damage, or theft — typically KES 50,000–150,000 depending on vehicle class. Customers may purchase a <strong>zero-excess upgrade</strong> at checkout (approx. $8/day).</p>
+        <p>Insurance <strong>will not apply</strong> if:</p>
+        <ul>
+          <li>The driver is under the influence of alcohol or narcotics (above legal limit).</li>
+          <li>The vehicle is driven by an unapproved person.</li>
+          <li>Damage occurs during illegal or reckless use.</li>
+          <li>The customer leaves the accident scene without reporting.</li>
+        </ul>
+        <p>In the event of any accident or theft, the customer must <strong>immediately call Munwan Car Rental on +254 727 745 907</strong> and file a police report within 24 hours.</p>
+      </section>
+
+      <!-- 4. Payment -->
+      <section id="sec-payment" class="terms-section">
+        <h2>4. Rental Rates &amp; Payment</h2>
+        <ul>
+          <li>Daily rates are based on a <strong>24-hour period</strong> from pickup time. <strong>Minimum rental period is 2 days.</strong> Hire type affects daily pricing (corporate hire, long-term and safari packages each use distinct rates — the total shown at checkout is final).</li>
+          <li><strong>No security deposit is required.</strong> Your booking total is what you pay — no surprise hold on your card or M-Pesa.</li>
+          <li>Accepted payment methods: <strong>M-Pesa, Visa, Mastercard, Verve (via Paystack), and PayPal</strong>. Payments may be made in USD, KES, EUR or GBP.</li>
+          <li><strong>Fuel is not included.</strong> Vehicles are delivered with a full tank and must be returned full. Refuelling fees apply: pump rate + KES 500 service charge.</li>
+          <li>Late payment of any charge attracts interest at 2% per month plus reasonable recovery costs.</li>
+        </ul>
+      </section>
+
+      <!-- 5. Pickup & Return -->
+      <section id="sec-return" class="terms-section">
+        <h2>5. Vehicle Pickup &amp; Return</h2>
+        <ul>
+          <li>Vehicles are inspected by Munwan Car Rental and the customer at pickup. Any existing damage is noted on the rental agreement — please point out anything we miss.</li>
+          <li>The vehicle must be returned to the agreed location, at the agreed date and time, in the same condition (reasonable wear-and-tear accepted).</li>
+          <li><strong>Late return</strong>: a grace period of 1 hour applies. Beyond that, an additional day's rental is charged per 24-hour period of overdue time.</li>
+          <li><strong>Early return</strong> does not entitle the customer to a pro-rata refund unless Munwan Car Rental agrees in writing.</li>
+          <li>Loss of vehicle keys is charged at KES 10,000 plus the cost of locksmith/replacement.</li>
+        </ul>
+      </section>
+
+      <!-- 6. Cancellation Policy -->
+      <section class="terms-section">
+        <h2>6. Cancellations &amp; Modifications</h2>
+        <p>Cancellations are governed by our separate <a href="{% url 'cancellation' %}"><strong>Cancellation Policy</strong></a>, which forms part of these Terms. <strong>We always refund — no zero-refund situations:</strong></p>
+        <ul>
+          <li><strong>48+ hours</strong> before pickup → <strong>100% refund</strong></li>
+          <li><strong>Within 24 hours</strong> of pickup (including same-day cancellation and no-shows) → <strong>80% refund</strong></li>
+          <li>Date and time changes are <strong>free</strong> up to 24 hours before pickup, subject to availability.</li>
+        </ul>
+      </section>
+
+      <!-- 7. Privacy -->
+      <section id="sec-privacy" class="terms-section">
+        <h2>7. Privacy &amp; Data Protection</h2>
+        <p>Munwan Car Rental collects personal information (name, email, phone, licence details, payment information) only to process your booking, meet legal obligations, and provide customer support. We:</p>
+        <ul>
+          <li>Do not sell or rent your personal data to third parties.</li>
+          <li>Store card details only via PCI-DSS compliant processors (Paystack, PayPal) — never on our own servers.</li>
+          <li>Use live GPS tracking on all vehicles for safety, recovery, and operational purposes.</li>
+          <li>Retain booking records for a minimum of 7 years as required by Kenyan tax law.</li>
+        </ul>
+        <p>You may request access to or deletion of your data by emailing <strong>info@munwancarrental.com</strong>.</p>
+      </section>
+
+      <!-- 8. Force Majeure -->
+      <section class="terms-section">
+        <h2>8. Force Majeure</h2>
+        <p>Neither party is liable for failure to perform due to events beyond reasonable control, including but not limited to: natural disasters, pandemics, acts of terrorism, government travel bans, road closures, civil unrest, strikes, or infrastructure failures. In such cases, affected bookings are handled case-by-case with fair consideration for both parties.</p>
+      </section>
+
+      <!-- 9. Liability Limitations -->
+      <section class="terms-section">
+        <h2>9. Limitation of Liability</h2>
+        <p>To the maximum extent permitted by Kenyan law, Munwan Car Rental's total liability arising out of any single booking is limited to the total rental amount paid by the customer for that booking. Munwan Car Rental is not liable for indirect or consequential losses including missed flights, missed safari bookings, hotel no-show penalties, or business interruption.</p>
+      </section>
+
+      <!-- 10. Governing Law -->
+      <section class="terms-section">
+        <h2>10. Governing Law &amp; Disputes</h2>
+        <p>These Terms are governed by the <strong>laws of the Republic of Kenya</strong>. Any disputes are subject to the exclusive jurisdiction of the courts of Nairobi. Before any legal action, both parties agree to attempt mediation in good faith for at least 30 days.</p>
+      </section>
+
+      <!-- Acceptance box -->
+      <div class="terms-accept-box">
+        <strong>Acceptance.</strong> By booking with Munwan Car Rental (clicking "Continue" on the booking form with the acceptance checkbox ticked), you confirm you have read, understood, and agree to these Terms &amp; Conditions and the Cancellation Policy, and that you are legally authorised to enter into this agreement.
+      </div>
+
+      <!-- Contact -->
+      <div class="terms-contact">
+        <h3>Questions About These Terms?</h3>
+        <p>Contact us before booking — we're happy to clarify anything.</p>
+        <p>
+          📞 <strong>+254 727 745 907</strong> (WhatsApp &amp; phone)<br/>
+          ✉️ <a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=info@munwancarrental.com" target="_blank" rel="noopener"><strong>info@munwancarrental.com</strong></a>
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+.terms-effective {
+  font-size: 0.82rem;
+  color: #7888A8;
+  background: #F0F4FF;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+.terms-section {
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #D6E0F5;
+}
+.terms-section:last-of-type { border-bottom: none; }
+.terms-section h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0A0F1E;
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+.terms-section p {
+  font-size: 0.89rem;
+  color: #374151;
+  line-height: 1.7;
+  margin-bottom: 10px;
+}
+.terms-section ul {
+  padding-left: 20px;
+  margin-bottom: 12px;
+}
+.terms-section li {
+  font-size: 0.88rem;
+  color: #374151;
+  line-height: 1.7;
+  margin-bottom: 6px;
+}
+.terms-section strong { color: #0A0F1E; font-weight: 700; }
+.terms-section a { color: #1A6BF5; font-weight: 600; }
+.terms-accept-box {
+  background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(26,107,245,0.05));
+  border: 1.5px solid rgba(16,185,129,0.3);
+  border-radius: 12px;
+  padding: 18px 20px;
+  font-size: 0.9rem;
+  color: #065F46;
+  line-height: 1.7;
+  margin: 24px 0;
+}
+.terms-accept-box strong { color: #064E3B; }
+.terms-contact {
+  background: #F0F4FF;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 24px;
+}
+.terms-contact h3 { font-size: 1rem; color: #0A0F1E; margin-bottom: 8px; }
+.terms-contact p { font-size: 0.88rem; color: #7888A8; line-height: 1.7; }
+</style>
+{% endblock %}
