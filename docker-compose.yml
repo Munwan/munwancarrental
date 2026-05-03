@@ -1,4 +1,3 @@
-# ─────────────────────────────────────────────────────────────────────────────
 #  Munwan Car Rental — Production Docker Compose
 # ─────────────────────────────────────────────────────────────────────────────
 #  Three services:
@@ -68,6 +67,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+      - media_files:/srv/media:ro
     depends_on:
       - web
 

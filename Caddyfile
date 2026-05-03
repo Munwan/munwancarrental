@@ -1,48 +1,36 @@
-# ─────────────────────────────────────────────────────────────
-#  Caddyfile — auto-HTTPS reverse proxy for Munwan Car Rental
-# ─────────────────────────────────────────────────────────────
-#  Caddy automatically:
-#    • Provisions free Let's Encrypt certs (renews 30 days before expiry)
-#    • Redirects HTTP → HTTPS
-#    • Enables HTTP/2 and HTTP/3
-#    • Compresses responses
-#
-#  If Cloudflare proxies traffic to your VPS, Caddy still gets a real cert
-#  via the HTTP-01 challenge — Cloudflare just forwards the challenge.
-#  Set Cloudflare SSL/TLS mode to "Full (strict)".
-# ─────────────────────────────────────────────────────────────
+{
+  servers {
+    trusted_proxies static private_ranges
+  }
+}
 
 munwancarrental.com, www.munwancarrental.com {
 
-  # Trust Cloudflare's X-Forwarded-* headers so Django sees real client IPs
-  servers {
-    trusted_proxies cloudflare
+  # Serve user-uploaded media directly from the volume (NOT through Django)
+  handle_path /media/* {
+    root * /srv/media
+    file_server
+    header Cache-Control "public, max-age=86400"
   }
 
-  # Reverse proxy → Django container on internal port 8000
   reverse_proxy web:8000 {
     header_up X-Real-IP {remote_host}
     header_up X-Forwarded-Proto {scheme}
   }
 
-  # Compression
   encode gzip zstd
 
-  # Security headers (defense in depth — Django sets these too)
   header {
     Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
     X-Content-Type-Options    "nosniff"
     X-Frame-Options           "DENY"
     Referrer-Policy           "strict-origin-when-cross-origin"
-    Permissions-Policy        "camera=(), microphone=(), geolocation=(self)"
     -Server
   }
 
-  # Long-cache static assets (WhiteNoise also sets cache headers, this is belt+braces)
   @static path /static/*
   header @static Cache-Control "public, max-age=2592000, immutable"
 
-  # Access log
   log {
     output stdout
     format console

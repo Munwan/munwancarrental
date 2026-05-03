@@ -82,7 +82,7 @@ RUN DJANGO_SECRET_KEY=build-only-not-used \
 
 # Health check — Docker can use this to detect crashed containers
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/ || exit 1
+    CMD curl -f -H "Host: munwancarrental.com" http://localhost:${PORT}/ || exit 1
 
 EXPOSE 8000
 

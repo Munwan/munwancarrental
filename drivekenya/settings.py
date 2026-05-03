@@ -211,10 +211,14 @@ _csrf_origins = os.environ.get(
 ).strip()
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(',') if o.strip()]
 
-# ADMINS get emailed on 500 errors (when EMAIL_HOST is configured)
-_admin_email_for_errors = os.environ.get('ADMIN_BOOKING_EMAIL', 'info@munwancarrental.com')
-ADMINS = [('Munwan Admin', _admin_email_for_errors)]
-SERVER_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', _admin_email_for_errors)
+# ADMINS get emailed on 500 errors UNLESS the env var disables it
+if os.environ.get('DISABLE_ADMIN_EMAILS', 'False').lower() == 'true':
+    ADMINS = []
+else:
+    _admin_email_for_errors = os.environ.get('ADMIN_BOOKING_EMAIL', 'info@munwancarrental.com')
+    ADMINS = [('Munwan Admin', _admin_email_for_errors)]
+
+SERVER_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'info@munwancarrental.com')
 
 # Logging — explicit config so logs go to stderr (Appliku captures these)
 LOGGING = {
