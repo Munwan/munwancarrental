@@ -1,7 +1,7 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}{{ vehicle.name }} for Hire in Nairobi Kenya | ${{ vehicle.price_usd }}/day | DriveKenya{% endblock %}
+{% block title %}{{ vehicle.name }} for Hire in Nairobi Kenya | ${{ vehicle.price_usd }}/day | Munwan Car Rental{% endblock %}
 {% block meta_description %}Hire {{ vehicle.name }} in Nairobi from ${{ vehicle.price_usd }}/day. {{ vehicle.seats }}-seater {{ vehicle.get_fuel_display|default:"fuel-efficient" }} car with full insurance, GPS &amp; free JKIA airport delivery. Perfect for {% if 'Prado' in vehicle.name or 'Cruiser' in vehicle.name or 'X-Trail' in vehicle.name or 'Forester' in vehicle.name or 'Rav4' in vehicle.name %}Maasai Mara safaris{% else %}city &amp; road trips in Kenya{% endif %}. Book with M-Pesa, card or PayPal.{% endblock %}
 {% block canonical %}https://munwancarrental.com{% url 'vehicle_detail' slug=vehicle.slug %}{% endblock %}
 {% block og_title %}{{ vehicle.name }} Rental in Kenya — ${{ vehicle.price_usd }}/day{% endblock %}
@@ -16,8 +16,8 @@
   "@type": "Product",
   "name": "{{ vehicle.name }} — Car Hire in Nairobi",
   "description": "Rent a {{ vehicle.name }} in Nairobi, Kenya. {{ vehicle.seats }}-seater with full insurance, GPS and airport delivery.",
-  "image": "{% if vehicle.image %}https://munwancarrental.com{{ vehicle.image.url }}{% else %}https://yourdomain.com/static/images/cars/placeholder.jpg{% endif %}",
-  "brand": {"@type": "Brand", "name": "DriveKenya"},
+  "image": "{% if vehicle.image %}https://munwancarrental.com{{ vehicle.image.url }}{% else %}https://munwancarrental.com/static/images/cars/placeholder.jpg{% endif %}",
+  "brand": {"@type": "Brand", "name": "Munwan Car Rental"},
   "offers": {
     "@type": "Offer",
     "url": "https://munwancarrental.com{% url 'vehicle_detail' slug=vehicle.slug %}",
@@ -84,7 +84,7 @@
         <button class="vehicle-book-btn" onclick="openBookingModalForCar('{{ vehicle.id }}', '{{ vehicle.name }}')">
           🚗 Book {{ vehicle.name }} Now
         </button>
-        <a href="https://wa.me/{{ whatsapp_number|default:'254727745907' }}?text=Hi%20DriveKenya%2C%20I'd%20like%20to%20hire%20the%20{{ vehicle.name|urlencode }}"
+        <a href="https://wa.me/{{ whatsapp_number }}?text=Hi%20Munwan Car Rental%2C%20I'd%20like%20to%20hire%20the%20{{ vehicle.name|urlencode }}"
            class="vehicle-wa-btn" target="_blank" rel="noopener">
           💬 Ask on WhatsApp
         </a>

@@ -5,9 +5,23 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
+  <!-- ═══ PERFORMANCE: PRELOADS ═══ -->
+  <!-- Hero is the LCP element on home page — preload to drop mobile LCP from 7s to ~2s -->
+  <link rel="preload" as="image" href="{% static 'images/hero-bg.jpg' %}" fetchpriority="high"/>
+  <!-- Preconnect to Google Fonts for fast font loading -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+
+  <!-- ═══ FAVICON ═══ -->
+  <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}"/>
+  <meta name="theme-color" content="#1565FF"/>
+
   <!-- ═══ SEO META ═══ -->
-  <meta name="description" content="{% block meta_description %}Munwan Car Rental – Affordable car hire in Nairobi, Mombasa & across Kenya. Self-drive, with driver, safari packages. M-Pesa, card & PayPal. Full insurance included.{% endblock %}"/>
-  <meta name="keywords" content="car hire Kenya, car rental Nairobi, self drive Kenya, hire a car Nairobi, car hire Mombasa, safari car hire, car hire JKIA, car rental Kenya affordable, Kenya self drive rental, car hire with driver Kenya"/>
+  <meta name="description" content="{% block meta_description %}Munwan Car Rental – Premium car hire in Nairobi, Mombasa & across Kenya. Self-drive, with driver, safari packages. M-Pesa, card & PayPal. Full insurance included.{% endblock %}"/>
+  <meta name="keywords" content="car hire Kenya, car rental Nairobi, self drive Kenya, hire a car Nairobi, car hire Mombasa, safari car hire, car hire JKIA, premium car rental Kenya, Kenya self drive rental, car hire with driver Kenya"/>
   <meta name="robots" content="index, follow"/>
   <link rel="canonical" href="{% block canonical %}https://munwancarrental.com{% endblock %}"/>
 
@@ -65,7 +79,7 @@
 <!-- NAV -->
 <nav id="mainNav">
   <a href="{% url 'home' %}" class="logo logo-with-img">
-    <img src="{% static 'images/logo.png' %}" alt="Munwan Car Rental" class="logo-img"/>
+    <img src="{% static 'images/logo.png' %}" alt="Munwan Car Rental" class="logo-img" width="48" height="48"/>
     <span class="logo-stack">
       <span class="logo-top">Munwan</span>
       <span class="logo-bot">CarRental</span>

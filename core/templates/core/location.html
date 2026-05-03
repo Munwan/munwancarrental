@@ -3,7 +3,7 @@
 
 {% block title %}{{ loc.title }}{% endblock %}
 {% block meta_description %}{{ loc.meta_description }}{% endblock %}
-{% block canonical %}https://yourdomain.com{% url loc.url_name %}{% endblock %}
+{% block canonical %}https://munwancarrental.com{% url loc.url_name %}{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/location.css' %}?v=1"/>
@@ -12,11 +12,10 @@
 {
   "@context": "https://schema.org",
   "@type": "CarRental",
-  "name": "DriveKenya — {{ loc.h1 }}",
+  "name": "Munwan Car Rental — {{ loc.h1 }}",
   "description": "{{ loc.meta_description }}",
   "url": "https://munwancarrental.com{% url loc.url_name %}",
   "telephone": "+254727745907",
-   "
   "priceRange": "$28 - $120",
   "currenciesAccepted": "USD, KES, GBP, EUR",
   "paymentAccepted": "Cash, M-Pesa, Visa, Mastercard, PayPal",
@@ -65,7 +64,7 @@
     <!-- Delivery locations -->
     <section class="location-section">
       <h2>Where We Deliver in {{ loc.h1|slice:"15:"|default:"This Area" }}</h2>
-      <p>DriveKenya offers <strong>free delivery</strong> to the following spots:</p>
+      <p>Munwan Car Rental offers <strong>free delivery</strong> to the following spots:</p>
       <div class="location-delivery-grid">
         {% for spot in loc.delivery_spots %}
         <div class="location-delivery-card">
@@ -96,7 +95,7 @@
     <!-- Recommended cars -->
     <section class="location-section">
       <h2>Recommended Cars for {% if loc.key == 'jkia' %}JKIA Pickup{% else %}{{ loc.h1|cut:"Car Rental in "|cut:"Car Hire at " }}{% endif %}</h2>
-      <p>These are the most popular DriveKenya vehicles for this location:</p>
+      <p>These are the most popular Munwan Car Rental vehicles for this location:</p>
       <ul class="location-recommended">
         {% for car_name in loc.best_cars %}
         <li>{{ car_name }}</li>
@@ -136,7 +135,7 @@
       <p>Free cancellation up to 48 hours before pickup. No hidden fees. Pay your way.</p>
       <button class="location-btn location-btn-primary location-btn-lg" onclick="openBookingModal()">🚗 Book Now — from $28/day</button>
       <a href="https://wa.me/{{ whatsapp_number }}" target="_blank" class="location-wa-link">
-        💬 Or WhatsApp us: +254 727745907
+        💬 Or WhatsApp us: +254 727 745 907
       </a>
     </section>
 

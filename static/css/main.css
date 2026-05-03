@@ -47,7 +47,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:cen
 @media(max-width:380px){
   .logo-img{height:24px;max-width:30px}
   .logo-top{font-size:.82rem}
-  .logo-bot{font-size:.6rem}
+  .logo-bot{font-size:.7rem}
 }
 .nav-links{display:flex;gap:22px;list-style:none;align-items:center}
 .nav-links a{color:rgba(255,255,255,0.82);text-decoration:none;font-size:0.86rem;font-weight:600;transition:color .2s;white-space:nowrap}
@@ -340,7 +340,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .form-step.active{display:block}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
 .frow.full{grid-template-columns:1fr}
-.fg label{display:block;font-size:.64rem;font-weight:700;letter-spacing:.08em;
+.fg label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.06em;
   text-transform:uppercase;color:var(--muted);margin-bottom:3px}
 /* Group heading — used where we need a label-like element that doesn't bind
    to a specific input (e.g. "Optional Add-ons" preceding a checkbox group). */
@@ -925,7 +925,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   .footer-grid{grid-template-columns:1.4fr 1fr 1fr 1fr;gap:14px}
   footer{padding:28px 20px 16px}
   .footer-col a{font-size:.74rem}
-  .footer-col h4{font-size:.6rem;margin-bottom:8px}
+  .footer-col h4{font-size:.78rem;margin-bottom:8px}
   .footer-brand p{font-size:.74rem}
 
   .frow{grid-template-columns:1fr}
@@ -1013,7 +1013,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   .modal .fg textarea{height:auto;min-height:60px}
   .modal .frow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
   .modal .frow.full{grid-template-columns:1fr}
-  .modal .ferr{font-size:.65rem}
+  .modal .ferr{font-size:.72rem}
   .modal .info-note{padding:6px 9px;font-size:.7rem;margin:6px 0}
   .modal .acc-opt{margin-top:8px}
   .modal .acc-hdr{padding:8px 11px}

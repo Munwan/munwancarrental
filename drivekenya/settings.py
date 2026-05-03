@@ -165,12 +165,12 @@ MPESA_CONSUMER_KEY    = os.environ.get('MPESA_CONSUMER_KEY',    'REPLACE_ME')
 MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', 'REPLACE_ME')
 MPESA_SHORTCODE       = os.environ.get('MPESA_SHORTCODE',       '174379')
 MPESA_PASSKEY         = os.environ.get('MPESA_PASSKEY',         'REPLACE_ME')
-MPESA_CALLBACK_URL    = os.environ.get('MPESA_CALLBACK_URL',    'https://yourdomain.com/payments/mpesa/callback/')
+MPESA_CALLBACK_URL    = os.environ.get('MPESA_CALLBACK_URL',    'https://munwancarrental.com/payments/mpesa/callback/')
 MPESA_ENV             = os.environ.get('MPESA_ENV',             'sandbox')
 
 # ── Site config ───────────────────────────────────────────────────────────────
 WHATSAPP_NUMBER = os.environ.get('WHATSAPP_NUMBER', '254727745907')
-SITE_URL        = os.environ.get('SITE_URL', 'https://yourdomain.com')
+SITE_URL        = os.environ.get('SITE_URL', 'https://munwancarrental.com')
 
 # ── Rate limiting ─────────────────────────────────────────────────────────────
 RATE_LIMIT_BOOKING = 10

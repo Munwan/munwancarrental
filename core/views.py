@@ -529,7 +529,7 @@ def paystack_webhook(request):
 
     Set the webhook URL in Paystack dashboard:
       https://dashboard.paystack.com/#/settings/developers  → Webhook URL
-      → https://yourdomain.com/payments/paystack/webhook/
+      → https://munwancarrental.com/payments/paystack/webhook/
     """
     import hashlib
     import hmac
@@ -945,10 +945,10 @@ def _location_context(location_key):
             'h1': 'Car Rental in Nairobi, Kenya',
             'tagline': 'Self-drive and chauffeur services across Nairobi — from the CBD to Westlands, Karen and Kilimani.',
             'title': 'Car Rental in Nairobi Kenya | Self Drive & Chauffeur from $28/day | Munwan Car Rental',
-            'meta_description': 'Affordable car rental in Nairobi, Kenya from $28/day. Self-drive or with driver. Free delivery to CBD, Westlands, Karen, Kilimani and JKIA airport. Pay by M-Pesa or card.',
+            'meta_description': 'Premium car rental in Nairobi, Kenya from $28/day. Self-drive or with driver. Free delivery to CBD, Westlands, Karen, Kilimani and JKIA airport. Pay by M-Pesa or card.',
             'url_name': 'location_nairobi',
             'hero_icon': '🏙️',
-            'intro_p1': 'Nairobi is the capital of Kenya and the gateway to East Africa\'s best safari experiences. Whether you\'re a business traveller attending a conference in the CBD, a tourist arriving at Jomo Kenyatta International Airport, or a Nairobi resident heading upcountry, <strong>Munwan Car Rental</strong> offers affordable car rental in Nairobi with free delivery across the city.',
+            'intro_p1': 'Nairobi is the capital of Kenya and the gateway to East Africa\'s best safari experiences. Whether you\'re a business traveller attending a conference in the CBD, a tourist arriving at Jomo Kenyatta International Airport, or a Nairobi resident heading upcountry, <strong>Munwan Car Rental</strong> offers premium car rental in Nairobi with free delivery across the city.',
             'intro_p2': 'Our fleet ranges from economy saloons ideal for navigating Nairobi traffic (Mazda Demio, Toyota Fielder) to rugged 4x4s for safari trips (Toyota Prado, Land Cruiser). All rentals include <strong>full insurance, GPS tracking and 24/7 support</strong>.',
             'delivery_spots': [
                 ('🏙️', 'Nairobi CBD', 'Free delivery to any office or hotel in the CBD — Kenyatta Avenue, Moi Avenue, Standard Street.'),
@@ -995,7 +995,7 @@ def _location_context(location_key):
             'h1': 'Car Rental in Mombasa, Kenya',
             'tagline': 'Coastal car hire — from Mombasa Airport to Diani Beach and Nyali.',
             'title': 'Car Rental in Mombasa Kenya | Airport Pickup | Diani Beach | Munwan Car Rental',
-            'meta_description': 'Affordable car rental in Mombasa, Kenya. Free pickup at Moi International Airport. Drive to Diani Beach, Nyali, Watamu or Malindi. Self-drive or with driver. M-Pesa, card & PayPal accepted.',
+            'meta_description': 'Premium car rental in Mombasa, Kenya. Free pickup at Moi International Airport. Drive to Diani Beach, Nyali, Watamu or Malindi. Self-drive or with driver. M-Pesa, card & PayPal accepted.',
             'url_name': 'location_mombasa',
             'hero_icon': '🏖️',
             'intro_p1': 'Planning a trip to Kenya\'s stunning coastal region? <strong>Munwan Car Rental offers car rental in Mombasa</strong> with free pickup at Moi International Airport. Whether you\'re heading to the white sands of <strong>Diani Beach</strong>, the coral reefs of <strong>Watamu</strong>, or the historic Old Town of Mombasa itself, we have the right vehicle.',
@@ -1139,7 +1139,7 @@ def blog_post(request, slug):
 
 def robots_txt(request):
     """robots.txt — tells search engines what to index."""
-    site_url = getattr(settings, 'SITE_URL', 'https://yourdomain.com').rstrip('/')
+    site_url = getattr(settings, 'SITE_URL', 'https://munwancarrental.com').rstrip('/')
     content = (
         "User-agent: *\n"
         "Allow: /\n"

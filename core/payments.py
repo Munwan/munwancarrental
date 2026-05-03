@@ -136,7 +136,7 @@ class PaystackBackend:
                 'amount':    amount_kes,
                 'currency':  'KES',
                 'reference': booking.reference,
-                'callback_url': getattr(settings, 'SITE_URL', 'https://yourdomain.com').rstrip('/')
+                'callback_url': getattr(settings, 'SITE_URL', 'https://munwancarrental.com').rstrip('/')
                                 + '/payments/paystack/callback/',
                 'metadata': {
                     'booking_id':  booking.id,
