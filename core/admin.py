@@ -9,15 +9,16 @@ class VehicleAdmin(admin.ModelAdmin):
     Lower number = appears earlier on the homepage fleet section.
     Tip: skip numbers (use 10, 20, 30...) to leave room for inserts later.
     """
-    list_display  = ['order', 'name', 'category', 'badge',
-                     'price_usd', 'price_eur', 'price_kes', 'is_available']
-    list_editable = ['order', 'is_available']
-    list_filter   = ['category', 'is_available']
-    search_fields = ['name']
+    list_display       = ['order', 'name', 'category', 'badge',
+                          'price_usd', 'price_eur', 'price_kes', 'is_available']
+    list_display_links = ['name']  # required by Django since 'order' is first AND editable
+    list_editable      = ['order', 'is_available']
+    list_filter        = ['category', 'is_available']
+    search_fields      = ['name']
     prepopulated_fields = {'slug': ('name',)}
-    ordering      = ['order', 'name']
-    list_per_page = 50          # show all 28 vehicles on a single page
-    actions       = ['renumber_by_tens', 'renumber_sequential']
+    ordering           = ['order', 'name']
+    list_per_page      = 50          # show all 28 vehicles on a single page
+    actions            = ['renumber_by_tens', 'renumber_sequential']
 
     @admin.action(description='🔢 Renumber spaced (10, 20, 30…) — keeps room for inserts')
     def renumber_by_tens(self, request, queryset):
