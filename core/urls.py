@@ -43,6 +43,7 @@ urlpatterns = [
     path('auth/login/',         views.auth_login,        name='login'),
     path('auth/logout/',        views.auth_logout,       name='logout'),
     path('auth/register/',      views.auth_register,     name='register'),
+    path('auth/verify-email/',  views.verify_email,      name='verify_email'),
 
     # ── Dashboard ─────────────────────────────────────────────
     path('dashboard/',          views.dashboard,         name='dashboard'),

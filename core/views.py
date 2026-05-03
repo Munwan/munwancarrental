@@ -15,13 +15,15 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 
-from .emails import send_booking_confirmation, send_support_notification
+import secrets
+
+from .emails import send_booking_confirmation, send_support_notification, send_otp_email
 from .forms import (
     BookingStep1Form, BookingPaymentForm,
     CheckBookingForm, LoginForm, RegisterForm, SupportForm,
 )
 from .middleware import get_client_ip
-from .models import Booking, PaymentLog, Review, SupportTicket, Vehicle
+from .models import Booking, EmailOTP, PaymentLog, Review, SupportTicket, Vehicle
 from .payments import PaystackBackend, MpesaBackend, PayPalBackend
 
 logger = logging.getLogger('drivekenya.views')
@@ -201,6 +203,9 @@ def booking_submit(request):
             logger.warning('Booking-creation admin email thread failed: %s', e)
 
         # Optional account creation
+        # IMPORTANT: New accounts are created as inactive and require email
+        # OTP verification before login. The booking itself proceeds normally
+        # — the user just has a "verify email" pending action on their dashboard.
         account_created     = False
         account_email_taken = False
         if cd.get('create_account') and cd.get('password'):
@@ -224,11 +229,19 @@ def booking_submit(request):
                         first_name = cd['first_name'],
                         last_name  = cd['last_name'],
                     )
+                    new_user.is_active = False  # cannot log in until OTP verified
+                    new_user.save(update_fields=['is_active'])
                     booking.user = new_user
                     booking.save(update_fields=['user'])
-                    # Explicit backend — required when multiple AUTHENTICATION_BACKENDS
-                    # are configured. Without it, Django raises ValueError.
-                    login(request, new_user, backend='core.auth_backends.EmailOrUsernameBackend')
+
+                    # Send OTP — non-blocking failure (booking still succeeds)
+                    try:
+                        _create_and_send_otp(new_user)
+                        # Stash pk so /auth/verify-email/ knows who's verifying
+                        request.session['otp_user_pk'] = new_user.pk
+                    except Exception as otp_exc:
+                        logger.warning('OTP send failed for new account %s: %s', cd['email'], otp_exc)
+
                     account_created = True
                 except Exception as exc:
                     logger.warning('Account creation failed: %s', exc)
@@ -689,18 +702,129 @@ def auth_logout(request):
 
 
 def auth_register(request):
+    """
+    Step 1 of new-account creation:
+    - Validates the form
+    - Creates the user with is_active=False (cannot log in until verified)
+    - Generates a 6-digit OTP, emails it
+    - Redirects to /auth/verify-email/ where the user enters the code
+    """
     if request.user.is_authenticated:
         return redirect('dashboard')
     form = RegisterForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        user = form.save()
-        # Explicit backend — required when AUTHENTICATION_BACKENDS has > 1 entry.
-        # Without this, Django raises ValueError at this point even though the
-        # user has been saved successfully.
-        login(request, user, backend='core.auth_backends.EmailOrUsernameBackend')
-        messages.success(request, f'Welcome, {user.first_name}! Your account is ready.')
-        return redirect('dashboard')
+        user = form.save(commit=False)
+        user.is_active = False  # cannot log in until OTP verified
+        user.save()
+        if hasattr(form, 'save_m2m'):
+            try:
+                form.save_m2m()
+            except Exception:
+                pass
+        _create_and_send_otp(user)
+        # Stash the user pk in session so the verify page knows who's verifying
+        request.session['otp_user_pk'] = user.pk
+        messages.info(request, f'We just emailed a 6-digit code to {user.email}. Enter it below to finish creating your account.')
+        return redirect('verify_email')
     return render(request, 'core/auth/register.html', {'form': form})
+
+
+# ─────────────────────────────────────────────────────────────
+#  EMAIL OTP HELPERS
+# ─────────────────────────────────────────────────────────────
+from datetime import timedelta
+
+
+OTP_EXPIRY_MINUTES = 15
+OTP_MAX_ATTEMPTS = 5
+OTP_RESEND_COOLDOWN_SECONDS = 60
+
+
+def _generate_otp_code() -> str:
+    """Cryptographically random 6-digit numeric code."""
+    return f'{secrets.randbelow(1_000_000):06d}'
+
+
+def _create_and_send_otp(user):
+    """
+    Invalidate any prior unverified OTPs for this email, create a fresh one,
+    and email it to the user.
+    """
+    EmailOTP.objects.filter(email__iexact=user.email, verified_at__isnull=True).delete()
+    code = _generate_otp_code()
+    expires_at = timezone.now() + timedelta(minutes=OTP_EXPIRY_MINUTES)
+    otp = EmailOTP.objects.create(
+        email=user.email, code=code, user=user, expires_at=expires_at,
+    )
+    send_otp_email(to_email=user.email, code=code, first_name=user.first_name or '')
+    return otp
+
+
+def verify_email(request):
+    """
+    Step 2 of new-account creation: user enters the OTP they received by email.
+    On success: activates the user, logs them in, redirects to dashboard.
+    On failure: logs an attempt; after 5 wrong codes the OTP is invalidated.
+    """
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    user_pk = request.session.get('otp_user_pk')
+    if not user_pk:
+        messages.error(request, 'No verification in progress. Please register again.')
+        return redirect('register')
+
+    try:
+        from django.contrib.auth.models import User
+        user = User.objects.get(pk=user_pk, is_active=False)
+    except Exception:
+        messages.error(request, 'Verification expired. Please register again.')
+        return redirect('register')
+
+    # Latest unverified OTP for this user's email
+    otp = EmailOTP.objects.filter(
+        email__iexact=user.email, verified_at__isnull=True,
+    ).order_by('-created_at').first()
+
+    if request.method == 'POST':
+        action = request.POST.get('action', 'verify')
+        if action == 'resend':
+            # Cooldown check — prevent abuse
+            if otp and otp.created_at and (timezone.now() - otp.created_at).total_seconds() < OTP_RESEND_COOLDOWN_SECONDS:
+                wait = OTP_RESEND_COOLDOWN_SECONDS - int((timezone.now() - otp.created_at).total_seconds())
+                messages.warning(request, f'Please wait {wait}s before requesting a new code.')
+            else:
+                _create_and_send_otp(user)
+                messages.success(request, 'A new code has been sent to your email.')
+            return redirect('verify_email')
+
+        # Default: verify the entered code
+        entered = (request.POST.get('code') or '').strip()
+        if not otp:
+            messages.error(request, 'No active code. Click "Resend code".')
+        elif otp.is_expired():
+            messages.error(request, 'This code has expired. Click "Resend code" to get a fresh one.')
+        elif otp.attempts >= OTP_MAX_ATTEMPTS:
+            messages.error(request, 'Too many wrong attempts. Click "Resend code" to get a fresh one.')
+        elif entered == otp.code:
+            otp.verified_at = timezone.now()
+            otp.save(update_fields=['verified_at'])
+            user.is_active = True
+            user.save(update_fields=['is_active'])
+            login(request, user, backend='core.auth_backends.EmailOrUsernameBackend')
+            request.session.pop('otp_user_pk', None)
+            messages.success(request, f'Welcome aboard, {user.first_name}! Your email is verified.')
+            return redirect('dashboard')
+        else:
+            otp.attempts += 1
+            otp.save(update_fields=['attempts'])
+            remaining = max(0, OTP_MAX_ATTEMPTS - otp.attempts)
+            messages.error(request, f'Incorrect code. {remaining} attempt(s) left before this code is invalidated.')
+
+    return render(request, 'core/auth/verify_email.html', {
+        'email': user.email,
+        'expires_minutes': OTP_EXPIRY_MINUTES,
+    })
 
 
 # ─────────────────────────────────────────────────────────────

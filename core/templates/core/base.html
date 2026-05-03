@@ -5,6 +5,21 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
+  {% if not debug %}
+  <!-- ═══ GOOGLE ANALYTICS 4 ═══ -->
+  <!-- Replace G-XXXXXXXXXX with your actual Measurement ID from analytics.google.com -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-3Z32E16397"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-3Z32E16397', {
+      'anonymize_ip': true,
+      'cookie_flags': 'SameSite=None;Secure'
+    });
+  </script>
+  {% endif %}
+
   <!-- ═══ PERFORMANCE: PRELOADS ═══ -->
   <!-- Hero is the LCP element on home page — preload to drop mobile LCP from 7s to ~2s -->
   <link rel="preload" as="image" href="{% static 'images/hero-bg.jpg' %}" fetchpriority="high"/>
@@ -12,7 +27,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 
-  
   <!-- ═══ FAVICON ═══ -->
   <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}"/>
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}"/>

@@ -517,3 +517,54 @@ def send_support_notification(ticket):
     except Exception as exc:
         logger.warning('send_support_notification failed: %s', exc)
         return False
+
+
+# ════════════════════════════════════════════════════════════════════
+#  Email OTP — sent during registration to verify the user's email
+# ════════════════════════════════════════════════════════════════════
+
+def send_otp_email(*, to_email: str, code: str, first_name: str = '') -> bool:
+    """
+    Sends a 6-digit verification code to the user during account registration.
+    The OTP itself is the only thing the email needs to surface — keep it
+    visually prominent and the rest minimal.
+    """
+    greeting = f'Hi {first_name},' if first_name else 'Hi,'
+    body_html = f"""
+      <h2 style="font-family:'Helvetica Neue',Arial,sans-serif;color:#0A0F1E;font-size:20px;margin:0 0 16px;">
+        {greeting}
+      </h2>
+      <p style="font-family:'Helvetica Neue',Arial,sans-serif;color:#3A4259;font-size:15px;line-height:1.6;margin:0 0 24px;">
+        Thank you for creating an account at Munwan Car Rental. To finish setting up your account, enter this 6-digit code on the verification page:
+      </p>
+      <div style="text-align:center;margin:32px 0;">
+        <div style="display:inline-block;padding:18px 36px;background:#F4F6FA;border:2px dashed #1565FF;border-radius:12px;
+                    font-family:'Courier New',monospace;font-size:36px;font-weight:800;letter-spacing:8px;color:#0A0F1E;">
+          {code}
+        </div>
+      </div>
+      <p style="font-family:'Helvetica Neue',Arial,sans-serif;color:#3A4259;font-size:14px;line-height:1.6;margin:0 0 8px;">
+        This code expires in <strong>15 minutes</strong>.
+      </p>
+      <p style="font-family:'Helvetica Neue',Arial,sans-serif;color:#7A8298;font-size:13px;line-height:1.6;margin:24px 0 0;">
+        If you didn't request this code, you can safely ignore this email — your address will NOT be added to our system.
+      </p>
+    """
+    text_body = (
+        f'{greeting}\n\n'
+        f'Your Munwan Car Rental verification code: {code}\n\n'
+        f'Enter this code on the verification page to complete your account setup.\n'
+        f'This code expires in 15 minutes.\n\n'
+        f"If you didn't request this, please ignore this email.\n"
+    )
+    try:
+        return _send_html(
+            subject=f'Your Munwan verification code: {code}',
+            to=to_email,
+            html_body=body_html,
+            text_body=text_body,
+            preheader=f'Your verification code is {code}. It expires in 15 minutes.',
+        )
+    except Exception as exc:
+        logger.warning('send_otp_email failed for %s: %s', to_email, exc)
+        return False

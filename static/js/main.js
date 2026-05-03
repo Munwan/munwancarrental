@@ -49,14 +49,19 @@ document.addEventListener('DOMContentLoaded', function () {
       tab.classList.add('active');
       openBookingModal();
       const sel = document.getElementById('b_hire_type');
-      if (sel) { sel.value = tab.dataset.type || 'normal'; updatePricingPreview(); }
+      if (sel) {
+        sel.value = tab.dataset.type || 'normal';
+        if (typeof onHireTypeChange === 'function') onHireTypeChange();
+        else updatePricingPreview();
+      }
     });
   });
 
-  ['b_pickup_date','b_return_date','b_with_driver','b_hire_type','b_driver_option'].forEach(id => {
+  ['b_pickup_date','b_return_date','b_with_driver','b_driver_option'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', updatePricingPreview);
   });
+  // b_hire_type uses onHireTypeChange directly (set as inline onchange in template)
 
   const qsPick = document.getElementById('qs_pickup');
   if (qsPick) qsPick.addEventListener('change', () => {
@@ -334,16 +339,62 @@ function closeBookingModal() {
 // Driver choice is now a dedicated select field next to Hire Type.
 // The hidden checkbox #b_with_driver is kept in sync so the existing
 // form submit + pricing preview logic continues to work unchanged.
-function onDriverOptionChange() {
-  const choice   = val('b_driver_option');   // 'self' or 'driver'
+// ── Driver checkbox toggled on/off ─────────────────────────
+// New behaviour: driver is now a checkbox under Optional Add-ons.
+// We keep the legacy hidden b_driver_option in sync ('self' / 'driver')
+// since the server-side code reads either field. Cyan styling on the
+// .addon-checkbox label is driven by :has(input:checked) in CSS.
+function onDriverToggle() {
   const checkbox = $id('b_with_driver');
-  if (checkbox) checkbox.checked = (choice === 'driver');
+  const hidden = $id('b_driver_option');
+  if (hidden) hidden.value = (checkbox && checkbox.checked) ? 'driver' : 'self';
   updatePricingPreview();
 }
 
+// Legacy alias kept so any older inline handlers still work
+function onDriverOptionChange() { onDriverToggle(); }
+
+// ── Hire type changed — apply Safari Package vehicle filter ───────
+// Safari Package may only be hired with safari-ready vehicles.
+// We hide all non-safari options when 'safari' is picked, and restore
+// them when any other hire type is picked. If the currently-selected
+// vehicle is not safari-ready and the user picks Safari, clear it.
+function onHireTypeChange() {
+  const hire = val('b_hire_type');
+  const veh  = $id('b_vehicle');
+  if (!veh) { updatePricingPreview(); return; }
+
+  const wantSafariOnly = (hire === 'safari');
+  let clearedSelection = false;
+
+  Array.from(veh.options).forEach(opt => {
+    if (!opt.value) { opt.hidden = false; return; }   // keep "— Select Vehicle —"
+    const cat = opt.dataset.category || '';
+    const isSafari = (cat === 'safari');
+    opt.hidden = wantSafariOnly && !isSafari;
+    if (opt.selected && opt.hidden) {
+      veh.value = '';                                  // unselect hidden choice
+      clearedSelection = true;
+    }
+  });
+
+  if (clearedSelection) {
+    const errEl = $id('err_vehicle');
+    if (errEl) errEl.textContent = 'Safari Package requires a Safari-Ready vehicle. Please pick one from the list.';
+  } else {
+    const errEl = $id('err_vehicle');
+    if (errEl) errEl.textContent = '';
+  }
+  updatePricingPreview();
+}
+
+// ── Pickup location toggle: shows hotel OR custom address field ───
 function toggleHotelField() {
   const loc = val('b_pickup_location');
-  const w = $id('hotelFieldWrap'); if (w) w.style.display = loc === 'HOTEL' ? '' : 'none';
+  const hotel  = $id('hotelFieldWrap');
+  const custom = $id('customPickupWrap');
+  if (hotel)  hotel.style.display  = (loc === 'HOTEL') ? '' : 'none';
+  if (custom) custom.style.display = (loc === 'other') ? '' : 'none';
 }
 
 function toggleAccSection() {
@@ -462,8 +513,33 @@ async function submitStep1() {
       showFieldError(f, 'This field is required.'); hasError = true;
     }
   });
+
+  // ── Email must contain "@" and a "." after it ────────────
+  // Lightweight check that catches the common "missed the @" mistake without
+  // being too strict (we don't want to reject valid edge-case domains).
+  if (fields.email && fields.email.trim()) {
+    const e = fields.email.trim();
+    if (!e.includes('@') || e.indexOf('@') === e.length - 1 || !e.includes('.')) {
+      showFieldError('email', 'Please enter a valid email address (must include @).');
+      hasError = true;
+    }
+  }
+
   if (fields.pickup_location==='HOTEL' && !fields.hotel_address.trim()) {
     showFieldError('hotel_address','Hotel address required.'); hasError=true;
+  }
+  // Custom pickup location requires the user to type their address
+  if (fields.pickup_location==='other') {
+    fields.custom_pickup = val('b_custom_pickup');
+    if (!fields.custom_pickup || !fields.custom_pickup.trim()) {
+      showFieldError('custom_pickup', 'Please enter your pick-up address.');
+      hasError = true;
+    } else {
+      // The server expects the chosen pickup_location code OR a free-text
+      // address in hotel_address. Reuse hotel_address to carry the custom
+      // address — server treats it as delivery instructions either way.
+      fields.hotel_address = fields.custom_pickup;
+    }
   }
 
   // ── Minimum 2-day rental duration ────────────────────────

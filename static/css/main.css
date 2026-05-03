@@ -359,30 +359,54 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .req{color:var(--danger)}
 
 /* Add-on checkbox (baby seat) — sits inline in a form-group */
+/* ── Optional add-on checkboxes (driver, baby seat) ───────────
+   Three visual states must be unambiguous:
+   1. Unchecked + idle     → white background, gray border, dark text
+   2. Unchecked + hovering → very light blue tint, blue border (subtle hint)
+   3. Checked              → light blue background, blue border, blue text
+   The earlier bug: hover and :has(:checked) used overlapping rules so
+   it looked checked-while-hovering-unchecked. Fixed by giving each
+   state its own non-overlapping rule and resetting on hover when checked. */
 .addon-checkbox{
   display:flex;align-items:center;gap:10px;
-  padding:7px 11px;border:1.5px solid var(--border);border-radius:9px;
-  background:var(--white);cursor:pointer;
-  transition:border-color .2s,background .2s;
-  font-size:.84rem;font-weight:500;color:var(--ink);
-  min-height:38px;line-height:1
+  padding:7px 11px;
+  border:1.5px solid var(--border);
+  border-radius:9px;
+  background:var(--white);
+  color:var(--ink);
+  cursor:pointer;
+  transition:border-color .15s, background .15s, color .15s;
+  font-size:.84rem;font-weight:500;
+  min-height:38px;line-height:1;
+  margin-bottom:8px;
 }
-.addon-checkbox:hover{border-color:var(--blue-light);background:rgba(21,101,255,.03)}
 .addon-checkbox input[type="checkbox"]{
   width:18px;height:18px;flex-shrink:0;
   accent-color:var(--blue);cursor:pointer;margin:0
 }
-.addon-checkbox input[type="checkbox"]:checked + .addon-checkbox-text{color:var(--blue)}
 .addon-checkbox-text{
-  display:flex;align-items:center;gap:6px;flex-wrap:wrap;line-height:1.2
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;line-height:1.2;
+  color:var(--ink);   /* explicit: text is dark when not selected */
 }
 .addon-price{
   background:rgba(21,101,255,.1);color:var(--blue);
   padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700;white-space:nowrap
 }
-.addon-checkbox:has(input:checked){
-  border-color:var(--blue);background:rgba(21,101,255,.05)
+
+/* HOVER on UNCHECKED — only a subtle border hint, NOT background fill */
+.addon-checkbox:hover:not(:has(input:checked)){
+  border-color:var(--blue-light);
 }
+
+/* CHECKED state — clearly distinct from hover */
+.addon-checkbox:has(input:checked){
+  border-color:var(--blue);
+  background:rgba(21,101,255,.08);
+}
+.addon-checkbox:has(input:checked) .addon-checkbox-text{
+  color:var(--blue);font-weight:600;
+}
+
 
 .info-note{display:flex;align-items:flex-start;gap:8px;background:rgba(26,107,245,.06);
   border:1px solid rgba(26,107,245,.2);border-radius:7px;padding:8px 11px;

@@ -1,0 +1,54 @@
+{% extends 'core/base.html' %}
+{% block title %}Verify Your Email – Munwan Car Rental{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <a href="{% url 'home' %}" class="logo" style="display:block;margin-bottom:28px">Munwan<span>CarRental</span></a>
+    <h1 class="auth-title">Verify your email</h1>
+    <p class="auth-sub">
+      We sent a 6-digit code to <strong>{{ email }}</strong>.<br/>
+      Enter it below to activate your account. The code expires in {{ expires_minutes }} minutes.
+    </p>
+
+    {% if messages %}
+      {% for m in messages %}
+        <div class="ferr" style="background:rgba(21,101,255,.06);border:1px solid rgba(21,101,255,.2);
+                                 padding:10px 14px;border-radius:8px;margin-bottom:14px;color:var(--ink);
+                                 font-size:.85rem;">
+          {{ m }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" autocomplete="off">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="verify"/>
+
+      <div class="fg" style="margin-bottom:18px">
+        <label for="otp_code">Verification Code</label>
+        <input type="text" name="code" id="otp_code"
+               inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+               placeholder="123456"
+               style="font-family:'Courier New',monospace;font-size:1.4rem;letter-spacing:8px;text-align:center;font-weight:700"
+               required autofocus/>
+      </div>
+
+      <button type="submit" class="btn-primary" style="width:100%;margin-bottom:12px">
+        Verify &amp; Continue
+      </button>
+    </form>
+
+    <form method="post" autocomplete="off" style="margin-top:8px">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="resend"/>
+      <button type="submit" class="btn-secondary" style="width:100%">
+        Resend Code
+      </button>
+    </form>
+
+    <p class="auth-foot" style="margin-top:18px;font-size:.85rem;text-align:center">
+      Wrong email? <a href="{% url 'register' %}">Start over</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

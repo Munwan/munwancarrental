@@ -91,6 +91,7 @@ class Booking(models.Model):
         ('CBD',   'Nairobi CBD'),
         ('MBA',   'Mombasa Airport (MBA)'),
         ('HOTEL', 'Hotel Delivery'),
+        ('other', 'Other (custom address)'),
     ]
     PAYMENT_METHOD_CHOICES = [
         ('stripe', 'Card (Stripe)'),
@@ -300,3 +301,34 @@ class RateLimitEntry(models.Model):
 
     def __str__(self):
         return f'{self.ip_address} – {self.action} – {self.count}'
+
+
+# ─────────────────────────────────────────────────────────────
+#  EMAIL OTP — short-lived single-use code for new account verification
+# ─────────────────────────────────────────────────────────────
+class EmailOTP(models.Model):
+    """
+    Stores a 6-digit code emailed to the user during registration.
+    One unverified row per email at any time (newer requests replace the older).
+    Codes expire after 15 minutes; max 5 wrong attempts then it's invalidated.
+    """
+    email        = models.EmailField(db_index=True)
+    code         = models.CharField(max_length=6)
+    user         = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True, blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    expires_at   = models.DateTimeField()
+    attempts     = models.PositiveSmallIntegerField(default=0)
+    verified_at  = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'OTP for {self.email} (verified={self.verified_at is not None})'
+
+    def is_expired(self):
+        from django.utils import timezone as tz
+        return tz.now() >= self.expires_at
+
+    def is_used(self):
+        return self.verified_at is not None

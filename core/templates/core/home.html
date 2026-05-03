@@ -219,40 +219,45 @@
         </div>
         <div class="frow">
           <div class="fg"><label for="b_hire_type">Hire Type <span class="req">*</span></label>
-            <select id="b_hire_type" onchange="updatePricingPreview()">
+            <select id="b_hire_type" onchange="onHireTypeChange()">
               <option value="normal">Normal Hire</option>
               <option value="long">Long-Term Lease</option>
               <option value="corporate">Corporate Hire</option>
               <option value="safari">Safari Package</option>
             </select>
           </div>
-          <div class="fg"><label for="b_driver_option">Driver <span class="req">*</span></label>
-            <select id="b_driver_option" onchange="onDriverOptionChange()">
-              <option value="self">Self Drive</option>
-              <option value="driver">With Driver (+$<span id="driverFeeInline">0</span>/day)</option>
-            </select>
-            <!-- Hidden checkbox still posted to the server -->
-            <input type="checkbox" id="b_with_driver" style="display:none"/>
-          </div>
-        </div>
-        <div class="frow">
           <div class="fg"><label for="b_vehicle">Vehicle <span class="req">*</span></label>
             <select id="b_vehicle" onchange="updatePricingPreview()">
               <option value="">— Select Vehicle —</option>
               {% for v in vehicles %}
-              <option value="{{ v.id }}" data-usd="{{ v.price_usd }}" data-eur="{{ v.price_eur }}" data-kes="{{ v.price_kes }}" data-driver="{{ v.driver_fee_usd }}">{{ v.name }} — ${{ v.price_usd }}/day</option>
+              <option value="{{ v.id }}"
+                      data-usd="{{ v.price_usd }}"
+                      data-eur="{{ v.price_eur }}"
+                      data-kes="{{ v.price_kes }}"
+                      data-driver="{{ v.driver_fee_usd }}"
+                      data-category="{{ v.category }}">{{ v.name }} — ${{ v.price_usd }}/day</option>
               {% endfor %}
             </select>
             <div class="ferr" id="err_vehicle"></div>
           </div>
+        </div>
+        <div class="frow full">
           <div class="fg">
             <span class="form-group-heading">Optional Add-ons</span>
-            <label class="addon-checkbox">
+            <label class="addon-checkbox" id="addonDriverLabel">
+              <input type="checkbox" id="b_with_driver" onchange="onDriverToggle()"/>
+              <span class="addon-checkbox-text">
+                🚖 With Driver <span class="addon-price">+$<span id="driverFeeInline">0</span>/day</span>
+              </span>
+            </label>
+            <label class="addon-checkbox" id="addonBabySeatLabel">
               <input type="checkbox" id="b_baby_seat" onchange="updatePricingPreview()"/>
               <span class="addon-checkbox-text">
                 👶 Baby Seat <span class="addon-price">+$10 / trip</span>
               </span>
             </label>
+            <!-- Hidden compatibility field — driver_option always derived from b_with_driver checkbox -->
+            <input type="hidden" id="b_driver_option" value="self"/>
           </div>
         </div>
         <div class="frow full">
@@ -260,12 +265,16 @@
             <select id="b_pickup_location" onchange="toggleHotelField()">
               <option value="">— Select Location —</option>
               {% for code, label in pickup_choices %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+              <option value="other">📍 Other (custom location)</option>
             </select>
             <div class="ferr" id="err_pickup_location"></div>
           </div>
         </div>
         <div class="frow full" id="hotelFieldWrap" style="display:none">
           <div class="fg"><label for="b_hotel_address">Hotel / Delivery Address <span class="req">*</span></label><input type="text" id="b_hotel_address" placeholder="Hotel name and full address"/><div class="ferr" id="err_hotel_address"></div></div>
+        </div>
+        <div class="frow full" id="customPickupWrap" style="display:none">
+          <div class="fg"><label for="b_custom_pickup">Your Pick-up Address <span class="req">*</span></label><input type="text" id="b_custom_pickup" placeholder="e.g. KCB Bank, Thika Road"/><div class="ferr" id="err_custom_pickup"></div></div>
         </div>
         <div class="frow full"><div class="fg"><label for="b_dropoff">Drop-off Location (if different)</label><input type="text" id="b_dropoff" placeholder="Leave blank if same"/></div></div>
         <div class="frow">
@@ -470,7 +479,8 @@
       <ul>
         <li><a href="tel:+254727745907">📞 +254 727 745 907</a></li>
         <li><a href="https://wa.me/254727745907" target="_blank" rel="noopener">💬 WhatsApp Us</a></li>
-        <li><a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=info@munwancarrental.com" target="_blank" rel="noopener">✉️ info@munwancarrental.com</a></li>
+        <li><a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=info@munwancarrental.com" target="_blank" rel="noopener">info@munwancarrental.com</a></li>
+        <li><a href="https://www.instagram.com/munwan_carrental/" target="_blank" rel="noopener">📸 @munwan_carrental</a></li>
         <li><a href="#">📍 Nairobi</a></li>
       </ul>
     </div>
