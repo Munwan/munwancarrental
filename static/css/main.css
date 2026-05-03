@@ -93,7 +93,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:cen
 /* ── HERO ─────────────────────────────────────────────── */
 .hero{min-height:80vh;
   background:linear-gradient(160deg,rgba(5,8,20,.88) 0%,rgba(10,20,50,.65) 50%,rgba(5,8,20,.82) 100%),
-    url('/static/images/hero-bg.jpg') center/cover no-repeat fixed;
+    url('../images/hero-bg.jpg') center/cover no-repeat fixed;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:96px 56px 64px;position:relative;overflow:hidden;text-align:center}
 .hero::after{content:'';position:absolute;inset:0;
