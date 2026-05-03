@@ -1,5 +1,5 @@
 """
-Payment backends for DriveKenya.
+Payment backends for Munwan Car Rental.
 
   PaystackBackend  – Card / Bank / Mobile Money via Paystack Inline popup
                      (no card fields on our page — PCI-compliant)
@@ -180,13 +180,15 @@ class PayPalBackend:
     BASE_URLS = {
         'sandbox':    'https://api-m.sandbox.paypal.com',
         'production': 'https://api-m.paypal.com',
+        'live':       'https://api-m.paypal.com',  # alias — PayPal's dashboard says "live"
     }
 
     @classmethod
     def _base_url(cls):
-        return cls.BASE_URLS.get(
-            getattr(settings, 'PAYPAL_MODE', 'sandbox'),
-            cls.BASE_URLS['sandbox'])
+        # Accept both "production" and "live" — PayPal's dashboard says "live"
+        # while many integrations historically use "production". Either works.
+        mode = (getattr(settings, 'PAYPAL_MODE', 'sandbox') or 'sandbox').lower().strip()
+        return cls.BASE_URLS.get(mode, cls.BASE_URLS['sandbox'])
 
     @classmethod
     def _get_token(cls) -> str:
@@ -237,7 +239,7 @@ class PayPalBackend:
                 'intent': 'CAPTURE',
                 'purchase_units': [{
                     'reference_id': booking.reference,
-                    'description':  f'DriveKenya – {booking.vehicle.name}',
+                    'description':  f'Munwan Car Rental – {booking.vehicle.name}',
                     'amount': {
                         'currency_code': 'USD',
                         'value':         str(booking.total_usd),
@@ -321,7 +323,7 @@ class MpesaBackend:
                 'PhoneNumber':       phone,
                 'CallBackURL':       settings.MPESA_CALLBACK_URL,
                 'AccountReference':  booking.reference,
-                'TransactionDesc':   f'DriveKenya {booking.reference}',
+                'TransactionDesc':   f'Munwan Car Rental {booking.reference}',
             }
             resp = requests.post(
                 f'{cls._base_url()}/mpesa/stkpush/v1/processrequest',
