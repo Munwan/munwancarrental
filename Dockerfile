@@ -80,15 +80,19 @@ RUN DJANGO_SECRET_KEY=build-only-not-used \
     DATABASE_URL="" \
     python manage.py collectstatic --no-input --clear
 
-# Health check — Docker can use this to detect crashed containers
+# Health check — Docker can use this to detect crashed containers.
+# We pass the Host header so DEBUG=False doesn't reject the request as
+# DisallowedHost (which used to leak SECRET_KEY via mail_admins emails).
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -f -H "Host: munwancarrental.com" http://localhost:${PORT}/ || exit 1
 
 EXPOSE 8000
 
-# Run migrations on container start, then launch gunicorn.
-# Migrations are idempotent — safe to run on every restart.
+# Container startup: migrate, then collectstatic (in case build-time staticfiles
+# were cleared or the image was restarted with a stale layer), then gunicorn.
+# Both migrate and collectstatic are idempotent — safe to run every start.
 CMD ["sh", "-c", "python manage.py migrate --no-input && \
+     python manage.py collectstatic --no-input && \
      exec gunicorn drivekenya.wsgi \
        --bind 0.0.0.0:${PORT} \
        --workers 3 \
