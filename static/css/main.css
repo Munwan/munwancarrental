@@ -284,7 +284,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   font-size:.78rem;color:rgba(255,255,255,.62);line-height:1.55;max-width:255px;margin:0
 }
 .footer-col h4{
-  font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
   color:rgba(255,255,255,.5);margin-bottom:10px
 }
 .footer-col ul{list-style:none;display:flex;flex-direction:column;gap:6px;padding:0;margin:0}
@@ -333,7 +333,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   margin:0 auto 5px;position:relative;z-index:1;transition:all .3s}
 .step.active .step-dot{background:var(--blue);color:var(--white);box-shadow:0 0 0 4px rgba(26,107,245,.2)}
 .step.done .step-dot{background:var(--success);color:var(--white)}
-.step-lbl{font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.step-lbl{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .step.active .step-lbl{color:var(--blue)}
 .modal-body{padding:14px 22px;overflow-y:auto;flex:1}
 .form-step{display:none}
@@ -342,6 +342,11 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .frow.full{grid-template-columns:1fr}
 .fg label{display:block;font-size:.64rem;font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+/* Group heading — used where we need a label-like element that doesn't bind
+   to a specific input (e.g. "Optional Add-ons" preceding a checkbox group). */
+.form-group-heading{display:block;font-size:.78rem;font-weight:700;
+  color:var(--ink);margin-bottom:6px;letter-spacing:.02em}
+
 .fg input,.fg select,.fg textarea{width:100%;padding:7px 11px;border:1.5px solid var(--border);
   border-radius:7px;font-family:'Poppins',sans-serif;font-size:.85rem;color:var(--ink);
   background:var(--light);transition:border-color .2s,box-shadow .2s;
@@ -529,7 +534,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .pay-tab-name{font-size:.84rem;font-weight:700;color:var(--ink)}
 .pay-tab.active .pay-tab-name{color:var(--blue)}
 .pay-tab-logos{display:flex;gap:5px;flex-wrap:wrap}
-.plogo{padding:2px 7px;border-radius:4px;font-size:.62rem;font-weight:800;border:1px solid var(--border);background:var(--white)}
+.plogo{padding:2px 7px;border-radius:4px;font-size:.72rem;font-weight:800;border:1px solid var(--border);background:var(--white)}
 .plogo-visa{color:#1a1f71}.plogo-mc{color:#eb001b}.plogo-mpesa{color:#00a550;border-color:#00a550}
 .plogo-paypal{color:#003087}.plogo-fw{color:#F5A623}
 .pay-panel{animation:fadeUp .22s ease}
@@ -965,7 +970,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   .hero h1{font-size:clamp(1.7rem,7.5vw,2.3rem)}
   .hero h1 .grad{font-size:clamp(1.15rem,5.5vw,1.55rem);margin-top:4px}
   .hero-sub{font-size:.86rem;line-height:1.5;margin-top:12px}
-  .hero-eyebrow{font-size:.62rem;margin-bottom:14px}
+  .hero-eyebrow{font-size:.72rem;margin-bottom:14px}
 
   .search-wrap{padding:0 14px 28px}
   .search-card{padding:16px 14px;border-radius:var(--radius);transform:translateY(-32px);
@@ -1003,7 +1008,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   .step-dot{width:24px;height:24px;font-size:.74rem}
 
   /* Compact form fields inside booking modal — fit all 3 steps on phone */
-  .modal .fg label{font-size:.62rem;margin-bottom:3px}
+  .modal .fg label{font-size:.72rem;margin-bottom:3px}
   .modal .fg input,.modal .fg select,.modal .fg textarea{padding:6px 9px;font-size:.84rem;height:34px}
   .modal .fg textarea{height:auto;min-height:60px}
   .modal .frow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
@@ -1018,7 +1023,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   .modal .opt-badge{font-size:.6rem;padding:2px 6px}
   .modal .addon-checkbox{padding:6px 9px;min-height:34px;font-size:.78rem}
   .modal .addon-checkbox input[type="checkbox"]{width:16px;height:16px}
-  .modal .addon-price{font-size:.62rem;padding:1px 6px}
+  .modal .addon-price{font-size:.72rem;padding:1px 6px}
   .modal .price-preview{padding:9px 11px;margin:8px 0;font-size:.78rem}
   .modal .pp-row{padding:3px 0;font-size:.78rem}
   .modal .pp-total{padding:6px 0;font-size:.86rem}
@@ -1034,7 +1039,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   .pay-method-tabs{grid-template-columns:1fr 1fr;gap:6px}
   .pay-tab{padding:10px 8px;font-size:.78rem}
   .ptbadges{flex-wrap:wrap;gap:4px}
-  .ptbadge{font-size:.62rem;padding:2px 6px}
+  .ptbadge{font-size:.72rem;padding:2px 6px}
 
   .support-grid{padding:24px 12px;gap:14px}
   .support-hero{padding:76px 16px 42px}

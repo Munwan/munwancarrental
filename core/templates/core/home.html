@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}Premium Car Rental in Nairobi Kenya | Self Drive &amp; Chauffeur from $28/day | Munwan Car Rental{% endblock %}
-{% block meta_description %}Affordable car rental in Nairobi, Kenya from $28/day. Self-drive &amp; chauffeur services, free JKIA airport pickup, safari-ready 4x4s for Maasai Mara. Pay by M-Pesa, Visa, Mastercard or PayPal. Full insurance included.{% endblock %}
+{% block meta_description %}Premium car rental in Nairobi, Kenya from $28/day. Self-drive &amp; chauffeur services, free JKIA airport pickup, safari-ready 4x4s for Maasai Mara. Pay by M-Pesa, Visa, Mastercard or PayPal. Full insurance included.{% endblock %}
 {% block canonical %}https://munwancarrental.com/{% endblock %}
 
 {% block content %}
@@ -11,7 +11,7 @@
 <section class="hero">
   <div class="hero-content">
     <div class="hero-eyebrow">🌍 Trusted Car Hire Across Kenya</div>
-    <h1> Premium Car Rental in Nairobi<span class="grad">Self Drive &amp; Chauffeur Services</span></h1>
+    <h1>Premium Car Rental in Nairobi<span class="grad">Self Drive &amp; Chauffeur Services</span></h1>
     <p class="hero-sub">Hire a car anywhere in Kenya from <strong>$28/day</strong>. <strong>Free pickup at JKIA</strong> and Mombasa airports · Safari-ready 4×4s for Maasai Mara · Pay by <strong>M-Pesa, card or PayPal</strong> · Full insurance &amp; GPS included.</p>
   </div>
 </section>
@@ -27,7 +27,7 @@
     </div>
     <div class="search-grid">
       <div class="sg">
-        <label>Vehicle</label>
+        <label for="qs_vehicle">Vehicle</label>
         <select id="qs_vehicle" required>
           <option value="">— Choose Vehicle —</option>
           {% for v in vehicles %}
@@ -36,7 +36,7 @@
         </select>
       </div>
       <div class="sg">
-        <label>Pick-up Location</label>
+        <label for="qs_pickup">Pick-up Location</label>
         <select id="qs_pickup" required>
           <option value="">— Select Location —</option>
           {% for code, label in pickup_choices %}
@@ -45,13 +45,13 @@
         </select>
       </div>
       <div class="sg" id="hotelAddrWrap" style="display:none">
-        <label>Hotel Address</label>
+        <label for="qs_hotel">Hotel Address</label>
         <input type="text" id="qs_hotel" placeholder="Hotel name & address"/>
       </div>
-      <div class="sg"><label>Pick-up Date</label><input type="date" id="qs_pickup_date" required/></div>
-      <div class="sg"><label>Pick-up Time</label><input type="time" id="qs_pickup_time" required value="08:00"/></div>
-      <div class="sg"><label>Return Date</label><input type="date" id="qs_return_date" required/></div>
-      <div class="sg"><label>Return Time</label><input type="time" id="qs_return_time" required value="08:00"/></div>
+      <div class="sg"><label for="qs_pickup_date">Pick-up Date</label><input type="date" id="qs_pickup_date" required/></div>
+      <div class="sg"><label for="qs_pickup_time">Pick-up Time</label><input type="time" id="qs_pickup_time" required value="08:00"/></div>
+      <div class="sg"><label for="qs_return_date">Return Date</label><input type="date" id="qs_return_date" required/></div>
+      <div class="sg"><label for="qs_return_time">Return Time</label><input type="time" id="qs_return_time" required value="08:00"/></div>
       <div class="sg"><button class="search-btn" onclick="openBookingModalPrefilled()">🔍 Book Now</button></div>
       <div class="sg"><button class="check-btn" onclick="openCheckModal()">📋 Check Booking</button></div>
     </div>
@@ -195,20 +195,20 @@
       <div class="form-step active" id="fs1">
         <!-- ═══ Bot traps (hidden from humans, visible to bots) ═══ -->
         <div class="bot-honeypot" aria-hidden="true">
-          <label>Leave this field empty if you're human
+          <label for="b_website">Leave this field empty if you're human
             <input type="text" name="website" id="b_website" autocomplete="off" tabindex="-1"/>
           </label>
         </div>
         <input type="hidden" id="b_form_started_at" value=""/>
 
         <div class="frow">
-          <div class="fg"><label>First Name <span class="req">*</span></label><input type="text" id="b_first_name" placeholder="John" value="{{ user.first_name|default:'' }}"/><div class="ferr" id="err_first_name"></div></div>
-          <div class="fg"><label>Last Name <span class="req">*</span></label><input type="text" id="b_last_name" placeholder="Smith" value="{{ user.last_name|default:'' }}"/><div class="ferr" id="err_last_name"></div></div>
+          <div class="fg"><label for="b_first_name">First Name <span class="req">*</span></label><input type="text" id="b_first_name" placeholder="John" value="{{ user.first_name|default:'' }}"/><div class="ferr" id="err_first_name"></div></div>
+          <div class="fg"><label for="b_last_name">Last Name <span class="req">*</span></label><input type="text" id="b_last_name" placeholder="Smith" value="{{ user.last_name|default:'' }}"/><div class="ferr" id="err_last_name"></div></div>
         </div>
-        <div class="frow full"><div class="fg"><label>Email <span class="req">*</span></label><input type="email" id="b_email" placeholder="john@example.com" value="{{ user.email|default:'' }}"/><div class="ferr" id="err_email"></div></div></div>
+        <div class="frow full"><div class="fg"><label for="b_email">Email <span class="req">*</span></label><input type="email" id="b_email" placeholder="john@example.com" value="{{ user.email|default:'' }}"/><div class="ferr" id="err_email"></div></div></div>
         <div class="frow">
-          <div class="fg"><label>Phone / WhatsApp <span class="req">*</span></label><input type="tel" id="b_phone" placeholder="+254 7XX XXX XXX"/><div class="ferr" id="err_phone"></div></div>
-          <div class="fg"><label>Nationality</label>
+          <div class="fg"><label for="b_phone">Phone / WhatsApp <span class="req">*</span></label><input type="tel" id="b_phone" placeholder="+254 7XX XXX XXX"/><div class="ferr" id="err_phone"></div></div>
+          <div class="fg"><label for="b_nationality">Nationality</label>
             <select id="b_nationality">
               <option value="Kenya">Kenya (Resident)</option><option value="United Kingdom">United Kingdom</option>
               <option value="United States">United States</option><option value="Germany">Germany</option>
@@ -218,7 +218,7 @@
           </div>
         </div>
         <div class="frow">
-          <div class="fg"><label>Hire Type <span class="req">*</span></label>
+          <div class="fg"><label for="b_hire_type">Hire Type <span class="req">*</span></label>
             <select id="b_hire_type" onchange="updatePricingPreview()">
               <option value="normal">Normal Hire</option>
               <option value="long">Long-Term Lease</option>
@@ -226,7 +226,7 @@
               <option value="safari">Safari Package</option>
             </select>
           </div>
-          <div class="fg"><label>Driver <span class="req">*</span></label>
+          <div class="fg"><label for="b_driver_option">Driver <span class="req">*</span></label>
             <select id="b_driver_option" onchange="onDriverOptionChange()">
               <option value="self">Self Drive</option>
               <option value="driver">With Driver (+$<span id="driverFeeInline">0</span>/day)</option>
@@ -236,7 +236,7 @@
           </div>
         </div>
         <div class="frow">
-          <div class="fg"><label>Vehicle <span class="req">*</span></label>
+          <div class="fg"><label for="b_vehicle">Vehicle <span class="req">*</span></label>
             <select id="b_vehicle" onchange="updatePricingPreview()">
               <option value="">— Select Vehicle —</option>
               {% for v in vehicles %}
@@ -246,7 +246,7 @@
             <div class="ferr" id="err_vehicle"></div>
           </div>
           <div class="fg">
-            <label>Optional Add-ons</label>
+            <span class="form-group-heading">Optional Add-ons</span>
             <label class="addon-checkbox">
               <input type="checkbox" id="b_baby_seat" onchange="updatePricingPreview()"/>
               <span class="addon-checkbox-text">
@@ -256,7 +256,7 @@
           </div>
         </div>
         <div class="frow full">
-          <div class="fg"><label>Pick-up Location <span class="req">*</span></label>
+          <div class="fg"><label for="b_pickup_location">Pick-up Location <span class="req">*</span></label>
             <select id="b_pickup_location" onchange="toggleHotelField()">
               <option value="">— Select Location —</option>
               {% for code, label in pickup_choices %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
@@ -265,16 +265,16 @@
           </div>
         </div>
         <div class="frow full" id="hotelFieldWrap" style="display:none">
-          <div class="fg"><label>Hotel / Delivery Address <span class="req">*</span></label><input type="text" id="b_hotel_address" placeholder="Hotel name and full address"/><div class="ferr" id="err_hotel_address"></div></div>
+          <div class="fg"><label for="b_hotel_address">Hotel / Delivery Address <span class="req">*</span></label><input type="text" id="b_hotel_address" placeholder="Hotel name and full address"/><div class="ferr" id="err_hotel_address"></div></div>
         </div>
-        <div class="frow full"><div class="fg"><label>Drop-off Location (if different)</label><input type="text" id="b_dropoff" placeholder="Leave blank if same"/></div></div>
+        <div class="frow full"><div class="fg"><label for="b_dropoff">Drop-off Location (if different)</label><input type="text" id="b_dropoff" placeholder="Leave blank if same"/></div></div>
         <div class="frow">
-          <div class="fg"><label>Pick-up Date <span class="req">*</span></label><input type="date" id="b_pickup_date" required onchange="updatePricingPreview()"/><div class="ferr" id="err_pickup_date"></div></div>
-          <div class="fg"><label>Pick-up Time <span class="req">*</span></label><input type="time" id="b_pickup_time" required value="08:00"/></div>
+          <div class="fg"><label for="b_pickup_date">Pick-up Date <span class="req">*</span></label><input type="date" id="b_pickup_date" required onchange="updatePricingPreview()"/><div class="ferr" id="err_pickup_date"></div></div>
+          <div class="fg"><label for="b_pickup_time">Pick-up Time <span class="req">*</span></label><input type="time" id="b_pickup_time" required value="08:00"/></div>
         </div>
         <div class="frow">
-          <div class="fg"><label>Return Date <span class="req">*</span></label><input type="date" id="b_return_date" required onchange="updatePricingPreview()"/><div class="ferr" id="err_return_date"></div></div>
-          <div class="fg"><label>Return Time <span class="req">*</span></label><input type="time" id="b_return_time" required value="08:00"/></div>
+          <div class="fg"><label for="b_return_date">Return Date <span class="req">*</span></label><input type="date" id="b_return_date" required onchange="updatePricingPreview()"/><div class="ferr" id="err_return_date"></div></div>
+          <div class="fg"><label for="b_return_time">Return Time <span class="req">*</span></label><input type="time" id="b_return_time" required value="08:00"/></div>
         </div>
 
         <div class="price-preview" id="pricePreview" style="display:none">
@@ -295,8 +295,8 @@
           </div>
           <div class="acc-body" id="accBody">
             <div class="frow" style="margin-top:12px;margin-bottom:0">
-              <div class="fg"><label>Password</label><input type="password" id="b_password" placeholder="Min. 8 characters" autocomplete="new-password" autocorrect="off" spellcheck="false"/><div class="ferr" id="err_password"></div></div>
-              <div class="fg"><label>Confirm Password</label><input type="password" id="b_password2" placeholder="Repeat password" autocomplete="new-password" autocorrect="off" spellcheck="false"/><div class="ferr" id="err_password_confirm"></div></div>
+              <div class="fg"><label for="b_password">Password</label><input type="password" id="b_password" placeholder="Min. 8 characters" autocomplete="new-password" autocorrect="off" spellcheck="false"/><div class="ferr" id="err_password"></div></div>
+              <div class="fg"><label for="b_password2">Confirm Password</label><input type="password" id="b_password2" placeholder="Repeat password" autocomplete="new-password" autocorrect="off" spellcheck="false"/><div class="ferr" id="err_password_confirm"></div></div>
             </div>
           </div>
         </div>
@@ -365,7 +365,7 @@
           <!-- M-Pesa panel -->
           <div id="fw_mpesa_panel" style="display:none">
             <div class="frow full" style="margin-bottom:6px">
-              <div class="fg"><label>M-Pesa Phone Number <span class="req">*</span></label>
+              <div class="fg"><label for="mpesa_phone">M-Pesa Phone Number <span class="req">*</span></label>
                 <input type="tel" id="mpesa_phone" placeholder="+254 7XX XXX XXX"/>
                 <div class="ferr" id="err_mpesa"></div>
               </div>
@@ -410,7 +410,7 @@
     <div class="check-modal-header"><h3>📋 Check Your Booking</h3><button class="modal-close" onclick="closeCheckModal()">✕</button></div>
     <div class="check-modal-body">
       <div class="check-input-wrap">
-        <label>Booking Reference</label>
+        <label for="checkRefInput">Booking Reference</label>
         <input type="text" id="checkRefInput" placeholder="DK-2025-XXXXXX" oninput="this.value=this.value.toUpperCase()"/>
       </div>
       <button class="check-lookup-btn" onclick="doCheckBooking()">🔍 Look Up Booking</button>
