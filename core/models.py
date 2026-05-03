@@ -147,6 +147,8 @@ class Booking(models.Model):
     payment_method  = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, blank=True)
     payment_status  = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='unpaid')
     payment_reminder_sent = models.BooleanField(default=False, help_text='Customer has been emailed the "complete payment" reminder')
+    payment_attempt_at = models.DateTimeField(null=True, blank=True,
+                        help_text='Set when the customer initiates a payment (Paystack/PayPal/M-Pesa). Used to suppress reminders for in-progress checkouts.')
     payment_ref     = models.CharField(max_length=200, blank=True)  # Stripe/PayPal/M-Pesa txn id
 
     # Status

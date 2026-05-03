@@ -621,9 +621,28 @@ function selectFwSub(sub) {
   if (methInput) methInput.value = sub==='card' ? 'paystack_card' : 'paystack_mpesa';
 }
 
+// ── Mark checkout-in-progress so reminder cron skips this booking ─────
+// Fire-and-forget; we don't want to block the customer's payment flow if
+// this lightweight POST fails (the worst case is they get a reminder email
+// they didn't strictly need).
+function markPaymentAttempt() {
+  try {
+    const csrf = document.querySelector('meta[name="csrf-token"]');
+    fetch('/payments/attempt/', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrf ? csrf.content : '',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      credentials: 'same-origin',
+    }).catch(() => { /* ignore — non-critical */ });
+  } catch (_) { /* ignore */ }
+}
+
 // ── Paystack inline popup ─────────────────────────────────
 // Paystack Inline reference: https://paystack.com/docs/payments/accept-payments/
 function triggerPaystackCard() {
+  markPaymentAttempt();  // record checkout-in-progress
   const pk = ($id('paystackPk')||{}).value || '';
   if (!pk || pk.includes('REPLACE_ME') || !window.PaystackPop) {
     // Dev/test mode — simulate success so you can test the confirmation flow
@@ -678,6 +697,7 @@ function triggerPaystackCard() {
 async function triggerMpesaPayment() {
   const phone = val('mpesa_phone').trim();
   if (!phone) { setText('err_mpesa','Phone number required.'); return; }
+  markPaymentAttempt();  // record checkout-in-progress
   const btn = $id('mpesaPayBtn');
   btn.disabled=true; btn.textContent='⏳ Sending push…';
   try {
@@ -707,7 +727,7 @@ function renderPayPalButton() {
   const c=$id('paypal-button-container'); if (!c||!window.paypal) return;
   c.innerHTML='';
   paypal.Buttons({
-    createOrder: async () => { const r=await postJSON('/payments/paypal/create/',{}); if(r.ok) return r.orderID; throw new Error(r.error||'PayPal error'); },
+    createOrder: async () => { markPaymentAttempt(); const r=await postJSON('/payments/paypal/create/',{}); if(r.ok) return r.orderID; throw new Error(r.error||'PayPal error'); },
     onApprove:  async (data) => { await finalisePayment('paypal',{paypal_order_id:data.orderID,payment_method:'paypal'}); },
     onError: err => toast('PayPal error: ' + err, 'error'),
   }).render('#paypal-button-container');

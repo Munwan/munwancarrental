@@ -110,6 +110,7 @@ def booking_submit(request):
         # unpaid, update it. Stops Back→Continue from creating duplicates.
         existing_ref = (request.POST.get('edit_ref') or '').strip()
         booking = None
+        is_meaningful_edit = False  # set to True if price-affecting fields changed
         if existing_ref:
             try:
                 booking = Booking.objects.get(
@@ -117,6 +118,18 @@ def booking_submit(request):
                     payment_status='unpaid',
                     email__iexact=cd['email'],  # only the owner can edit
                 )
+                # Detect if the edit changes anything that affects the total.
+                # If so, the customer effectively has a "new" booking and we
+                # need to reset the reminder window so the email reflects the
+                # latest price.
+                if (
+                    booking.vehicle_id != vehicle.id
+                    or booking.days != days
+                    or booking.with_driver != with_driver
+                    or booking.baby_seat != baby_seat
+                    or booking.hire_type != cd['hire_type']
+                ):
+                    is_meaningful_edit = True
             except Booking.DoesNotExist:
                 booking = None  # fall through to create-new
 
@@ -155,7 +168,20 @@ def booking_submit(request):
             booking.user = request.user
 
         booking.calculate_totals()
+
+        # On a meaningful edit, restart the reminder clock — the customer should
+        # get a fresh reminder showing the new price 1 hour from now (if still
+        # unpaid by then). Without this, an edited-up booking would either
+        # never reminder again, or reminder with a stale price.
+        if is_meaningful_edit:
+            booking.payment_reminder_sent = False
+
         booking.save()
+
+        # auto_now_add=True ignores explicit assignment to created_at, so use
+        # queryset update to forcibly reset the reminder clock when the price changed.
+        if is_meaningful_edit:
+            Booking.objects.filter(pk=booking.pk).update(created_at=timezone.now())
 
         # Email admin about new booking immediately. The CUSTOMER reminder
         # ("Complete Payment") is delayed: it fires from the
