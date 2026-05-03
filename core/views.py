@@ -361,6 +361,33 @@ def booking_resume(request):
 #  PAYMENT PROCESS  (Step 2)
 # ─────────────────────────────────────────────────────────────
 @require_POST
+def payment_attempt(request):
+    """
+    Lightweight endpoint hit by the frontend the moment a customer clicks any
+    payment button (Paystack popup, PayPal Smart Button, or M-Pesa "Send STK").
+    Stamps `payment_attempt_at` so the reminder cron skips this booking — the
+    customer is actively in checkout, no need to nag them.
+    """
+    try:
+        booking_id = request.session.get('pending_booking_id')
+        if not booking_id:
+            return JsonResponse({'ok': False, 'error': 'session_expired'}, status=400)
+
+        try:
+            booking = Booking.objects.get(pk=booking_id, payment_status='unpaid')
+        except Booking.DoesNotExist:
+            return JsonResponse({'ok': False, 'error': 'booking_not_found'}, status=404)
+
+        # Use queryset .update() so we don't trip auto_now on updated_at, and
+        # so we don't accidentally clobber other fields if signals fire.
+        Booking.objects.filter(pk=booking.pk).update(payment_attempt_at=timezone.now())
+        return JsonResponse({'ok': True})
+    except Exception as exc:
+        logger.error('payment_attempt error: %s', exc)
+        return JsonResponse({'ok': False, 'error': 'server_error'}, status=500)
+
+
+@require_POST
 def payment_process(request):
     try:
         booking_id = request.session.get('pending_booking_id')
