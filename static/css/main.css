@@ -91,18 +91,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:cen
 .closeMobileMenu-helper{cursor:pointer}
 
 /* ── HERO ─────────────────────────────────────────────── */
-/* Hero uses an actual <img> element for fastest LCP detection.
-   CSS background-image was treated as low-priority by browsers even
-   with preload — switching to <img loading=eager fetchpriority=high>
-   lets browsers process it inline with HTML parsing. */
-.hero{min-height:80vh;position:relative;overflow:hidden;
+.hero{min-height:80vh;
+  background:linear-gradient(160deg,rgba(5,8,20,.88) 0%,rgba(10,20,50,.65) 50%,rgba(5,8,20,.82) 100%),
+    url('../images/hero-bg.jpg') center/cover no-repeat fixed;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:96px 56px 64px;text-align:center;background:var(--ink)}
-.hero-img{position:absolute;inset:0;width:100%;height:100%;
-  object-fit:cover;object-position:center;z-index:0}
-.hero-overlay{position:absolute;inset:0;z-index:1;pointer-events:none;
-  background:linear-gradient(160deg,rgba(5,8,20,.88) 0%,rgba(10,20,50,.65) 50%,rgba(5,8,20,.82) 100%)}
-.hero::after{content:'';position:absolute;inset:0;z-index:1;
+  padding:96px 56px 64px;position:relative;overflow:hidden;text-align:center}
+.hero::after{content:'';position:absolute;inset:0;
   background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,.012) 3px,rgba(255,255,255,.012) 4px);
   pointer-events:none}
 .hero::before{content:none}
