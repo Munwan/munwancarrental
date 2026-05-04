@@ -12,6 +12,7 @@ from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 
@@ -701,6 +702,7 @@ def auth_logout(request):
     return redirect('home')
 
 
+@never_cache
 def auth_register(request):
     """
     Step 1 of new-account creation:
@@ -708,9 +710,42 @@ def auth_register(request):
     - Creates the user with is_active=False (cannot log in until verified)
     - Generates a 6-digit OTP, emails it
     - Redirects to /auth/verify-email/ where the user enters the code
+
+    Special case: if a user with this email exists but is INACTIVE (they
+    started signup before but never verified the OTP), we delete that stale
+    record so the new registration succeeds. This handles "I made a typo
+    and want to retry" without leaving orphan inactive accounts.
     """
     if request.user.is_authenticated:
         return redirect('dashboard')
+
+    # Clear any stale OTP session state so the previous half-finished
+    # registration doesn't interfere with this new attempt.
+    request.session.pop('otp_user_pk', None)
+
+    # Pre-flight: if an inactive user with the typed email already exists,
+    # delete it BEFORE form validation so UserCreationForm's username/email
+    # uniqueness checks don't fail. We do this BEFORE form validation only
+    # for POST (don't need it for GET render).
+    if request.method == 'POST':
+        email = (request.POST.get('email') or '').strip().lower()
+        if email:
+            stale = User.objects.filter(email__iexact=email, is_active=False).first()
+            if stale:
+                logger.info('Deleting stale inactive registration for %s', email)
+                # Also delete any OTP records pointing at this stale user
+                EmailOTP.objects.filter(email__iexact=email).delete()
+                stale.delete()
+
+        # Same check for username (since username often equals email)
+        username = (request.POST.get('username') or '').strip()
+        if username:
+            stale = User.objects.filter(username__iexact=username, is_active=False).first()
+            if stale:
+                logger.info('Deleting stale inactive username %s', username)
+                EmailOTP.objects.filter(email__iexact=stale.email).delete()
+                stale.delete()
+
     form = RegisterForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         user = form.save(commit=False)
@@ -760,6 +795,7 @@ def _create_and_send_otp(user):
     return otp
 
 
+@never_cache
 def verify_email(request):
     """
     Step 2 of new-account creation: user enters the OTP they received by email.

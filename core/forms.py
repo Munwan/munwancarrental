@@ -285,7 +285,14 @@ class RegisterForm(UserCreationForm):
 
     def clean_email(self):
         email = self.cleaned_data['email'].lower().strip()
-        if User.objects.filter(email__iexact=email).exists():
+        existing = User.objects.filter(email__iexact=email).first()
+        if existing:
+            # If the existing account is INACTIVE (started signup but never
+            # verified email), allow the new registration — we'll delete the
+            # stale one in the view's save() flow. Tells the user politely.
+            if not existing.is_active:
+                # Don't raise — let the view replace the stale record
+                return email
             raise forms.ValidationError('An account with this email already exists.')
         return email
 

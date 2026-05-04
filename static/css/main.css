@@ -417,10 +417,14 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 /* CHECKED state — clearly distinct from hover */
 .addon-checkbox:has(input:checked){
   border-color:var(--blue);
-  background:rgba(21,101,255,.08);
+  background:rgba(21,101,255,.18);
+  box-shadow:0 0 0 1px var(--blue) inset;
 }
 .addon-checkbox:has(input:checked) .addon-checkbox-text{
-  color:var(--blue);font-weight:600;
+  color:var(--blue-dark);font-weight:700;
+}
+.addon-checkbox:has(input:checked) .addon-price{
+  background:var(--blue);color:var(--white);
 }
 
 
