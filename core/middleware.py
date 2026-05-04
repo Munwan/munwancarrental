@@ -1,5 +1,5 @@
 """
-DriveKenya rate-limit middleware.
+Munwan Car Rental rate-limit middleware.
 
 DEFAULT BEHAVIOUR
   • DEBUG=True  →  rate limiting is DISABLED (easy local development)
@@ -61,11 +61,17 @@ class RateLimitMiddleware:
         if self._limits is None:
             # Raised the booking limit significantly — 10/hr was trapping real
             # users who test multiple dates/vehicles before committing.
+            #
+            # Register is bumped to 10/hr after we added OTP — each signup attempt
+            # may need a "start over" to fix a typo, hitting the limit easily.
+            # /auth/verify-email/ is intentionally NOT listed — resending OTP
+            # codes shouldn't count toward the registration limit; that route
+            # has its own internal 60-second cooldown inside the view.
             self._limits = {
                 '/booking/submit/':   ('booking', getattr(settings, 'RATE_LIMIT_BOOKING', 30)),
                 '/booking/resume/':   ('booking', 30),
                 '/auth/login/':       ('login',   getattr(settings, 'RATE_LIMIT_LOGIN',   10)),
-                '/auth/register/':    ('register', 5),
+                '/auth/register/':    ('register', getattr(settings, 'RATE_LIMIT_REGISTER', 10)),
                 '/payments/process/': ('payment', 30),
                 '/support/':          ('support', 20),
             }

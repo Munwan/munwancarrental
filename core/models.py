@@ -91,7 +91,7 @@ class Booking(models.Model):
         ('CBD',   'Nairobi CBD'),
         ('MBA',   'Mombasa Airport (MBA)'),
         ('HOTEL', 'Hotel Delivery'),
-        ('other', 'Other (custom address)'),
+        ('other', '📍 Choose Location'),
     ]
     PAYMENT_METHOD_CHOICES = [
         ('stripe', 'Card (Stripe)'),

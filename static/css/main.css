@@ -358,15 +358,24 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .ferr:empty{display:none}
 .req{color:var(--danger)}
 
-/* Add-on checkbox (baby seat) — sits inline in a form-group */
+/* ── Add-on row: side-by-side layout for driver + baby seat ───────
+   On wide screens both addons sit on the same row.
+   On narrow screens (<480px) they wrap onto two lines. */
+.addon-row{
+  display:flex;flex-wrap:wrap;gap:10px;
+  margin-top:6px;
+}
+.addon-row > .addon-checkbox{
+  flex:1 1 calc(50% - 5px);
+  min-width:160px;
+  margin-bottom:0;          /* gap handles spacing instead */
+}
+
 /* ── Optional add-on checkboxes (driver, baby seat) ───────────
    Three visual states must be unambiguous:
    1. Unchecked + idle     → white background, gray border, dark text
-   2. Unchecked + hovering → very light blue tint, blue border (subtle hint)
-   3. Checked              → light blue background, blue border, blue text
-   The earlier bug: hover and :has(:checked) used overlapping rules so
-   it looked checked-while-hovering-unchecked. Fixed by giving each
-   state its own non-overlapping rule and resetting on hover when checked. */
+   2. Unchecked + hovering → subtle blue border (no background)
+   3. Checked              → light blue background, blue border, blue text */
 .addon-checkbox{
   display:flex;align-items:center;gap:10px;
   padding:7px 11px;
@@ -382,11 +391,18 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 }
 .addon-checkbox input[type="checkbox"]{
   width:18px;height:18px;flex-shrink:0;
-  accent-color:var(--blue);cursor:pointer;margin:0
+  accent-color:var(--blue);cursor:pointer;margin:0;
+  /* Suppress the lingering focus ring that some browsers leave after click —
+     this was the cause of "blue border doesn't disappear when unchecked".
+     We restore a focus indicator only when keyboard-focused (not after click). */
+  outline:none;
+}
+.addon-checkbox input[type="checkbox"]:focus-visible{
+  outline:2px solid var(--blue);outline-offset:2px;
 }
 .addon-checkbox-text{
   display:flex;align-items:center;gap:6px;flex-wrap:wrap;line-height:1.2;
-  color:var(--ink);   /* explicit: text is dark when not selected */
+  color:var(--ink);
 }
 .addon-price{
   background:rgba(21,101,255,.1);color:var(--blue);
@@ -406,6 +422,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .addon-checkbox:has(input:checked) .addon-checkbox-text{
   color:var(--blue);font-weight:600;
 }
+
 
 
 .info-note{display:flex;align-items:flex-start;gap:8px;background:rgba(26,107,245,.06);
@@ -658,6 +675,10 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   font-family:'Poppins',sans-serif;font-weight:700;font-size:.95rem;
   box-shadow:0 4px 16px rgba(26,107,245,.35);transition:opacity .2s,transform .15s}
 .auth-btn:hover{opacity:.9;transform:translateY(-1px)}
+.auth-btn-secondary{width:100%;padding:13px;background:var(--white);
+  color:var(--blue);border:1.5px solid var(--blue);border-radius:8px;cursor:pointer;
+  font-family:'Poppins',sans-serif;font-weight:700;font-size:.95rem;transition:.2s}
+.auth-btn-secondary:hover{background:rgba(21,101,255,.06)}
 .auth-error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);
   border-radius:8px;padding:11px 13px;font-size:.82rem;color:#DC2626;margin-bottom:15px}
 .auth-link{font-size:.82rem;color:var(--muted);text-align:center;margin-top:15px}

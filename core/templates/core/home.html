@@ -244,18 +244,20 @@
         <div class="frow full">
           <div class="fg">
             <span class="form-group-heading">Optional Add-ons</span>
-            <label class="addon-checkbox" id="addonDriverLabel">
-              <input type="checkbox" id="b_with_driver" onchange="onDriverToggle()"/>
-              <span class="addon-checkbox-text">
-                🚖 With Driver <span class="addon-price">+$<span id="driverFeeInline">0</span>/day</span>
-              </span>
-            </label>
-            <label class="addon-checkbox" id="addonBabySeatLabel">
-              <input type="checkbox" id="b_baby_seat" onchange="updatePricingPreview()"/>
-              <span class="addon-checkbox-text">
-                👶 Baby Seat <span class="addon-price">+$10 / trip</span>
-              </span>
-            </label>
+            <div class="addon-row">
+              <label class="addon-checkbox" id="addonDriverLabel">
+                <input type="checkbox" id="b_with_driver" onchange="onDriverToggle()"/>
+                <span class="addon-checkbox-text">
+                  🚖 With Driver <span class="addon-price">+$<span id="driverFeeInline">0</span>/day</span>
+                </span>
+              </label>
+              <label class="addon-checkbox" id="addonBabySeatLabel">
+                <input type="checkbox" id="b_baby_seat" onchange="updatePricingPreview()"/>
+                <span class="addon-checkbox-text">
+                  👶 Baby Seat <span class="addon-price">+$10 / trip</span>
+                </span>
+              </label>
+            </div>
             <!-- Hidden compatibility field — driver_option always derived from b_with_driver checkbox -->
             <input type="hidden" id="b_driver_option" value="self"/>
           </div>
@@ -265,7 +267,6 @@
             <select id="b_pickup_location" onchange="toggleHotelField()">
               <option value="">— Select Location —</option>
               {% for code, label in pickup_choices %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
-              <option value="other">📍 Other (custom location)</option>
             </select>
             <div class="ferr" id="err_pickup_location"></div>
           </div>

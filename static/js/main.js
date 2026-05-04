@@ -515,12 +515,11 @@ async function submitStep1() {
   });
 
   // ── Email must contain "@" and a "." after it ────────────
-  // Lightweight check that catches the common "missed the @" mistake without
-  // being too strict (we don't want to reject valid edge-case domains).
+  // Lightweight check that catches the common mistakes without being too strict.
   if (fields.email && fields.email.trim()) {
     const e = fields.email.trim();
     if (!e.includes('@') || e.indexOf('@') === e.length - 1 || !e.includes('.')) {
-      showFieldError('email', 'Please enter a valid email address (must include @).');
+      showFieldError('email', 'Please enter a valid email address (must contain @ and a . after it, e.g. you@example.com).');
       hasError = true;
     }
   }

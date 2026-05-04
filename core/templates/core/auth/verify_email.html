@@ -11,13 +11,21 @@
     </p>
 
     {% if messages %}
-      {% for m in messages %}
-        <div class="ferr" style="background:rgba(21,101,255,.06);border:1px solid rgba(21,101,255,.2);
-                                 padding:10px 14px;border-radius:8px;margin-bottom:14px;color:var(--ink);
-                                 font-size:.85rem;">
-          {{ m }}
-        </div>
-      {% endfor %}
+      <div style="margin-bottom:18px;">
+        {% for m in messages %}
+          {% if 'error' in m.tags or 'warning' in m.tags %}
+            <div style="background:rgba(220,53,69,.06);border:1px solid rgba(220,53,69,.25);
+                        padding:10px 14px;border-radius:8px;margin-bottom:8px;color:#a82938;font-size:.85rem;">
+              {{ m }}
+            </div>
+          {% else %}
+            <div style="background:rgba(21,101,255,.06);border:1px solid rgba(21,101,255,.2);
+                        padding:10px 14px;border-radius:8px;margin-bottom:8px;color:var(--ink);font-size:.85rem;">
+              {{ m }}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
     {% endif %}
 
     <form method="post" autocomplete="off">
@@ -28,25 +36,21 @@
         <label for="otp_code">Verification Code</label>
         <input type="text" name="code" id="otp_code"
                inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
-               placeholder="123456"
+               placeholder="000000"
                style="font-family:'Courier New',monospace;font-size:1.4rem;letter-spacing:8px;text-align:center;font-weight:700"
                required autofocus/>
       </div>
 
-      <button type="submit" class="btn-primary" style="width:100%;margin-bottom:12px">
-        Verify &amp; Continue
-      </button>
+      <button type="submit" class="auth-btn" style="margin-bottom:12px">Verify &amp; Continue</button>
     </form>
 
-    <form method="post" autocomplete="off" style="margin-top:8px">
+    <form method="post" autocomplete="off">
       {% csrf_token %}
       <input type="hidden" name="action" value="resend"/>
-      <button type="submit" class="btn-secondary" style="width:100%">
-        Resend Code
-      </button>
+      <button type="submit" class="auth-btn-secondary">Resend Code</button>
     </form>
 
-    <p class="auth-foot" style="margin-top:18px;font-size:.85rem;text-align:center">
+    <p class="auth-foot" style="margin-top:18px;text-align:center">
       Wrong email? <a href="{% url 'register' %}">Start over</a>
     </p>
   </div>
