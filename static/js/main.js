@@ -344,15 +344,20 @@ function closeBookingModal() {
 // We keep the legacy hidden b_driver_option in sync ('self' / 'driver')
 // since the server-side code reads either field. Cyan styling on the
 // .addon-checkbox label is driven by :has(input:checked) in CSS.
-function onDriverToggle() {
+// ── Driver dropdown changed ─────────────────────────────
+// Driver is once again a <select>: 'self' (default) or 'driver'.
+// The hidden b_with_driver checkbox is kept in sync so any older
+// server-side code that reads either field still works.
+function onDriverOptionChange() {
+  const sel      = $id('b_driver_option');
   const checkbox = $id('b_with_driver');
-  const hidden = $id('b_driver_option');
-  if (hidden) hidden.value = (checkbox && checkbox.checked) ? 'driver' : 'self';
+  const choice   = sel ? sel.value : 'self';
+  if (checkbox) checkbox.checked = (choice === 'driver');
   updatePricingPreview();
 }
 
-// Legacy alias kept so any older inline handlers still work
-function onDriverOptionChange() { onDriverToggle(); }
+// Legacy alias kept so any older code that called onDriverToggle still works
+function onDriverToggle() { onDriverOptionChange(); }
 
 // ── Hire type changed — apply Safari Package vehicle filter ───────
 // Safari Package may only be hired with safari-ready vehicles.
@@ -409,8 +414,28 @@ function updatePricingPreview() {
   const vehicleId = parseInt(val('b_vehicle'));
   const pDate = val('b_pickup_date');
   const rDate = val('b_return_date');
-  const withDriver = val('b_with_driver');
-  const babySeat   = val('b_baby_seat');  // boolean from checkbox
+  // Driver is a SELECT now: 'self' or 'driver'.
+  const driverChoice = val('b_driver_option') || 'self';
+  const withDriver   = (driverChoice === 'driver');
+  const babySeat     = val('b_baby_seat');  // boolean from checkbox
+
+  // Always update the dropdown's "With Driver" option label to show the
+  // current vehicle's driver fee — even before pickup/return dates exist.
+  // This way the customer sees an accurate price as soon as they pick a car.
+  if (vehicleId) {
+    const vehLookup = VEHICLES.find(x => x.id === vehicleId);
+    if (vehLookup) {
+      const opt = $id('driverWithOption');
+      if (opt) opt.textContent = `With Driver (+$${vehLookup.driver}/day)`;
+      setText('driverFeeInline', vehLookup.driver);
+    }
+  } else {
+    // No vehicle picked yet — reset the option text
+    const opt = $id('driverWithOption');
+    if (opt) opt.textContent = 'With Driver (select a vehicle to see price)';
+    setText('driverFeeInline', '0');
+  }
+
   const preview = $id('pricePreview');
   if (!vehicleId || !pDate || !rDate) { if (preview) preview.style.display = 'none'; return; }
   const v = VEHICLES.find(x => x.id === vehicleId);
@@ -424,7 +449,6 @@ function updatePricingPreview() {
   if (preview) preview.style.display = '';
   setText('pp_rate',  `$${v.usd}/day`);
   setText('pp_days',  `${days} day${days !== 1 ? 's' : ''}`);
-  setText('driverFeeInline', v.driver);
   const dRow = $id('pp_driver_row');
   if (withDriver) {
     if (dRow) dRow.style.display = '';

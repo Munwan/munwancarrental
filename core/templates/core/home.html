@@ -267,24 +267,28 @@
         </div>
 
         <div class="frow full">
-          <div class="fg">
-            <span class="form-group-heading">Optional Add-ons</span>
-            <div class="addon-row">
-              <label class="addon-checkbox" id="addonDriverLabel">
-                <input type="checkbox" id="b_with_driver" onchange="onDriverToggle()"/>
-                <span class="addon-checkbox-text">
-                  🚖 With Driver <span class="addon-price">+$<span id="driverFeeInline">0</span>/day</span>
-                </span>
-              </label>
-              <label class="addon-checkbox" id="addonBabySeatLabel">
+          <span class="form-group-heading">Optional Add-ons</span>
+          <div class="frow" style="margin-top:6px">
+            <div class="fg">
+              <label for="b_driver_option">🚖 Driver</label>
+              <select id="b_driver_option" onchange="onDriverOptionChange()">
+                <option value="self">Self Drive (no extra cost)</option>
+                <option value="driver" id="driverWithOption">With Driver (+$0/day)</option>
+              </select>
+              <!-- Hidden checkbox kept in sync for backend compatibility -->
+              <input type="checkbox" id="b_with_driver" style="display:none"/>
+              <!-- Hidden span retained for any other code that reads the fee value -->
+              <span id="driverFeeInline" style="display:none">0</span>
+            </div>
+            <div class="fg">
+              <label for="b_baby_seat">👶 Baby Seat</label>
+              <label class="addon-checkbox" id="addonBabySeatLabel" style="margin-bottom:0">
                 <input type="checkbox" id="b_baby_seat" onchange="updatePricingPreview()"/>
                 <span class="addon-checkbox-text">
-                  👶 Baby Seat <span class="addon-price">+$10 / trip</span>
+                  Add baby seat <span class="addon-price">+$10 / trip</span>
                 </span>
               </label>
             </div>
-            <!-- Hidden compatibility field — driver_option always derived from b_with_driver checkbox -->
-            <input type="hidden" id="b_driver_option" value="self"/>
           </div>
         </div>
 
