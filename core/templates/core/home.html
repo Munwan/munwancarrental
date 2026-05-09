@@ -231,80 +231,186 @@
             </select>
           </div>
         </div>
-        <div class="frow">
-          <div class="fg"><label for="b_vehicle">Vehicle <span class="req">*</span></label>
-            <select id="b_vehicle" onchange="updatePricingPreview()">
-              <option value="">— Select Vehicle —</option>
-              {% for v in vehicles %}
-              <option value="{{ v.id }}"
-                      data-usd="{{ v.price_usd }}"
-                      data-eur="{{ v.price_eur }}"
-                      data-kes="{{ v.price_kes }}"
-                      data-driver="{{ v.driver_fee_usd }}"
-                      data-category="{{ v.category }}">{{ v.name }} — ${{ v.price_usd }}/day</option>
-              {% endfor %}
-            </select>
-            <div class="ferr" id="err_vehicle"></div>
-          </div>
-        </div>
-        <div class="frow full">
-          <div class="fg"><label for="b_pickup_location">Pick-up Location <span class="req">*</span></label>
-            <select id="b_pickup_location" onchange="toggleHotelField()">
-              <option value="">— Select Location —</option>
-              {% for code, label in pickup_choices %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
-            </select>
-            <div class="ferr" id="err_pickup_location"></div>
-          </div>
-        </div>
-        <div class="frow full" id="hotelFieldWrap" style="display:none">
-          <div class="fg"><label for="b_hotel_address">Hotel / Delivery Address <span class="req">*</span></label><input type="text" id="b_hotel_address" placeholder="Hotel name and full address"/><div class="ferr" id="err_hotel_address"></div></div>
-        </div>
-        <div class="frow full" id="customPickupWrap" style="display:none">
-          <div class="fg"><label for="b_custom_pickup">Your Pick-up Address <span class="req">*</span></label><input type="text" id="b_custom_pickup" placeholder="e.g. KCB Bank, Thika Road"/><div class="ferr" id="err_custom_pickup"></div></div>
-        </div>
-        <div class="frow full"><div class="fg"><label for="b_dropoff">Drop-off Location (if different)</label><input type="text" id="b_dropoff" placeholder="Leave blank if same"/></div></div>
-        <div class="frow">
-          <div class="fg"><label for="b_pickup_date">Pick-up Date <span class="req">*</span></label><input type="date" id="b_pickup_date" required onchange="updatePricingPreview()"/><div class="ferr" id="err_pickup_date"></div></div>
-          <div class="fg"><label for="b_pickup_time">Pick-up Time <span class="req">*</span></label><input type="time" id="b_pickup_time" required value="08:00"/></div>
-        </div>
-        <div class="frow">
-          <div class="fg"><label for="b_return_date">Return Date <span class="req">*</span></label><input type="date" id="b_return_date" required onchange="updatePricingPreview()"/><div class="ferr" id="err_return_date"></div></div>
-          <div class="fg"><label for="b_return_time">Return Time <span class="req">*</span></label><input type="time" id="b_return_time" required value="08:00"/></div>
-        </div>
-
-        <div class="frow full">
-          <span class="form-group-heading">Optional Add-ons</span>
-          <div class="frow" style="margin-top:6px">
-            <div class="fg">
-              <label for="b_driver_option">🚖 Driver</label>
-              <select id="b_driver_option" onchange="onDriverOptionChange()">
-                <option value="self">Self Drive (no extra cost)</option>
-                <option value="driver" id="driverWithOption">With Driver (+$0/day)</option>
+        <!-- ═══ RENTAL fields (Normal/Long/Corporate/Safari) ═══ -->
+        <div id="rentalFields">
+          <div class="frow">
+            <div class="fg"><label for="b_vehicle">Vehicle <span class="req">*</span></label>
+              <select id="b_vehicle" onchange="updatePricingPreview()">
+                <option value="">— Select Vehicle —</option>
+                {% for v in vehicles %}
+                <option value="{{ v.id }}"
+                        data-usd="{{ v.price_usd }}"
+                        data-eur="{{ v.price_eur }}"
+                        data-kes="{{ v.price_kes }}"
+                        data-driver="{{ v.driver_fee_usd }}"
+                        data-category="{{ v.category }}">{{ v.name }} — ${{ v.price_usd }}/day</option>
+                {% endfor %}
               </select>
-              <!-- Hidden checkbox kept in sync for backend compatibility -->
-              <input type="checkbox" id="b_with_driver" style="display:none"/>
-              <!-- Hidden span retained for any other code that reads the fee value -->
-              <span id="driverFeeInline" style="display:none">0</span>
-            </div>
-            <div class="fg">
-              <label for="b_baby_seat">👶 Baby Seat</label>
-              <label class="addon-checkbox" id="addonBabySeatLabel" style="margin-bottom:0">
-                <input type="checkbox" id="b_baby_seat" onchange="updatePricingPreview()"/>
-                <span class="addon-checkbox-text">
-                  Add baby seat <span class="addon-price">+$10 / trip</span>
-                </span>
-              </label>
+              <div class="ferr" id="err_vehicle"></div>
             </div>
           </div>
-        </div>
+          <div class="frow full">
+            <div class="fg"><label for="b_pickup_location">Pick-up Location <span class="req">*</span></label>
+              <select id="b_pickup_location" onchange="toggleHotelField()">
+                <option value="">— Select Location —</option>
+                {% for code, label in pickup_choices %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+              </select>
+              <div class="ferr" id="err_pickup_location"></div>
+            </div>
+          </div>
+          <div class="frow full" id="hotelFieldWrap" style="display:none">
+            <div class="fg"><label for="b_hotel_address">Hotel / Delivery Address <span class="req">*</span></label><input type="text" id="b_hotel_address" placeholder="Hotel name and full address"/><div class="ferr" id="err_hotel_address"></div></div>
+          </div>
+          <div class="frow full" id="customPickupWrap" style="display:none">
+            <div class="fg"><label for="b_custom_pickup">Your Pick-up Address <span class="req">*</span></label><input type="text" id="b_custom_pickup" placeholder="e.g. KCB Bank, Thika Road"/><div class="ferr" id="err_custom_pickup"></div></div>
+          </div>
+          <div class="frow full"><div class="fg"><label for="b_dropoff">Drop-off Location (if different)</label><input type="text" id="b_dropoff" placeholder="Leave blank if same"/></div></div>
+          <div class="frow">
+            <div class="fg"><label for="b_pickup_date">Pick-up Date <span class="req">*</span></label><input type="date" id="b_pickup_date" required onchange="updatePricingPreview()"/><div class="ferr" id="err_pickup_date"></div></div>
+            <div class="fg"><label for="b_pickup_time">Pick-up Time <span class="req">*</span></label><input type="time" id="b_pickup_time" required value="08:00"/></div>
+          </div>
+          <div class="frow">
+            <div class="fg"><label for="b_return_date">Return Date <span class="req">*</span></label><input type="date" id="b_return_date" required onchange="updatePricingPreview()"/><div class="ferr" id="err_return_date"></div></div>
+            <div class="fg"><label for="b_return_time">Return Time <span class="req">*</span></label><input type="time" id="b_return_time" required value="08:00"/></div>
+          </div>
 
-        <div class="price-preview" id="pricePreview" style="display:none">
-          <div class="pp-row"><span>Vehicle rate</span><span id="pp_rate">—</span></div>
-          <div class="pp-row" id="pp_driver_row" style="display:none"><span>Driver fee</span><span id="pp_driver">—</span></div>
-          <div class="pp-row" id="pp_baby_row" style="display:none"><span>Baby seat</span><span id="pp_baby">—</span></div>
-          <div class="pp-row"><span>Duration</span><span id="pp_days">—</span></div>
-          <div class="pp-total"><span>Estimated Total</span><span id="pp_total">—</span></div>
+          <div class="frow full">
+            <span class="form-group-heading">Optional Add-ons</span>
+            <div class="frow" style="margin-top:6px">
+              <div class="fg">
+                <label for="b_driver_option">🚖 Driver</label>
+                <select id="b_driver_option" onchange="onDriverOptionChange()">
+                  <option value="self">Self Drive (no extra cost)</option>
+                  <option value="driver" id="driverWithOption">With Driver (+$0/day)</option>
+                </select>
+                <!-- Hidden checkbox kept in sync for backend compatibility -->
+                <input type="checkbox" id="b_with_driver" style="display:none"/>
+                <!-- Hidden span retained for any other code that reads the fee value -->
+                <span id="driverFeeInline" style="display:none">0</span>
+              </div>
+              <div class="fg">
+                <label for="b_baby_seat">👶 Baby Seat</label>
+                <label class="addon-checkbox" id="addonBabySeatLabel" style="margin-bottom:0">
+                  <input type="checkbox" id="b_baby_seat" onchange="updatePricingPreview()"/>
+                  <span class="addon-checkbox-text">
+                    Add baby seat <span class="addon-price">+$10 / trip</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="price-preview" id="pricePreview" style="display:none">
+            <div class="pp-row"><span>Vehicle rate</span><span id="pp_rate">—</span></div>
+            <div class="pp-row" id="pp_driver_row" style="display:none"><span>Driver fee</span><span id="pp_driver">—</span></div>
+            <div class="pp-row" id="pp_baby_row" style="display:none"><span>Baby seat</span><span id="pp_baby">—</span></div>
+            <div class="pp-row"><span>Duration</span><span id="pp_days">—</span></div>
+            <div class="pp-total"><span>Estimated Total</span><span id="pp_total">—</span></div>
+          </div>
         </div>
+        <!-- ═══ END rentalFields ═══ -->
+
+        <!-- ═══ AIRPORT TRANSFER fields ═══ -->
+        <div id="transferFields" style="display:none">
+          <div class="transfer-banner">
+            ✈️ <strong>Airport Transfer</strong> — quick one-way ride between JKIA and Nairobi.
+            Pickup is always JKIA or your chosen destination. No return needed.
+          </div>
+
+          <div class="frow">
+            <div class="fg"><label for="b_transfer_direction">Direction <span class="req">*</span></label>
+              <select id="b_transfer_direction" onchange="onTransferDirectionChange()">
+                <option value="FROM">JKIA → Destination</option>
+                <option value="TO">Pickup Location → JKIA</option>
+              </select>
+            </div>
+            <div class="fg"><label for="b_transfer_car_type">Car Type <span class="req">*</span></label>
+              <select id="b_transfer_car_type" onchange="updateTransferQuote()">
+                <option value="">— Select Car Type —</option>
+                <option value="economy">Economy</option>
+                <option value="midsize">Mid-size</option>
+                <option value="luxury">Luxury</option>
+                <option value="van">Van / Group</option>
+              </select>
+              <div class="ferr" id="err_transfer_car_type"></div>
+            </div>
+          </div>
+
+          <div class="frow full">
+            <div class="fg">
+              <label for="b_transfer_location" id="transferLocationLabel">Destination <span class="req">*</span></label>
+              <select id="b_transfer_location" onchange="onTransferLocationChange()">
+                <option value="">— Select Location —</option>
+                <optgroup label="Near Airport (lowest fare)">
+                  <option value="embakasi">Embakasi</option>
+                  <option value="fedha">Fedha</option>
+                  <option value="south b">South B</option>
+                  <option value="south c">South C</option>
+                  <option value="syokimau">Syokimau</option>
+                  <option value="mombasa road">Mombasa Road</option>
+                </optgroup>
+                <optgroup label="Nairobi (mid fare)">
+                  <option value="westlands">Westlands</option>
+                  <option value="parklands">Parklands</option>
+                  <option value="kilimani">Kilimani</option>
+                  <option value="kileleshwa">Kileleshwa</option>
+                  <option value="hurlingham">Hurlingham</option>
+                  <option value="upperhill">Upperhill</option>
+                  <option value="nairobi cbd">Nairobi CBD</option>
+                  <option value="pangani">Pangani</option>
+                  <option value="eastleigh">Eastleigh</option>
+                  <option value="langata">Lang'ata</option>
+                  <option value="ngong road">Ngong Road</option>
+                  <option value="yaya centre">Yaya Centre</option>
+                </optgroup>
+                <optgroup label="Outskirts (highest fare)">
+                  <option value="karen">Karen</option>
+                  <option value="karen hardy">Karen Hardy</option>
+                  <option value="runda">Runda</option>
+                  <option value="gigiri">Gigiri</option>
+                  <option value="muthaiga">Muthaiga</option>
+                  <option value="lavington">Lavington</option>
+                  <option value="spring valley">Spring Valley</option>
+                  <option value="kitisuru">Kitisuru</option>
+                  <option value="rosslyn">Rosslyn</option>
+                  <option value="ridgeways">Ridgeways</option>
+                  <option value="kiambu road">Kiambu Road</option>
+                  <option value="ruaka">Ruaka</option>
+                </optgroup>
+              </select>
+              <div class="ferr" id="err_transfer_location"></div>
+              <div class="zone-hint" id="zoneHint" style="display:none"></div>
+            </div>
+          </div>
+
+          <div class="frow full">
+            <div class="fg"><label for="b_transfer_destination_text">Specific Address (optional)</label>
+              <input type="text" id="b_transfer_destination_text" placeholder="e.g. Sarova Stanley Hotel, Westlands"/>
+            </div>
+          </div>
+
+          <div class="frow">
+            <div class="fg"><label for="b_transfer_pickup_date">Pickup Date <span class="req">*</span></label>
+              <input type="date" id="b_transfer_pickup_date" required onchange="updateTransferQuote()"/>
+              <div class="ferr" id="err_transfer_pickup_date"></div>
+            </div>
+            <div class="fg"><label for="b_transfer_pickup_time">Pickup Time <span class="req">*</span></label>
+              <input type="time" id="b_transfer_pickup_time" required value="08:00" onchange="updateTransferQuote()"/>
+              <div class="ferr" id="err_transfer_pickup_time"></div>
+            </div>
+          </div>
+
+          <!-- Live transfer price preview -->
+          <div class="price-preview" id="transferPricePreview" style="display:none">
+            <div class="pp-row"><span>Base fare (<span id="tpp_zone_label">—</span>, <span id="tpp_car_label">—</span>)</span><span id="tpp_base">—</span></div>
+            <div class="pp-row" id="tpp_night_row" style="display:none"><span>🌙 Night surcharge (10pm–6am)</span><span id="tpp_night">—</span></div>
+            <div class="pp-row"><span>Total in KES</span><span id="tpp_total_kes" style="font-weight:700">—</span></div>
+            <div class="pp-row"><span>≈ Total in USD</span><span id="tpp_total_usd">—</span></div>
+            <div class="pp-row"><span>≈ Total in EUR</span><span id="tpp_total_eur">—</span></div>
+            <div class="pp-total"><span>You Pay</span><span id="tpp_total_pay">—</span></div>
+          </div>
+        </div>
+        <!-- ═══ END transferFields ═══ -->
 
         {% if not user.is_authenticated %}
         <div class="acc-opt">
@@ -448,6 +554,8 @@
 <script type="application/json" id="vehicleData">
 [{% for v in vehicles %}{"id":{{ v.id }},"name":"{{ v.name }}","usd":{{ v.price_usd }},"eur":{{ v.price_eur }},"kes":{{ v.price_kes }},"driver":{{ v.driver_fee_usd }}}{% if not forloop.last %},{% endif %}{% endfor %}]
 </script>
+
+<script type="application/json" id="transferConstants">{{ transfer_constants_json|safe }}</script>
 {% endblock %}
 
 {% block footer %}
@@ -491,7 +599,7 @@
       <ul>
         <li><a href="tel:+254727745907">📞 +254 727 745 907</a></li>
         <li><a href="https://wa.me/254727745907" target="_blank" rel="noopener">💬 WhatsApp Us</a></li>
-        <li><a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=info@munwancarrental.com" target="_blank" rel="noopener">✉️ info@munwancarrental.com</a></li>
+        <li><a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=info@munwancarrental.com" target="_blank" rel="noopener">info@munwancarrental.com</a></li>
         <li><a href="https://www.instagram.com/munwan_carrental/" target="_blank" rel="noopener">📸 @munwan_carrental</a></li>
         <li><a href="#">📍 Nairobi</a></li>
       </ul>

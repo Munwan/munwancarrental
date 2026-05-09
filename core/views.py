@@ -12,19 +12,16 @@ from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 
-import secrets
-
-from .emails import send_booking_confirmation, send_support_notification, send_otp_email
+from .emails import send_booking_confirmation, send_support_notification
 from .forms import (
     BookingStep1Form, BookingPaymentForm,
     CheckBookingForm, LoginForm, RegisterForm, SupportForm,
 )
 from .middleware import get_client_ip
-from .models import Booking, EmailOTP, PaymentLog, Review, SupportTicket, Vehicle
+from .models import Booking, PaymentLog, Review, SupportTicket, Vehicle
 from .payments import PaystackBackend, MpesaBackend, PayPalBackend
 
 logger = logging.getLogger('drivekenya.views')
@@ -47,6 +44,14 @@ def home(request):
     except Exception:
         reviews = []
 
+    # Airport-transfer pricing constants for the JS to use client-side.
+    # Server is still source of truth — this is only for instant preview.
+    try:
+        from .airport_transfer import dump_js_constants
+        transfer_constants_json = dump_js_constants()
+    except Exception:
+        transfer_constants_json = '{}'
+
     context = {
         'vehicles':           vehicles,
         'reviews':            reviews,
@@ -54,6 +59,7 @@ def home(request):
         'paypal_client_id':   getattr(settings, 'PAYPAL_CLIENT_ID', ''),
         'whatsapp_number':    getattr(settings, 'WHATSAPP_NUMBER', '254727745907'),
         'pickup_choices':     Booking.PICKUP_LOCATION_CHOICES,
+        'transfer_constants_json': transfer_constants_json,
     }
     return render(request, 'core/home.html', context)
 
@@ -91,8 +97,149 @@ def privacy(request):
 #  BOOKING SUBMIT  (Step 1)
 # ─────────────────────────────────────────────────────────────
 @require_POST
+def _booking_submit_transfer(request):
+    """
+    Handle an Airport Transfer booking. Different shape from rental:
+    - No return_date / return_time
+    - No days field (single trip)
+    - Price comes from airport_transfer.quote() based on zone + car type
+    - Vehicle is auto-assigned from the chosen transfer_car_type
+    """
+    from .airport_transfer import detect_zone, is_night_pickup, quote, KES_PER_USD
+
+    # ── Field extraction with light validation ───────────────
+    P = request.POST
+    errors = {}
+    def _grab(key, label, max_len=200):
+        v = (P.get(key) or '').strip()
+        if not v:
+            errors[key] = f'{label} is required.'
+        return v[:max_len]
+
+    first_name = _grab('first_name', 'First name', 60)
+    last_name  = _grab('last_name',  'Last name',  60)
+    email      = _grab('email',      'Email')
+    phone      = _grab('phone',      'Phone')
+    nationality = (P.get('nationality') or 'Kenya').strip()[:60]
+
+    direction  = (P.get('transfer_direction') or 'FROM').strip().upper()
+    if direction not in ('FROM', 'TO'):
+        errors['transfer_direction'] = 'Pick a transfer direction.'
+
+    car_type = (P.get('transfer_car_type') or '').strip().lower()
+    if car_type not in ('economy', 'midsize', 'luxury', 'van'):
+        errors['transfer_car_type'] = 'Pick a car type.'
+
+    location_raw = _grab('transfer_location', 'Location', 120)
+    zone = detect_zone(location_raw) if location_raw else ''
+    if not zone:
+        errors['transfer_location'] = 'Pick a location from the list — we couldn\'t detect the zone.'
+
+    pickup_date_str = _grab('transfer_pickup_date', 'Pickup date')
+    pickup_time_str = _grab('transfer_pickup_time', 'Pickup time')
+
+    # Email format check (mirrors the JS-side rule)
+    if email and ('@' not in email or '.' not in email or email.endswith('@')):
+        errors['email'] = 'Please enter a valid email address (must contain @ and . — e.g. you@example.com).'
+
+    if errors:
+        return JsonResponse({'ok': False, 'errors': errors}, status=400)
+
+    # ── Parse date/time ──────────────────────────────────────
+    try:
+        from datetime import datetime
+        pickup_date = datetime.strptime(pickup_date_str, '%Y-%m-%d').date()
+        pickup_time = datetime.strptime(pickup_time_str, '%H:%M').time()
+    except ValueError:
+        return JsonResponse({'ok': False, 'errors': {
+            'transfer_pickup_date': 'Invalid date or time.'
+        }}, status=400)
+
+    # ── Pick a vehicle of the right type ─────────────────────
+    candidate = (Vehicle.objects
+                 .filter(is_available=True, transfer_car_type=car_type)
+                 .order_by('order', 'name')
+                 .first())
+    if not candidate:
+        return JsonResponse({'ok': False, 'errors': {
+            'transfer_car_type': f'No {car_type} vehicle currently available. Try a different car type.'
+        }}, status=400)
+
+    # ── Compute price (server is source of truth) ───────────
+    q = quote(zone, car_type, pickup_time)
+    if not q.get('ok'):
+        return JsonResponse({'ok': False, 'errors': {
+            'transfer_location': q.get('error', 'Could not compute price.')
+        }}, status=400)
+
+    # ── Persist ──────────────────────────────────────────────
+    from decimal import Decimal
+    booking = Booking(
+        ip_address  = get_client_ip(request),
+        user_agent  = request.META.get('HTTP_USER_AGENT', '')[:500],
+        first_name  = first_name,
+        last_name   = last_name,
+        email       = email.lower(),
+        phone       = phone,
+        nationality = nationality,
+        vehicle     = candidate,
+        hire_type   = 'transfer',
+        with_driver = True,         # transfers always include driver
+        baby_seat   = False,
+        # Direction-aware pickup_location: JKIA for FROM, custom for TO
+        pickup_location  = 'JKIA' if direction == 'FROM' else 'other',
+        hotel_address    = location_raw if direction == 'TO' else '',
+        dropoff_location = location_raw if direction == 'FROM' else 'JKIA',
+        pickup_date      = pickup_date,
+        pickup_time      = pickup_time,
+        return_date      = None,
+        return_time      = None,
+        # Transfer-specific fields
+        transfer_direction   = direction,
+        transfer_zone        = zone,
+        transfer_car_type    = car_type,
+        transfer_destination = (P.get('transfer_destination_text') or '').strip()[:120],
+        is_night_surcharge   = q['night'],
+        # Pricing (lock in)
+        days            = 1,
+        base_price_usd  = Decimal(str(q['usd_total'])),
+        driver_fee_usd  = Decimal('0.00'),
+        total_usd       = Decimal(str(q['usd_total'])),
+        terms_accepted  = bool(P.get('terms_accepted')),
+    )
+    if request.user.is_authenticated:
+        booking.user = request.user
+    booking.save()
+
+    # Admin alert
+    try:
+        import threading
+        from .emails import send_new_booking_admin_alert
+        threading.Thread(target=send_new_booking_admin_alert, args=(booking,), daemon=True).start()
+    except Exception as e:
+        logger.warning('Transfer booking admin email thread failed: %s', e)
+
+    return JsonResponse({
+        'ok':                True,
+        'reference':         booking.reference,
+        'total_usd':         float(booking.total_usd),
+        'total_kes':         q['kes_total'],
+        'total_eur':         q['eur_total'],
+        'is_transfer':       True,
+        'zone_label':        booking.get_transfer_zone_display(),
+        'car_type_label':    booking.get_transfer_car_type_display(),
+        'vehicle_name':      candidate.name,
+        'night_surcharge':   q['night'],
+    })
+
+
 def booking_submit(request):
     try:
+        # ── Branch: Airport Transfer bookings have a different field set,
+        # so they go through their own validation/save path.
+        if (request.POST.get('hire_type') or '').strip() == 'transfer':
+            return _booking_submit_transfer(request)
+
         form = BookingStep1Form(request.POST)
         if not form.is_valid():
             errors = {k: v[0] if isinstance(v, list) else str(v)
@@ -204,9 +351,6 @@ def booking_submit(request):
             logger.warning('Booking-creation admin email thread failed: %s', e)
 
         # Optional account creation
-        # IMPORTANT: New accounts are created as inactive and require email
-        # OTP verification before login. The booking itself proceeds normally
-        # — the user just has a "verify email" pending action on their dashboard.
         account_created     = False
         account_email_taken = False
         if cd.get('create_account') and cd.get('password'):
@@ -230,19 +374,11 @@ def booking_submit(request):
                         first_name = cd['first_name'],
                         last_name  = cd['last_name'],
                     )
-                    new_user.is_active = False  # cannot log in until OTP verified
-                    new_user.save(update_fields=['is_active'])
                     booking.user = new_user
                     booking.save(update_fields=['user'])
-
-                    # Send OTP — non-blocking failure (booking still succeeds)
-                    try:
-                        _create_and_send_otp(new_user)
-                        # Stash pk so /auth/verify-email/ knows who's verifying
-                        request.session['otp_user_pk'] = new_user.pk
-                    except Exception as otp_exc:
-                        logger.warning('OTP send failed for new account %s: %s', cd['email'], otp_exc)
-
+                    # Explicit backend — required when multiple AUTHENTICATION_BACKENDS
+                    # are configured. Without it, Django raises ValueError.
+                    login(request, new_user, backend='core.auth_backends.EmailOrUsernameBackend')
                     account_created = True
                 except Exception as exc:
                     logger.warning('Account creation failed: %s', exc)
@@ -543,7 +679,7 @@ def paystack_webhook(request):
 
     Set the webhook URL in Paystack dashboard:
       https://dashboard.paystack.com/#/settings/developers  → Webhook URL
-      → https://munwancarrental.com/payments/paystack/webhook/
+      → https://yourdomain.com/payments/paystack/webhook/
     """
     import hashlib
     import hmac
@@ -702,165 +838,19 @@ def auth_logout(request):
     return redirect('home')
 
 
-@never_cache
 def auth_register(request):
-    """
-    Step 1 of new-account creation:
-    - Validates the form
-    - Creates the user with is_active=False (cannot log in until verified)
-    - Generates a 6-digit OTP, emails it
-    - Redirects to /auth/verify-email/ where the user enters the code
-
-    Special case: if a user with this email exists but is INACTIVE (they
-    started signup before but never verified the OTP), we delete that stale
-    record so the new registration succeeds. This handles "I made a typo
-    and want to retry" without leaving orphan inactive accounts.
-    """
     if request.user.is_authenticated:
         return redirect('dashboard')
-
-    # Clear any stale OTP session state so the previous half-finished
-    # registration doesn't interfere with this new attempt.
-    request.session.pop('otp_user_pk', None)
-
-    # Pre-flight: if an inactive user with the typed email already exists,
-    # delete it BEFORE form validation so UserCreationForm's username/email
-    # uniqueness checks don't fail. We do this BEFORE form validation only
-    # for POST (don't need it for GET render).
-    if request.method == 'POST':
-        email = (request.POST.get('email') or '').strip().lower()
-        if email:
-            stale = User.objects.filter(email__iexact=email, is_active=False).first()
-            if stale:
-                logger.info('Deleting stale inactive registration for %s', email)
-                # Also delete any OTP records pointing at this stale user
-                EmailOTP.objects.filter(email__iexact=email).delete()
-                stale.delete()
-
-        # Same check for username (since username often equals email)
-        username = (request.POST.get('username') or '').strip()
-        if username:
-            stale = User.objects.filter(username__iexact=username, is_active=False).first()
-            if stale:
-                logger.info('Deleting stale inactive username %s', username)
-                EmailOTP.objects.filter(email__iexact=stale.email).delete()
-                stale.delete()
-
     form = RegisterForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        user = form.save(commit=False)
-        user.is_active = False  # cannot log in until OTP verified
-        user.save()
-        if hasattr(form, 'save_m2m'):
-            try:
-                form.save_m2m()
-            except Exception:
-                pass
-        _create_and_send_otp(user)
-        # Stash the user pk in session so the verify page knows who's verifying
-        request.session['otp_user_pk'] = user.pk
-        messages.info(request, f'We just emailed a 6-digit code to {user.email}. Enter it below to finish creating your account.')
-        return redirect('verify_email')
-    return render(request, 'core/auth/register.html', {'form': form})
-
-
-# ─────────────────────────────────────────────────────────────
-#  EMAIL OTP HELPERS
-# ─────────────────────────────────────────────────────────────
-from datetime import timedelta
-
-
-OTP_EXPIRY_MINUTES = 15
-OTP_MAX_ATTEMPTS = 5
-OTP_RESEND_COOLDOWN_SECONDS = 60
-
-
-def _generate_otp_code() -> str:
-    """Cryptographically random 6-digit numeric code."""
-    return f'{secrets.randbelow(1_000_000):06d}'
-
-
-def _create_and_send_otp(user):
-    """
-    Invalidate any prior unverified OTPs for this email, create a fresh one,
-    and email it to the user.
-    """
-    EmailOTP.objects.filter(email__iexact=user.email, verified_at__isnull=True).delete()
-    code = _generate_otp_code()
-    expires_at = timezone.now() + timedelta(minutes=OTP_EXPIRY_MINUTES)
-    otp = EmailOTP.objects.create(
-        email=user.email, code=code, user=user, expires_at=expires_at,
-    )
-    send_otp_email(to_email=user.email, code=code, first_name=user.first_name or '')
-    return otp
-
-
-@never_cache
-def verify_email(request):
-    """
-    Step 2 of new-account creation: user enters the OTP they received by email.
-    On success: activates the user, logs them in, redirects to dashboard.
-    On failure: logs an attempt; after 5 wrong codes the OTP is invalidated.
-    """
-    if request.user.is_authenticated:
+        user = form.save()
+        # Explicit backend — required when AUTHENTICATION_BACKENDS has > 1 entry.
+        # Without this, Django raises ValueError at this point even though the
+        # user has been saved successfully.
+        login(request, user, backend='core.auth_backends.EmailOrUsernameBackend')
+        messages.success(request, f'Welcome, {user.first_name}! Your account is ready.')
         return redirect('dashboard')
-
-    user_pk = request.session.get('otp_user_pk')
-    if not user_pk:
-        messages.error(request, 'No verification in progress. Please register again.')
-        return redirect('register')
-
-    try:
-        from django.contrib.auth.models import User
-        user = User.objects.get(pk=user_pk, is_active=False)
-    except Exception:
-        messages.error(request, 'Verification expired. Please register again.')
-        return redirect('register')
-
-    # Latest unverified OTP for this user's email
-    otp = EmailOTP.objects.filter(
-        email__iexact=user.email, verified_at__isnull=True,
-    ).order_by('-created_at').first()
-
-    if request.method == 'POST':
-        action = request.POST.get('action', 'verify')
-        if action == 'resend':
-            # Cooldown check — prevent abuse
-            if otp and otp.created_at and (timezone.now() - otp.created_at).total_seconds() < OTP_RESEND_COOLDOWN_SECONDS:
-                wait = OTP_RESEND_COOLDOWN_SECONDS - int((timezone.now() - otp.created_at).total_seconds())
-                messages.warning(request, f'Please wait {wait}s before requesting a new code.')
-            else:
-                _create_and_send_otp(user)
-                messages.success(request, 'A new code has been sent to your email.')
-            return redirect('verify_email')
-
-        # Default: verify the entered code
-        entered = (request.POST.get('code') or '').strip()
-        if not otp:
-            messages.error(request, 'No active code. Click "Resend code".')
-        elif otp.is_expired():
-            messages.error(request, 'This code has expired. Click "Resend code" to get a fresh one.')
-        elif otp.attempts >= OTP_MAX_ATTEMPTS:
-            messages.error(request, 'Too many wrong attempts. Click "Resend code" to get a fresh one.')
-        elif entered == otp.code:
-            otp.verified_at = timezone.now()
-            otp.save(update_fields=['verified_at'])
-            user.is_active = True
-            user.save(update_fields=['is_active'])
-            login(request, user, backend='core.auth_backends.EmailOrUsernameBackend')
-            request.session.pop('otp_user_pk', None)
-            messages.success(request, f'Welcome aboard, {user.first_name}! Your email is verified.')
-            return redirect('dashboard')
-        else:
-            otp.attempts += 1
-            otp.save(update_fields=['attempts'])
-            remaining = max(0, OTP_MAX_ATTEMPTS - otp.attempts)
-            messages.error(request, f'Incorrect code. {remaining} attempt(s) left before this code is invalidated.')
-
-    return render(request, 'core/auth/verify_email.html', {
-        'email': user.email,
-        'expires_minutes': OTP_EXPIRY_MINUTES,
-    })
+    return render(request, 'core/auth/register.html', {'form': form})
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1105,10 +1095,10 @@ def _location_context(location_key):
             'h1': 'Car Rental in Nairobi, Kenya',
             'tagline': 'Self-drive and chauffeur services across Nairobi — from the CBD to Westlands, Karen and Kilimani.',
             'title': 'Car Rental in Nairobi Kenya | Self Drive & Chauffeur from $28/day | Munwan Car Rental',
-            'meta_description': 'Premium car rental in Nairobi, Kenya from $28/day. Self-drive or with driver. Free delivery to CBD, Westlands, Karen, Kilimani and JKIA airport. Pay by M-Pesa or card.',
+            'meta_description': 'Affordable car rental in Nairobi, Kenya from $28/day. Self-drive or with driver. Free delivery to CBD, Westlands, Karen, Kilimani and JKIA airport. Pay by M-Pesa or card.',
             'url_name': 'location_nairobi',
             'hero_icon': '🏙️',
-            'intro_p1': 'Nairobi is the capital of Kenya and the gateway to East Africa\'s best safari experiences. Whether you\'re a business traveller attending a conference in the CBD, a tourist arriving at Jomo Kenyatta International Airport, or a Nairobi resident heading upcountry, <strong>Munwan Car Rental</strong> offers premium car rental in Nairobi with free delivery across the city.',
+            'intro_p1': 'Nairobi is the capital of Kenya and the gateway to East Africa\'s best safari experiences. Whether you\'re a business traveller attending a conference in the CBD, a tourist arriving at Jomo Kenyatta International Airport, or a Nairobi resident heading upcountry, <strong>Munwan Car Rental</strong> offers affordable car rental in Nairobi with free delivery across the city.',
             'intro_p2': 'Our fleet ranges from economy saloons ideal for navigating Nairobi traffic (Mazda Demio, Toyota Fielder) to rugged 4x4s for safari trips (Toyota Prado, Land Cruiser). All rentals include <strong>full insurance, GPS tracking and 24/7 support</strong>.',
             'delivery_spots': [
                 ('🏙️', 'Nairobi CBD', 'Free delivery to any office or hotel in the CBD — Kenyatta Avenue, Moi Avenue, Standard Street.'),
@@ -1155,7 +1145,7 @@ def _location_context(location_key):
             'h1': 'Car Rental in Mombasa, Kenya',
             'tagline': 'Coastal car hire — from Mombasa Airport to Diani Beach and Nyali.',
             'title': 'Car Rental in Mombasa Kenya | Airport Pickup | Diani Beach | Munwan Car Rental',
-            'meta_description': 'Premium car rental in Mombasa, Kenya. Free pickup at Moi International Airport. Drive to Diani Beach, Nyali, Watamu or Malindi. Self-drive or with driver. M-Pesa, card & PayPal accepted.',
+            'meta_description': 'Affordable car rental in Mombasa, Kenya. Free pickup at Moi International Airport. Drive to Diani Beach, Nyali, Watamu or Malindi. Self-drive or with driver. M-Pesa, card & PayPal accepted.',
             'url_name': 'location_mombasa',
             'hero_icon': '🏖️',
             'intro_p1': 'Planning a trip to Kenya\'s stunning coastal region? <strong>Munwan Car Rental offers car rental in Mombasa</strong> with free pickup at Moi International Airport. Whether you\'re heading to the white sands of <strong>Diani Beach</strong>, the coral reefs of <strong>Watamu</strong>, or the historic Old Town of Mombasa itself, we have the right vehicle.',
@@ -1299,7 +1289,7 @@ def blog_post(request, slug):
 
 def robots_txt(request):
     """robots.txt — tells search engines what to index."""
-    site_url = getattr(settings, 'SITE_URL', 'https://munwancarrental.com').rstrip('/')
+    site_url = getattr(settings, 'SITE_URL', 'https://yourdomain.com').rstrip('/')
     content = (
         "User-agent: *\n"
         "Allow: /\n"

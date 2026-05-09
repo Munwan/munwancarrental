@@ -7,6 +7,7 @@ let accOpen        = false;
 let currentPayTab  = 'paystack';
 let currentFwSub   = 'card';
 let VEHICLES       = [];
+let TRANSFER_CONSTS = {};   // populated from #transferConstants script tag
 
 // ── Boot ─────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
@@ -14,6 +15,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const el = document.getElementById('vehicleData');
     if (el) VEHICLES = JSON.parse(el.textContent || '[]');
   } catch (e) { VEHICLES = []; }
+  try {
+    const tc = document.getElementById('transferConstants');
+    if (tc) TRANSFER_CONSTS = JSON.parse(tc.textContent || '{}');
+  } catch (e) { TRANSFER_CONSTS = {}; }
 
   // ── Email links: on mobile, swap Gmail-web URLs for mailto: so the
   //    native Gmail / Outlook / Mail app opens instead of the browser.
@@ -357,7 +362,7 @@ function onDriverToggle() { onDriverOptionChange(); }
 
 // ── Set hire type (called from the modal pill buttons) ─────
 // Updates: visual active class on pills, hidden b_hire_type input,
-// then triggers the safari filter / airport-transfer toggle.
+// swap rental vs transfer field sections, then triggers downstream filters.
 function setHireType(type) {
   type = type || 'normal';
   // Update pill visual states
@@ -371,7 +376,38 @@ function setHireType(type) {
   // Update hidden input (server reads this)
   const hidden = $id('b_hire_type');
   if (hidden) hidden.value = type;
-  // Run downstream filters (Safari vehicle filter + future Airport Transfer toggle)
+
+  // ── Swap which field section is visible ───────────────────
+  // 'transfer' shows the Airport Transfer form; everything else shows
+  // the regular rental form. We toggle CSS display + the `required`
+  // attribute on inputs so HTML5 validation only checks the visible set.
+  const isTransfer = (type === 'transfer');
+  const rental   = $id('rentalFields');
+  const transfer = $id('transferFields');
+  if (rental)   rental.style.display   = isTransfer ? 'none' : '';
+  if (transfer) transfer.style.display = isTransfer ? '' : 'none';
+
+  // Toggle required-ness so hidden inputs don't block submit
+  ['b_vehicle','b_pickup_location','b_pickup_date','b_pickup_time',
+   'b_return_date','b_return_time'].forEach(id => {
+    const el = $id(id); if (!el) return;
+    if (isTransfer) el.removeAttribute('required');
+    else            el.setAttribute('required', '');
+  });
+  ['b_transfer_direction','b_transfer_car_type','b_transfer_location',
+   'b_transfer_pickup_date','b_transfer_pickup_time'].forEach(id => {
+    const el = $id(id); if (!el) return;
+    if (isTransfer) el.setAttribute('required', '');
+    else            el.removeAttribute('required');
+  });
+
+  // Update transfer location label based on direction (in case user toggled before)
+  if (isTransfer && typeof onTransferDirectionChange === 'function') {
+    onTransferDirectionChange();
+    updateTransferQuote();
+  }
+
+  // Run downstream filters (Safari vehicle filter etc.)
   if (typeof onHireTypeChange === 'function') onHireTypeChange();
   else updatePricingPreview();
 }
@@ -411,6 +447,108 @@ function onHireTypeChange() {
     if (errEl) errEl.textContent = '';
   }
   updatePricingPreview();
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  AIRPORT TRANSFER — quote logic & UI helpers
+// ════════════════════════════════════════════════════════════════════
+
+// Detect zone from a location string using TRANSFER_CONSTS.zone_locations.
+// Substring match in either direction so partial input also matches.
+function detectTransferZone(locText) {
+  if (!locText || !TRANSFER_CONSTS.zone_locations) return '';
+  const needle = locText.trim().toLowerCase();
+  if (!needle) return '';
+  const zones = TRANSFER_CONSTS.zone_locations;
+  for (const zone in zones) {
+    for (const loc of zones[zone]) {
+      if (loc.includes(needle) || needle.includes(loc)) return zone;
+    }
+  }
+  return '';
+}
+
+// True if pickup time string "HH:MM" falls in the night surcharge window.
+function isTransferNightPickup(timeStr) {
+  if (!timeStr) return false;
+  const [h] = timeStr.split(':').map(s => parseInt(s, 10));
+  if (isNaN(h)) return false;
+  const start = TRANSFER_CONSTS.night_start || 22;
+  const end   = TRANSFER_CONSTS.night_end || 6;
+  return h >= start || h < end;
+}
+
+// Direction toggle changes the location label between Destination/Pickup
+function onTransferDirectionChange() {
+  const dir = val('b_transfer_direction') || 'FROM';
+  const lbl = $id('transferLocationLabel');
+  if (lbl) {
+    lbl.innerHTML = (dir === 'FROM')
+      ? 'Destination <span class="req">*</span>'
+      : 'Pickup Location <span class="req">*</span>';
+  }
+  updateTransferQuote();
+}
+
+// Location selected — auto-detect zone and update the quote
+function onTransferLocationChange() {
+  const loc = val('b_transfer_location');
+  const zone = detectTransferZone(loc);
+  const hint = $id('zoneHint');
+  if (hint) {
+    if (zone && TRANSFER_CONSTS.zone_labels) {
+      hint.style.display = '';
+      hint.textContent = `Zone: ${TRANSFER_CONSTS.zone_labels[zone] || zone}`;
+    } else {
+      hint.style.display = 'none';
+    }
+  }
+  updateTransferQuote();
+}
+
+// Recompute the live quote and update the price preview block.
+// Mirrors the server-side airport_transfer.quote() function — both are
+// used: this for instant UI, server for the locked-in price at booking.
+function updateTransferQuote() {
+  const carType  = val('b_transfer_car_type');
+  const loc      = val('b_transfer_location');
+  const pickTime = val('b_transfer_pickup_time') || '08:00';
+  const zone     = detectTransferZone(loc);
+  const preview  = $id('transferPricePreview');
+
+  if (!preview) return;
+  if (!carType || !zone || !TRANSFER_CONSTS.prices_kes) {
+    preview.style.display = 'none';
+    return;
+  }
+
+  const baseKes = TRANSFER_CONSTS.prices_kes[`${zone}|${carType}`];
+  if (baseKes == null) { preview.style.display = 'none'; return; }
+
+  const isNight   = isTransferNightPickup(pickTime);
+  const nightKes  = isNight ? (TRANSFER_CONSTS.night_kes || 0) : 0;
+  const totalKes  = baseKes + nightKes;
+  const totalUsd  = totalKes / (TRANSFER_CONSTS.kes_per_usd || 130);
+  const totalEur  = totalKes / (TRANSFER_CONSTS.kes_per_eur || 140);
+
+  preview.style.display = '';
+  setText('tpp_zone_label', TRANSFER_CONSTS.zone_labels[zone] || zone);
+  const carLabels = {economy:'Economy', midsize:'Mid-size', luxury:'Luxury', van:'Van/Group'};
+  setText('tpp_car_label', carLabels[carType] || carType);
+  setText('tpp_base', `KES ${baseKes.toLocaleString()}`);
+
+  const nightRow = $id('tpp_night_row');
+  if (isNight) {
+    if (nightRow) nightRow.style.display = '';
+    setText('tpp_night', `+ KES ${nightKes.toLocaleString()}`);
+  } else {
+    if (nightRow) nightRow.style.display = 'none';
+  }
+
+  setText('tpp_total_kes', `KES ${totalKes.toLocaleString()}`);
+  setText('tpp_total_usd', `$${totalUsd.toFixed(2)}`);
+  setText('tpp_total_eur', `€${totalEur.toFixed(2)}`);
+  setText('tpp_total_pay', `KES ${totalKes.toLocaleString()} (≈ $${totalUsd.toFixed(2)})`);
 }
 
 // ── Pickup location toggle: shows hotel OR custom address field ───
@@ -525,6 +663,14 @@ function prevStep()  { if (currentStep>1) { currentStep--; updateStepUI(); } }
 // ── Step 1 ────────────────────────────────────────────────
 async function submitStep1() {
   clearErrors();
+
+  const hireType = val('b_hire_type') || 'normal';
+
+  // ── Airport Transfer has its own field set & validation ─────
+  if (hireType === 'transfer') {
+    return submitStep1Transfer();
+  }
+
   const fields = {
     first_name:      val('b_first_name'),
     last_name:       val('b_last_name'),
@@ -851,6 +997,107 @@ function renderPayPalButton() {
     onError: err => toast('PayPal error: ' + err, 'error'),
   }).render('#paypal-button-container');
 }
+
+// ── Step 1 — AIRPORT TRANSFER variant ──────────────────────
+async function submitStep1Transfer() {
+  clearErrors();
+  const fields = {
+    first_name:               val('b_first_name'),
+    last_name:                val('b_last_name'),
+    email:                    val('b_email'),
+    phone:                    val('b_phone'),
+    nationality:              val('b_nationality'),
+    hire_type:                'transfer',
+    transfer_direction:       val('b_transfer_direction') || 'FROM',
+    transfer_car_type:        val('b_transfer_car_type'),
+    transfer_location:        val('b_transfer_location'),
+    transfer_destination_text: val('b_transfer_destination_text'),
+    transfer_pickup_date:     val('b_transfer_pickup_date'),
+    transfer_pickup_time:     val('b_transfer_pickup_time'),
+    create_account:           accOpen ? 'on' : '',
+    password:                 val('b_password'),
+    password_confirm:         val('b_password2'),
+    terms_accepted:           val('b_terms_accepted') ? 'on' : '',
+    website:                  val('b_website') || '',
+    form_started_at:          val('b_form_started_at') || '',
+  };
+  let hasError = false;
+
+  ['first_name','last_name','email','phone',
+   'transfer_direction','transfer_car_type','transfer_location',
+   'transfer_pickup_date','transfer_pickup_time'].forEach(f => {
+    if (!fields[f] || !fields[f].toString().trim()) {
+      showFieldError(f, 'This field is required.'); hasError = true;
+    }
+  });
+
+  if (fields.email && fields.email.trim()) {
+    const e = fields.email.trim();
+    if (!e.includes('@') || e.indexOf('@') === e.length - 1 || !e.includes('.')) {
+      showFieldError('email', 'Please enter a valid email address (must contain @ and a . — e.g. you@example.com).');
+      hasError = true;
+    }
+  }
+
+  if (hasError) return;
+
+  // Submit
+  const btn = $id('btnNext');
+  if (btn) { btn.disabled = true; btn.textContent = 'Booking…'; }
+  try {
+    const result = await postJSON('/booking/submit/', fields);
+    if (!result.ok) {
+      Object.entries(result.errors || {}).forEach(([k,v]) => showFieldError(k, v));
+      toast(result.errors && Object.keys(result.errors).length === 1
+        ? Object.values(result.errors)[0]
+        : 'Please fix the errors and try again.', 'error');
+      return;
+    }
+    pendingBooking = result;
+    pendingBooking.is_transfer = true;
+    currentStep = 2;
+    updateStepUI();
+    renderTransferSummary(result);
+    if (typeof renderPaymentTabs === 'function') renderPaymentTabs();
+  } catch (err) {
+    toast('Network error. Please try again.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Next →'; }
+  }
+}
+
+// Render a "Booking Summary" block on Step 2 for airport transfer bookings.
+// Stage 3 will polish this into a proper card matching the rental summary.
+function renderTransferSummary(r) {
+  const wrap = $id('paymentSummary') || $id('s2_summary') || $id('modalBody');
+  if (!wrap) return;
+  const summary = `
+    <div style="background:rgba(21,101,255,.06);border:1px solid rgba(21,101,255,.2);
+                padding:14px 16px;border-radius:10px;margin-bottom:14px;">
+      <div style="font-weight:700;font-size:.95rem;margin-bottom:6px">
+        ✈️ Airport Transfer · ${r.zone_label} · ${r.car_type_label}
+      </div>
+      <div style="font-size:.85rem;color:var(--muted);margin-bottom:4px">
+        Vehicle: <strong>${r.vehicle_name}</strong>
+        ${r.night_surcharge ? '· 🌙 Night surcharge applied' : ''}
+      </div>
+      <div style="font-size:1.05rem;font-weight:700;color:var(--blue-dark)">
+        Total: KES ${r.total_kes.toLocaleString()} (≈ $${r.total_usd.toFixed(2)} · €${r.total_eur.toFixed(2)})
+      </div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:6px">
+        Reference: ${r.reference}
+      </div>
+    </div>
+  `;
+  // Render to top of payment-step body (idempotent)
+  const existing = document.getElementById('transferSummaryBlock');
+  if (existing) existing.remove();
+  const div = document.createElement('div');
+  div.id = 'transferSummaryBlock';
+  div.innerHTML = summary;
+  wrap.insertBefore(div, wrap.firstChild);
+}
+
 
 // ── Step 2: submit payment ────────────────────────────────
 async function submitPayment() {
