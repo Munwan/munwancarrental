@@ -133,18 +133,20 @@ nav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:cen
    Sit at the top of the booking form (above name fields).
    Selected state matches the baby-seat checked treatment for
    visual consistency across the form.
-   On desktop: all pills sit on a single horizontal row.
-   On narrow mobile: horizontal scroll keeps them on one line. */
-.modal-hire-tabs{display:flex;flex-wrap:nowrap;gap:8px;margin-bottom:18px;
+
+   All 5 pills must fit on a single row on desktop without scroll.
+   Mobile gets horizontal scroll fallback. */
+.modal-hire-tabs{display:flex;flex-wrap:nowrap;gap:6px;margin-bottom:18px;
   padding-bottom:14px;border-bottom:1px solid var(--border);
   overflow-x:auto;scrollbar-width:none}
 .modal-hire-tabs::-webkit-scrollbar{display:none}
-.hire-pill{padding:8px 14px;font-family:'Poppins',sans-serif;
-  font-size:.78rem;font-weight:700;cursor:pointer;
+.hire-pill{flex:1 1 0;min-width:0;
+  padding:8px 6px;font-family:'Poppins',sans-serif;
+  font-size:.72rem;font-weight:700;cursor:pointer;
   background:var(--white);color:var(--ink);
   border:1.5px solid var(--border);border-radius:100px;
   transition:border-color .15s, background .15s, color .15s, box-shadow .15s;
-  white-space:nowrap;flex-shrink:0;outline:none}
+  white-space:nowrap;text-overflow:ellipsis;overflow:hidden;outline:none}
 .hire-pill:hover:not(.active){border-color:var(--blue-light);color:var(--blue)}
 .hire-pill.active{
   border-color:var(--blue);
@@ -153,6 +155,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:cen
   box-shadow:0 0 0 1px var(--blue) inset;
 }
 .hire-pill:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+/* On narrow mobile, switch back to natural width with horizontal scroll
+   so pill text stays readable (instead of being squeezed to icons). */
+@media (max-width: 600px){
+  .hire-pill{flex:0 0 auto;padding:7px 12px;font-size:.74rem}
+}
+
 
 /* ── Airport Transfer banner & zone hint ─────────────────── */
 .transfer-banner{

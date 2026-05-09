@@ -174,6 +174,10 @@ def _booking_submit_transfer(request):
     if email and ('@' not in email or '.' not in email or email.endswith('@')):
         errors['email'] = 'Please enter a valid email address (must contain @ and . — e.g. you@example.com).'
 
+    # Terms must be accepted (matches rental flow)
+    if not P.get('terms_accepted'):
+        errors['terms_accepted'] = 'Please accept the Terms & Cancellation Policy.'
+
     if errors:
         return JsonResponse({'ok': False, 'errors': errors}, status=400)
 
@@ -243,6 +247,38 @@ def _booking_submit_transfer(request):
         booking.user = request.user
     booking.save()
 
+    # ── Optional account creation (mirrors rental flow) ───────
+    # New accounts created here are inactive until OTP-verified.
+    # Booking is already saved — account creation is a side effect.
+    account_created = False
+    if (P.get('create_account') == 'on' and P.get('password')):
+        existing = User.objects.filter(email__iexact=email.lower()).first()
+        if existing:
+            if request.user.is_authenticated and request.user == existing:
+                booking.user = existing
+                booking.save(update_fields=['user'])
+        else:
+            try:
+                new_user = User.objects.create_user(
+                    username   = email.lower(),
+                    email      = email.lower(),
+                    password   = P.get('password'),
+                    first_name = first_name,
+                    last_name  = last_name,
+                )
+                new_user.is_active = False
+                new_user.save(update_fields=['is_active'])
+                booking.user = new_user
+                booking.save(update_fields=['user'])
+                try:
+                    _create_and_send_otp(new_user)
+                    request.session['otp_user_pk'] = new_user.pk
+                except Exception as otp_exc:
+                    logger.warning('Transfer-flow OTP send failed for %s: %s', email, otp_exc)
+                account_created = True
+            except Exception as exc:
+                logger.warning('Transfer-flow account creation failed: %s', exc)
+
     # Admin alert
     try:
         import threading
@@ -262,6 +298,7 @@ def _booking_submit_transfer(request):
         'car_type_label':    booking.get_transfer_car_type_display(),
         'vehicle_name':      candidate.name,
         'night_surcharge':   q['night'],
+        'account_created':   account_created,
     })
 
 

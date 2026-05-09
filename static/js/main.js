@@ -327,8 +327,14 @@ function openBookingModalWithType(type) {
     return;
   }
   openBookingModal();
-  const sel = $id('b_hire_type');
-  if (sel) { sel.value = type; updatePricingPreview(); }
+  // Use setHireType so pills, hidden input, and field visibility all update.
+  // Falls back gracefully if setHireType isn't defined yet (early page load).
+  if (typeof setHireType === 'function') {
+    setHireType(type);
+  } else {
+    const sel = $id('b_hire_type');
+    if (sel) { sel.value = type; updatePricingPreview(); }
+  }
 }
 
 function closeBookingModal() {

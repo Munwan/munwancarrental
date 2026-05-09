@@ -179,6 +179,21 @@ def _details(rows):
     return f'<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:20px 0;">{body}</table>'
 
 
+def _return_str(booking):
+    """
+    Format the return date/time, returning '—' if not set (e.g. Airport
+    Transfer bookings are one-way and don't have a return).
+    """
+    if booking.return_date and booking.return_time:
+        return _return_str(booking)
+    return '— (one-way)'
+
+
+def _is_transfer(booking):
+    """True if this booking is an airport transfer."""
+    return getattr(booking, 'hire_type', '') == 'transfer'
+
+
 def _pricing(*, base, days, driver_fee, baby_seat, total_usd, total_kes):
     rows = (
         f'<tr>'
@@ -254,7 +269,7 @@ def send_booking_received(booking):
             ('Hire type', booking.get_hire_type_display()),
             ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
             ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
-            ('Return',    f'{booking.return_date} at {booking.return_time.strftime("%H:%M")}'),
+            ('Return',    _return_str(booking)),
             ('Pickup at', booking.get_pickup_location_display()),
             ('Hotel',     booking.hotel_address if booking.hotel_address else None),
             ('Baby seat', 'Included (+$10)' if booking.baby_seat else None),
@@ -287,7 +302,7 @@ def send_booking_received(booking):
             f'{_payment_url(booking)}\n\n'
             f'Reference: {booking.reference}\n'
             f'Pickup: {booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}\n'
-            f'Return: {booking.return_date} at {booking.return_time.strftime("%H:%M")}\n'
+            f'Return: {_return_str(booking)}\n'
             f'Total:  ${booking.total_usd} (KES {int(float(booking.total_kes)):,})\n\n'
             f'WhatsApp: {_whatsapp_display()}\n'
             f'Email:    {_info_email()}\n'
@@ -313,7 +328,7 @@ def send_booking_confirmation(booking):
             ('Hire type', booking.get_hire_type_display()),
             ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
             ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
-            ('Return',    f'{booking.return_date} at {booking.return_time.strftime("%H:%M")}'),
+            ('Return',    _return_str(booking)),
             ('Pickup at', booking.get_pickup_location_display()),
             ('Hotel',     booking.hotel_address if booking.hotel_address else None),
             ('Baby seat', 'Included' if booking.baby_seat else None),
@@ -341,7 +356,7 @@ def send_booking_confirmation(booking):
             f'Your booking {booking.reference} is confirmed.\n\n'
             f'Vehicle: {booking.vehicle.name}\n'
             f'Pickup:  {booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}\n'
-            f'Return:  {booking.return_date} at {booking.return_time.strftime("%H:%M")}\n\n'
+            f'Return:  {_return_str(booking)}\n\n'
             f'Bring at pickup: passport/ID, licence (and IDP if visiting), payment card/M-Pesa.\n\n'
             f'WhatsApp: {_whatsapp_display()}\n'
         )
@@ -371,7 +386,7 @@ def send_payment_receipt(booking):
             ('Status',     '<span style="color:#06A66D;">Paid</span>'),
             ('Method',     getattr(booking, 'payment_method', '') or 'Card'),
             ('Vehicle',    booking.vehicle.name),
-            ('Dates',      f'{booking.pickup_date} → {booking.return_date}'),
+            ('Dates',      (f'{booking.pickup_date} → {booking.return_date}' if booking.return_date else f'{booking.pickup_date} (one-way)')),
         ])
 
         body = (
@@ -422,7 +437,7 @@ def send_new_booking_admin_alert(booking):
             ('Hire type', booking.get_hire_type_display()),
             ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
             ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
-            ('Return',    f'{booking.return_date} at {booking.return_time.strftime("%H:%M")}'),
+            ('Return',    _return_str(booking)),
             ('Pickup at', booking.get_pickup_location_display()),
             ('Hotel',     booking.hotel_address if booking.hotel_address else None),
             ('Baby seat', 'Yes' if booking.baby_seat else None),
