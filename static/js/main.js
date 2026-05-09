@@ -42,18 +42,14 @@ document.addEventListener('DOMContentLoaded', function () {
     qsRet.value = t.toISOString().split('T')[0];
   }
 
-  // hire-type tabs open booking modal
+  // hire-type tabs (top of homepage) open booking modal & sync to modal pills
   document.querySelectorAll('#hireTabs .tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('#hireTabs .tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       openBookingModal();
-      const sel = document.getElementById('b_hire_type');
-      if (sel) {
-        sel.value = tab.dataset.type || 'normal';
-        if (typeof onHireTypeChange === 'function') onHireTypeChange();
-        else updatePricingPreview();
-      }
+      const type = tab.dataset.type || 'normal';
+      if (typeof setHireType === 'function') setHireType(type);
     });
   });
 
@@ -61,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', updatePricingPreview);
   });
-  // b_hire_type uses onHireTypeChange directly (set as inline onchange in template)
+  // b_hire_type is now driven by setHireType() — see below.
 
   const qsPick = document.getElementById('qs_pickup');
   if (qsPick) qsPick.addEventListener('change', () => {
@@ -359,11 +355,35 @@ function onDriverOptionChange() {
 // Legacy alias kept so any older code that called onDriverToggle still works
 function onDriverToggle() { onDriverOptionChange(); }
 
+// ── Set hire type (called from the modal pill buttons) ─────
+// Updates: visual active class on pills, hidden b_hire_type input,
+// then triggers the safari filter / airport-transfer toggle.
+function setHireType(type) {
+  type = type || 'normal';
+  // Update pill visual states
+  document.querySelectorAll('#modalHireTabs .hire-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.type === type);
+  });
+  // Update homepage hero tabs to match
+  document.querySelectorAll('#hireTabs .tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.type === type);
+  });
+  // Update hidden input (server reads this)
+  const hidden = $id('b_hire_type');
+  if (hidden) hidden.value = type;
+  // Run downstream filters (Safari vehicle filter + future Airport Transfer toggle)
+  if (typeof onHireTypeChange === 'function') onHireTypeChange();
+  else updatePricingPreview();
+}
+
 // ── Hire type changed — apply Safari Package vehicle filter ───────
 // Safari Package may only be hired with safari-ready vehicles.
 // We hide all non-safari options when 'safari' is picked, and restore
 // them when any other hire type is picked. If the currently-selected
 // vehicle is not safari-ready and the user picks Safari, clear it.
+//
+// Airport Transfer ('transfer') will swap the entire form layout in
+// Stage 2 — for now this function just keeps the safari filter behaviour.
 function onHireTypeChange() {
   const hire = val('b_hire_type');
   const veh  = $id('b_vehicle');

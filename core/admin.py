@@ -9,11 +9,11 @@ class VehicleAdmin(admin.ModelAdmin):
     Lower number = appears earlier on the homepage fleet section.
     Tip: skip numbers (use 10, 20, 30...) to leave room for inserts later.
     """
-    list_display       = ['order', 'name', 'category', 'badge',
+    list_display       = ['order', 'name', 'category', 'transfer_car_type', 'badge',
                           'price_usd', 'price_eur', 'price_kes', 'is_available']
     list_display_links = ['name']  # required by Django since 'order' is first AND editable
-    list_editable      = ['order', 'is_available']
-    list_filter        = ['category', 'is_available']
+    list_editable      = ['order', 'transfer_car_type', 'is_available']
+    list_filter        = ['category', 'transfer_car_type', 'is_available']
     search_fields      = ['name']
     prepopulated_fields = {'slug': ('name',)}
     ordering           = ['order', 'name']
@@ -47,13 +47,28 @@ class VehicleAdmin(admin.ModelAdmin):
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    list_display  = ['reference', 'full_name', 'vehicle', 'pickup_date', 'return_date',
+    list_display  = ['reference', 'full_name', 'vehicle', 'hire_type', 'pickup_date', 'return_date',
                      'days', 'total_usd', 'payment_method', 'payment_status', 'status', 'created_at']
-    list_filter   = ['status', 'payment_status', 'payment_method', 'pickup_date', 'hire_type']
-    search_fields = ['reference', 'first_name', 'last_name', 'email', 'phone']
+    list_filter   = ['hire_type', 'status', 'payment_status', 'payment_method', 'pickup_date',
+                     'transfer_zone', 'transfer_car_type']
+    search_fields = ['reference', 'first_name', 'last_name', 'email', 'phone', 'transfer_destination']
     readonly_fields = ['reference', 'ip_address', 'user_agent', 'created_at', 'updated_at']
     date_hierarchy = 'pickup_date'
     ordering = ['-created_at']
+    fieldsets = (
+        ('Reference', {'fields': ('reference', 'status', 'payment_status', 'payment_method')}),
+        ('Customer', {'fields': ('user', 'first_name', 'last_name', 'email', 'phone', 'nationality')}),
+        ('Hire details', {'fields': ('hire_type', 'vehicle', 'with_driver', 'baby_seat',
+                                     'pickup_location', 'hotel_address', 'dropoff_location',
+                                     'pickup_date', 'pickup_time', 'return_date', 'return_time')}),
+        ('Airport Transfer (only when hire_type=transfer)', {
+            'classes': ('collapse',),
+            'fields': ('transfer_direction', 'transfer_zone', 'transfer_car_type',
+                       'transfer_destination', 'is_night_surcharge'),
+        }),
+        ('Pricing', {'fields': ('days', 'base_price_usd', 'driver_fee_usd', 'total_usd')}),
+        ('Meta', {'classes': ('collapse',), 'fields': ('ip_address', 'user_agent', 'created_at', 'updated_at')}),
+    )
 
 
 @admin.register(PaymentLog)

@@ -26,6 +26,17 @@ class Vehicle(models.Model):
         ('mid',  'Mid-Range'),
         ('exec', 'Executive'),
     ]
+    # Airport-transfer car class. Used by /airport-transfer/ pricing.
+    # Leave blank ('') for a vehicle that should NOT appear in airport
+    # transfer at all (e.g. a heavy 4x4 with 80L diesel tank wouldn't be
+    # economical for a 30km airport run).
+    TRANSFER_CAR_TYPE_CHOICES = [
+        ('',        '— Not used for airport transfer —'),
+        ('economy', 'Economy'),
+        ('midsize', 'Mid-size'),
+        ('luxury',  'Luxury'),
+        ('van',     'Van / Group'),
+    ]
 
     name            = models.CharField(max_length=100)
     slug            = models.SlugField(unique=True)
@@ -44,6 +55,10 @@ class Vehicle(models.Model):
     image           = models.ImageField(upload_to='cars/', blank=True, null=True)
     is_available    = models.BooleanField(default=True)
     order           = models.PositiveSmallIntegerField(default=0)
+    transfer_car_type = models.CharField(
+        max_length=10, choices=TRANSFER_CAR_TYPE_CHOICES, default='', blank=True,
+        help_text='Airport-transfer category. Leave blank to exclude from transfer service.'
+    )
 
     class Meta:
         ordering = ['order', 'name']
@@ -84,6 +99,28 @@ class Booking(models.Model):
         ('long',      'Long-Term Lease'),
         ('corporate', 'Corporate Hire'),
         ('safari',    'Safari Package'),
+        ('transfer',  'Airport Transfer'),
+    ]
+    # Direction of an airport transfer
+    TRANSFER_DIRECTION_CHOICES = [
+        ('',     '— N/A (not an airport transfer) —'),
+        ('FROM', 'JKIA → Destination'),
+        ('TO',   'Pickup → JKIA'),
+    ]
+    # Zone within Nairobi
+    TRANSFER_ZONE_CHOICES = [
+        ('',          '— N/A —'),
+        ('near',      'Near Airport'),
+        ('nairobi',   'Nairobi'),
+        ('outskirts', 'Outskirts'),
+    ]
+    # Car type at the moment of booking (locked in price)
+    TRANSFER_CAR_TYPE_CHOICES = [
+        ('',        '— N/A —'),
+        ('economy', 'Economy'),
+        ('midsize', 'Mid-size'),
+        ('luxury',  'Luxury'),
+        ('van',     'Van / Group'),
     ]
     PICKUP_LOCATION_CHOICES = [
         ('JKIA',  'Jomo Kenyatta Airport (NBO)'),
@@ -133,8 +170,20 @@ class Booking(models.Model):
     dropoff_location = models.CharField(max_length=300, blank=True)
     pickup_date     = models.DateField()
     pickup_time     = models.TimeField()
-    return_date     = models.DateField()
-    return_time     = models.TimeField()
+    # Return date/time are required for car-rental hires but NOT for airport
+    # transfers (which are one-way rides). Hence nullable.
+    return_date     = models.DateField(null=True, blank=True)
+    return_time     = models.TimeField(null=True, blank=True)
+
+    # ── Airport Transfer fields (only used when hire_type='transfer') ────
+    # Direction: 'FROM' = JKIA → destination zone; 'TO' = zone → JKIA
+    transfer_direction  = models.CharField(max_length=4, choices=TRANSFER_DIRECTION_CHOICES, default='', blank=True)
+    transfer_zone       = models.CharField(max_length=10, choices=TRANSFER_ZONE_CHOICES, default='', blank=True)
+    transfer_car_type   = models.CharField(max_length=10, choices=TRANSFER_CAR_TYPE_CHOICES, default='', blank=True)
+    transfer_destination = models.CharField(max_length=120, blank=True,
+        help_text='Free-text destination/pickup point (e.g. "Sarova Stanley, CBD"). For transfers only.')
+    is_night_surcharge  = models.BooleanField(default=False,
+        help_text='Pickup is between 22:00 and 06:00 — adds $8 to total.')
 
     # Pricing (snapshotted at booking time)
     days            = models.PositiveSmallIntegerField(default=1)

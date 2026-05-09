@@ -128,6 +128,28 @@ nav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:cen
 .tab.active{color:var(--white);background:linear-gradient(135deg,var(--blue),var(--blue-dark));
   border-color:var(--blue);box-shadow:0 4px 14px rgba(21,101,255,.32)}
 .tab:hover:not(.active){background:#EDF2FF;border-color:var(--blue-light);color:var(--blue)}
+
+/* ── Hire-type pills inside the booking modal ──────────────────
+   Sit at the top of the booking form (above name fields).
+   Selected state matches the baby-seat checked treatment for
+   visual consistency across the form. */
+.modal-hire-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;
+  padding-bottom:14px;border-bottom:1px solid var(--border)}
+.hire-pill{padding:8px 14px;font-family:'Poppins',sans-serif;
+  font-size:.78rem;font-weight:700;cursor:pointer;
+  background:var(--white);color:var(--ink);
+  border:1.5px solid var(--border);border-radius:100px;
+  transition:border-color .15s, background .15s, color .15s, box-shadow .15s;
+  white-space:nowrap;outline:none}
+.hire-pill:hover:not(.active){border-color:var(--blue-light);color:var(--blue)}
+.hire-pill.active{
+  border-color:var(--blue);
+  background:rgba(21,101,255,.18);
+  color:var(--blue-dark);
+  box-shadow:0 0 0 1px var(--blue) inset;
+}
+.hire-pill:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
 .search-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:13px;align-items:end}
 .sg label{display:block;font-size:.68rem;font-weight:700;letter-spacing:.1em;
   text-transform:uppercase;color:var(--muted);margin-bottom:6px}
