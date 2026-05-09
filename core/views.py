@@ -1,6 +1,8 @@
 import json
 import logging
+import secrets
 import traceback
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
@@ -12,19 +14,49 @@ from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 
-from .emails import send_booking_confirmation, send_support_notification
+from .emails import send_booking_confirmation, send_support_notification, send_otp_email
 from .forms import (
     BookingStep1Form, BookingPaymentForm,
     CheckBookingForm, LoginForm, RegisterForm, SupportForm,
 )
 from .middleware import get_client_ip
-from .models import Booking, PaymentLog, Review, SupportTicket, Vehicle
+from .models import Booking, EmailOTP, PaymentLog, Review, SupportTicket, Vehicle
 from .payments import PaystackBackend, MpesaBackend, PayPalBackend
 
 logger = logging.getLogger('drivekenya.views')
+
+
+# ── Email OTP constants ──────────────────────────────────────────
+OTP_EXPIRY_MINUTES = 15
+OTP_MAX_ATTEMPTS = 5
+OTP_RESEND_COOLDOWN_SECONDS = 60
+
+
+def _generate_otp_code() -> str:
+    """Cryptographically random 6-digit numeric code."""
+    return f'{secrets.randbelow(1_000_000):06d}'
+
+
+def _create_and_send_otp(user):
+    """
+    Invalidate any prior unverified OTPs for this email, create a fresh one,
+    and email it to the user.
+    """
+    EmailOTP.objects.filter(email__iexact=user.email, verified_at__isnull=True).delete()
+    code = _generate_otp_code()
+    expires_at = timezone.now() + timedelta(minutes=OTP_EXPIRY_MINUTES)
+    otp = EmailOTP.objects.create(
+        email=user.email, code=code, user=user, expires_at=expires_at,
+    )
+    try:
+        send_otp_email(to_email=user.email, code=code, first_name=user.first_name or '')
+    except Exception as exc:
+        logger.warning('OTP email send failed for %s: %s', user.email, exc)
+    return otp
 
 
 def _json_error(message, status=400):
@@ -838,19 +870,125 @@ def auth_logout(request):
     return redirect('home')
 
 
+@never_cache
 def auth_register(request):
+    """
+    Step 1 of new-account creation:
+    - Validates the form
+    - Creates the user with is_active=False (cannot log in until verified)
+    - Generates a 6-digit OTP, emails it
+    - Redirects to /auth/verify-email/ where the user enters the code
+
+    If a user with this email exists but is INACTIVE (started signup but
+    never verified the OTP), we delete that stale record so the new
+    registration succeeds. Handles "I made a typo and want to retry".
+    """
     if request.user.is_authenticated:
         return redirect('dashboard')
+
+    # Clear any stale OTP session state from a previous incomplete attempt
+    request.session.pop('otp_user_pk', None)
+
+    # Pre-flight: delete inactive (unverified) records that match the email
+    # or username being registered. Stops UserCreationForm uniqueness checks
+    # from blocking the retry.
+    if request.method == 'POST':
+        email = (request.POST.get('email') or '').strip().lower()
+        if email:
+            stale = User.objects.filter(email__iexact=email, is_active=False).first()
+            if stale:
+                logger.info('Deleting stale inactive registration for %s', email)
+                EmailOTP.objects.filter(email__iexact=email).delete()
+                stale.delete()
+
+        username = (request.POST.get('username') or '').strip()
+        if username:
+            stale = User.objects.filter(username__iexact=username, is_active=False).first()
+            if stale:
+                logger.info('Deleting stale inactive username %s', username)
+                EmailOTP.objects.filter(email__iexact=stale.email).delete()
+                stale.delete()
+
     form = RegisterForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        user = form.save()
-        # Explicit backend — required when AUTHENTICATION_BACKENDS has > 1 entry.
-        # Without this, Django raises ValueError at this point even though the
-        # user has been saved successfully.
-        login(request, user, backend='core.auth_backends.EmailOrUsernameBackend')
-        messages.success(request, f'Welcome, {user.first_name}! Your account is ready.')
-        return redirect('dashboard')
+        user = form.save(commit=False)
+        user.is_active = False  # cannot log in until OTP verified
+        user.save()
+        if hasattr(form, 'save_m2m'):
+            try:
+                form.save_m2m()
+            except Exception:
+                pass
+        _create_and_send_otp(user)
+        request.session['otp_user_pk'] = user.pk
+        messages.info(request, f'We just emailed a 6-digit code to {user.email}. Enter it below to finish creating your account.')
+        return redirect('verify_email')
     return render(request, 'core/auth/register.html', {'form': form})
+
+
+@never_cache
+def verify_email(request):
+    """
+    Step 2 of new-account creation: user enters the OTP they received.
+    On success: activates the user, logs them in, redirects to dashboard.
+    On failure: logs an attempt; after 5 wrong codes the OTP is invalidated.
+    """
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    user_pk = request.session.get('otp_user_pk')
+    if not user_pk:
+        messages.error(request, 'No verification in progress. Please register again.')
+        return redirect('register')
+
+    try:
+        user = User.objects.get(pk=user_pk, is_active=False)
+    except Exception:
+        messages.error(request, 'Verification expired. Please register again.')
+        return redirect('register')
+
+    otp = EmailOTP.objects.filter(
+        email__iexact=user.email, verified_at__isnull=True,
+    ).order_by('-created_at').first()
+
+    if request.method == 'POST':
+        action = request.POST.get('action', 'verify')
+        if action == 'resend':
+            if otp and otp.created_at and (timezone.now() - otp.created_at).total_seconds() < OTP_RESEND_COOLDOWN_SECONDS:
+                wait = OTP_RESEND_COOLDOWN_SECONDS - int((timezone.now() - otp.created_at).total_seconds())
+                messages.warning(request, f'Please wait {wait}s before requesting a new code.')
+            else:
+                _create_and_send_otp(user)
+                messages.success(request, 'A new code has been sent to your email.')
+            return redirect('verify_email')
+
+        # Default: verify the entered code
+        entered = (request.POST.get('code') or '').strip()
+        if not otp:
+            messages.error(request, 'No active code. Click "Resend code".')
+        elif otp.is_expired():
+            messages.error(request, 'This code has expired. Click "Resend code" to get a fresh one.')
+        elif otp.attempts >= OTP_MAX_ATTEMPTS:
+            messages.error(request, 'Too many wrong attempts. Click "Resend code" to get a fresh one.')
+        elif entered == otp.code:
+            otp.verified_at = timezone.now()
+            otp.save(update_fields=['verified_at'])
+            user.is_active = True
+            user.save(update_fields=['is_active'])
+            login(request, user, backend='core.auth_backends.EmailOrUsernameBackend')
+            request.session.pop('otp_user_pk', None)
+            messages.success(request, f'Welcome aboard, {user.first_name}! Your email is verified.')
+            return redirect('dashboard')
+        else:
+            otp.attempts += 1
+            otp.save(update_fields=['attempts'])
+            remaining = max(0, OTP_MAX_ATTEMPTS - otp.attempts)
+            messages.error(request, f'Incorrect code. {remaining} attempt(s) left before this code is invalidated.')
+
+    return render(request, 'core/auth/verify_email.html', {
+        'email': user.email,
+        'expires_minutes': OTP_EXPIRY_MINUTES,
+    })
 
 
 # ─────────────────────────────────────────────────────────────
