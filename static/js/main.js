@@ -429,6 +429,26 @@ function setHireType(type) {
 function onHireTypeChange() {
   const hire = val('b_hire_type');
   const veh  = $id('b_vehicle');
+
+  // ── Driver field: Safari Package always includes a driver, so we hide
+  // the Self/With-Driver dropdown and show a static "included" note.
+  // For all other hire types, the dropdown is the customer's choice.
+  const driverWrap = $id('driverFieldWrap');
+  const safariNote = $id('safariDriverNote');
+  const withDriverCheckbox = $id('b_with_driver');
+  const driverSel  = $id('b_driver_option');
+  if (hire === 'safari') {
+    if (driverWrap) driverWrap.style.display = 'none';
+    if (safariNote) safariNote.style.display = '';
+    // Force "with driver" so server-side billing reflects this
+    if (driverSel) driverSel.value = 'driver';
+    if (withDriverCheckbox) withDriverCheckbox.checked = true;
+  } else {
+    if (driverWrap) driverWrap.style.display = '';
+    if (safariNote) safariNote.style.display = 'none';
+    // Don't reset their previous choice — they may have ticked driver before
+  }
+
   if (!veh) { updatePricingPreview(); return; }
 
   const wantSafariOnly = (hire === 'safari');
@@ -916,7 +936,19 @@ function markPaymentAttempt() {
 // Paystack Inline reference: https://paystack.com/docs/payments/accept-payments/
 function triggerPaystackCard() {
   markPaymentAttempt();  // record checkout-in-progress
-  const pk = ($id('paystackPk')||{}).value || '';
+  let pk = ($id('paystackPk')||{}).value || '';
+  pk = pk.trim();  // strip any whitespace from .env that crept in
+
+  // Diagnostics — log to console so we can debug "Please enter a valid Key"
+  // errors from the Paystack popup. Common causes: secret key (sk_*) instead
+  // of public key (pk_*), trailing whitespace, or empty .env value.
+  console.log('[Paystack] key prefix:', pk.slice(0, 8) || '(empty)');
+  if (pk && !pk.startsWith('pk_')) {
+    console.error('[Paystack] Public key must start with "pk_test_" or "pk_live_". Got:', pk.slice(0, 12));
+    toast('Paystack key misconfigured (must start with pk_). Tell support.', 'error');
+    return;
+  }
+
   if (!pk || pk.includes('REPLACE_ME') || !window.PaystackPop) {
     // Dev/test mode — simulate success so you can test the confirmation flow
     toast('Demo mode: simulating successful payment (Paystack keys not configured).', 'info');
@@ -931,6 +963,12 @@ function triggerPaystackCard() {
   // Paystack expects amount in the smallest unit of the currency
   // For KES, that's "kobo" = amount × 100
   const amountKobo = Math.round(parseFloat(booking.total_kes || 0) * 100);
+
+  if (!amountKobo || amountKobo <= 0) {
+    console.error('[Paystack] Invalid amount:', booking.total_kes, '→ kobo:', amountKobo);
+    toast('Could not start payment — booking total is 0. Please go back and re-enter the booking.', 'error');
+    return;
+  }
 
   const handler = PaystackPop.setup({
     key:       pk,
@@ -1113,6 +1151,33 @@ async function submitStep1Transfer() {
 
   if (hasError) return;
 
+  // ── Edit-instead-of-duplicate ───────────────────────────
+  // If we already have a pending transfer booking AND nothing has
+  // materially changed, just re-display step 2 — don't POST again.
+  // If something changed, attach edit_ref so server UPDATES the existing
+  // booking instead of creating a duplicate.
+  const sigNow  = `transfer|${fields.transfer_direction}|${fields.transfer_car_type}|${fields.transfer_location}|${fields.transfer_pickup_date}|${fields.transfer_pickup_time}|${fields.email}`;
+  if (pendingBooking && pendingBooking.reference && pendingBooking.is_transfer) {
+    const sigPrev = pendingBooking._sig || '';
+    if (sigNow === sigPrev) {
+      // Identical booking — just re-display the summary card
+      populateOrderSummary({
+        vehicle:    pendingBooking.vehicle_name || 'Airport Transfer',
+        days:       1,
+        base_price: pendingBooking.total_usd,
+        total_usd:  pendingBooking.total_usd,
+        total_kes:  pendingBooking.total_kes,
+        total_eur:  pendingBooking.total_eur,
+        driver_fee: '0', with_driver: false, baby_seat: false, baby_seat_fee: '0',
+      });
+      renderTransferSummary(pendingBooking);
+      currentStep = 2; updateStepUI();
+      return;
+    }
+    // Booking changed — update the existing one
+    fields.edit_ref = pendingBooking.reference;
+  }
+
   // Submit
   const btn = $id('btnNext');
   if (btn) { btn.disabled = true; btn.textContent = 'Booking…'; }
@@ -1127,6 +1192,22 @@ async function submitStep1Transfer() {
     }
     pendingBooking = result;
     pendingBooking.is_transfer = true;
+    pendingBooking._sig = sigNow;
+    // Map transfer response into the shape populateOrderSummary expects.
+    // This populates the standard "Your Booking" card on Step 2 so the
+    // payment total isn't $0.
+    populateOrderSummary({
+      vehicle:       result.vehicle_name || 'Airport Transfer',
+      days:          1,
+      base_price:    result.total_usd,
+      total_usd:     result.total_usd,
+      total_kes:     result.total_kes,
+      total_eur:     result.total_eur,
+      driver_fee:    '0',
+      with_driver:   false,
+      baby_seat:     false,
+      baby_seat_fee: '0',
+    });
     currentStep = 2;
     updateStepUI();
     renderTransferSummary(result);

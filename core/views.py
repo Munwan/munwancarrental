@@ -208,43 +208,59 @@ def _booking_submit_transfer(request):
             'transfer_location': q.get('error', 'Could not compute price.')
         }}, status=400)
 
-    # ── Persist ──────────────────────────────────────────────
+    # ── Edit-instead-of-duplicate ────────────────────────────
+    # If the form supplies edit_ref AND that booking is still unpaid AND
+    # the email matches, update the existing booking. Stops the customer
+    # from creating duplicates by going Back → Edit → Continue.
     from decimal import Decimal
-    booking = Booking(
-        ip_address  = get_client_ip(request),
-        user_agent  = request.META.get('HTTP_USER_AGENT', '')[:500],
-        first_name  = first_name,
-        last_name   = last_name,
-        email       = email.lower(),
-        phone       = phone,
-        nationality = nationality,
-        vehicle     = candidate,
-        hire_type   = 'transfer',
-        with_driver = True,         # transfers always include driver
-        baby_seat   = False,
-        # Direction-aware pickup_location: JKIA for FROM, custom for TO
-        pickup_location  = 'JKIA' if direction == 'FROM' else 'other',
-        hotel_address    = location_raw if direction == 'TO' else '',
-        dropoff_location = location_raw if direction == 'FROM' else 'JKIA',
-        pickup_date      = pickup_date,
-        pickup_time      = pickup_time,
-        return_date      = None,
-        return_time      = None,
-        # Transfer-specific fields
-        transfer_direction   = direction,
-        transfer_zone        = zone,
-        transfer_car_type    = car_type,
-        transfer_destination = (P.get('transfer_destination_text') or '').strip()[:120],
-        is_night_surcharge   = q['night'],
-        # Pricing (lock in) — all three currencies required by model
-        days            = 1,
-        base_price_usd  = Decimal(str(q['usd_total'])),
-        driver_fee_usd  = Decimal('0.00'),
-        total_usd       = Decimal(str(q['usd_total'])),
-        total_kes       = Decimal(str(q['kes_total'])),
-        total_eur       = Decimal(str(q['eur_total'])),
-        terms_accepted  = bool(P.get('terms_accepted')),
-    )
+    booking = None
+    existing_ref = (P.get('edit_ref') or '').strip()
+    if existing_ref:
+        try:
+            booking = Booking.objects.get(
+                reference=existing_ref,
+                payment_status='unpaid',
+                email__iexact=email.lower(),  # only the original booker can edit
+            )
+        except Booking.DoesNotExist:
+            booking = None  # fall through to create-new
+
+    if booking is None:
+        booking = Booking(
+            ip_address  = get_client_ip(request),
+            user_agent  = request.META.get('HTTP_USER_AGENT', '')[:500],
+        )
+
+    # ── Apply form data (works for both create and update paths) ────
+    booking.first_name  = first_name
+    booking.last_name   = last_name
+    booking.email       = email.lower()
+    booking.phone       = phone
+    booking.nationality = nationality
+    booking.vehicle     = candidate
+    booking.hire_type   = 'transfer'
+    booking.with_driver = True
+    booking.baby_seat   = False
+    booking.pickup_location  = 'JKIA' if direction == 'FROM' else 'other'
+    booking.hotel_address    = location_raw if direction == 'TO' else ''
+    booking.dropoff_location = location_raw if direction == 'FROM' else 'JKIA'
+    booking.pickup_date      = pickup_date
+    booking.pickup_time      = pickup_time
+    booking.return_date      = None
+    booking.return_time      = None
+    booking.transfer_direction   = direction
+    booking.transfer_zone        = zone
+    booking.transfer_car_type    = car_type
+    booking.transfer_destination = (P.get('transfer_destination_text') or '').strip()[:120]
+    booking.is_night_surcharge   = q['night']
+    booking.days            = 1
+    booking.base_price_usd  = Decimal(str(q['usd_total']))
+    booking.driver_fee_usd  = Decimal('0.00')
+    booking.total_usd       = Decimal(str(q['usd_total']))
+    booking.total_kes       = Decimal(str(q['kes_total']))
+    booking.total_eur       = Decimal(str(q['eur_total']))
+    booking.terms_accepted  = bool(P.get('terms_accepted'))
+
     if request.user.is_authenticated:
         booking.user = request.user
     booking.save()
@@ -369,7 +385,9 @@ def booking_submit(request):
         booking.nationality      = cd['nationality']
         booking.vehicle          = vehicle
         booking.hire_type        = cd['hire_type']
-        booking.with_driver      = with_driver
+        # Safari Package always includes a driver — enforce server-side
+        # in case the customer manipulated the form to send self-drive.
+        booking.with_driver      = True if cd['hire_type'] == 'safari' else with_driver
         booking.baby_seat        = baby_seat
         booking.pickup_location  = cd['pickup_location']
         booking.hotel_address    = cd.get('hotel_address') or ''

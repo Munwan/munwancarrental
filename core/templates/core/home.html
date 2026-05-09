@@ -282,7 +282,7 @@
           <div class="frow full">
             <span class="form-group-heading">Optional Add-ons</span>
             <div class="frow" style="margin-top:6px">
-              <div class="fg">
+              <div class="fg" id="driverFieldWrap">
                 <label for="b_driver_option">🚖 Driver</label>
                 <select id="b_driver_option" onchange="onDriverOptionChange()">
                   <option value="self">Self Drive (no extra cost)</option>
@@ -292,6 +292,14 @@
                 <input type="checkbox" id="b_with_driver" style="display:none"/>
                 <!-- Hidden span retained for any other code that reads the fee value -->
                 <span id="driverFeeInline" style="display:none">0</span>
+              </div>
+              <div class="fg" id="safariDriverNote" style="display:none">
+                <label>🚖 Driver</label>
+                <div style="padding:9px 12px;background:rgba(21,101,255,.06);
+                            border:1px solid rgba(21,101,255,.2);border-radius:8px;
+                            font-size:.82rem;color:var(--ink);line-height:1.4">
+                  ✓ Professional driver included with every Safari Package
+                </div>
               </div>
               <div class="fg">
                 <label for="b_baby_seat">👶 Baby Seat</label>
@@ -346,7 +354,7 @@
               <label for="b_transfer_location" id="transferLocationLabel">Destination <span class="req">*</span></label>
               <select id="b_transfer_location" onchange="onTransferLocationChange()">
                 <option value="">— Select Location —</option>
-                <optgroup label="Near Airport">
+                <optgroup label="Near Airport (lowest fare)">
                   <option value="embakasi">Embakasi</option>
                   <option value="fedha">Fedha</option>
                   <option value="south b">South B</option>
@@ -354,7 +362,7 @@
                   <option value="syokimau">Syokimau</option>
                   <option value="mombasa road">Mombasa Road</option>
                 </optgroup>
-                <optgroup label="Nairobi (mid fare)">
+                <optgroup label="Nairobi">
                   <option value="westlands">Westlands</option>
                   <option value="parklands">Parklands</option>
                   <option value="kilimani">Kilimani</option>
@@ -368,7 +376,7 @@
                   <option value="ngong road">Ngong Road</option>
                   <option value="yaya centre">Yaya Centre</option>
                 </optgroup>
-                <optgroup label=" Nairobi Outskirts">
+                <optgroup label="Nairobi Outskirts">
                   <option value="karen">Karen</option>
                   <option value="karen hardy">Karen Hardy</option>
                   <option value="runda">Runda</option>
@@ -409,8 +417,8 @@
           <div class="price-preview" id="transferPricePreview" style="display:none">
             <div class="pp-row"><span>Base fare (<span id="tpp_zone_label">—</span>, <span id="tpp_car_label">—</span>)</span><span id="tpp_base">—</span></div>
             <div class="pp-row" id="tpp_night_row" style="display:none"><span>🌙 Night surcharge (10pm–6am)</span><span id="tpp_night">—</span></div>
-            <div class="pp-row"><span>Total in KES</span><span id="tpp_total_kes" style="font-weight:700">—</span></div>
-            <div class="pp-row"><span>≈ Total in USD</span><span id="tpp_total_usd">—</span></div>
+            <div class="pp-row"><span>Total in USD</span><span id="tpp_total_usd" style="font-weight:700">—</span></div>
+            <div class="pp-row"><span>≈ Total in KES</span><span id="tpp_total_kes">—</span></div>
             <div class="pp-row"><span>≈ Total in EUR</span><span id="tpp_total_eur">—</span></div>
             <div class="pp-total"><span>You Pay</span><span id="tpp_total_pay">—</span></div>
           </div>
@@ -480,31 +488,16 @@
           </div>
         </div>
 
-        <!-- Paystack panel -->
+        <!-- Paystack panel — unified Card + M-Pesa.
+             Paystack's checkout popup lets the customer choose card, M-Pesa,
+             bank transfer, or USSD inside the popup itself. We don't need
+             separate sub-tabs in our UI — that just splits the flow
+             unnecessarily. -->
         <div class="pay-panel" id="panel_paystack">
-          <!-- Card / M-Pesa sub tabs -->
-          <div class="fw-sub-tabs">
-            <button class="fw-sub active" id="fw_tab_card" onclick="selectFwSub('card')">💳 Card</button>
-            <button class="fw-sub" id="fw_tab_mpesa" onclick="selectFwSub('mpesa')">📱 M-Pesa</button>
-          </div>
-
-          <!-- Card panel — single CTA only -->
-          <div id="fw_card_panel">
-            <button class="fw-pay-btn" id="fwCardBtn" onclick="triggerPaystackCard()">🔒 Pay Securely with Card</button>
-            <div class="pay-fineprint">Visa · Mastercard · Verve · Secure checkout</div>
-          </div>
-
-          <!-- M-Pesa panel -->
-          <div id="fw_mpesa_panel" style="display:none">
-            <div class="frow full" style="margin-bottom:6px">
-              <div class="fg"><label for="mpesa_phone">M-Pesa Phone Number <span class="req">*</span></label>
-                <input type="tel" id="mpesa_phone" placeholder="+254 7XX XXX XXX"/>
-                <div class="ferr" id="err_mpesa"></div>
-              </div>
-            </div>
-            <button class="fw-pay-btn fw-mpesa-btn" id="mpesaPayBtn" onclick="triggerMpesaPayment()">📱 Send STK Push</button>
-            <div class="pay-fineprint">An STK prompt will appear on your phone. Enter your M-Pesa PIN to confirm.</div>
-          </div>
+          <button class="fw-pay-btn" id="fwCardBtn" onclick="triggerPaystackCard()">
+            🔒 Pay with Card or M-Pesa
+          </button>
+          <div class="pay-fineprint">Card · M-Pesa · Bank Transfer · USSD — secured by Paystack</div>
         </div>
 
         <!-- PayPal panel -->
