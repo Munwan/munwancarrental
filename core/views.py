@@ -55,12 +55,32 @@ def _create_and_send_otp(user):
     try:
         send_otp_email(to_email=user.email, code=code, first_name=user.first_name or '')
     except Exception as exc:
-        logger.warning('OTP email send failed for %s: %s', user.email, exc)
+        logger.exception('OTP email send failed for %s', user.email)
     return otp
 
 
 def _json_error(message, status=400):
     return JsonResponse({'ok': False, 'error': message}, status=status)
+
+
+def _fire_email(fn, *args, **kwargs):
+    """
+    Run an email-send function in a daemon thread that LOGS its own
+    exceptions. Plain `threading.Thread(target=fn).start()` swallows
+    exceptions silently — making "email never arrived" bugs invisible.
+
+    Usage:
+        _fire_email(send_booking_confirmation, booking)
+    """
+    import threading
+
+    def _runner():
+        try:
+            fn(*args, **kwargs)
+        except Exception:
+            logger.exception('Email thread failed: %s', getattr(fn, '__name__', str(fn)))
+
+    threading.Thread(target=_runner, daemon=True).start()
 
 
 # ─────────────────────────────────────────────────────────────
@@ -298,19 +318,18 @@ def _booking_submit_transfer(request):
                     _create_and_send_otp(new_user)
                     request.session['otp_user_pk'] = new_user.pk
                 except Exception as otp_exc:
-                    logger.warning('Transfer-flow OTP send failed for %s: %s', email, otp_exc)
+                    logger.exception('Transfer-flow OTP send failed for %s', email)
                 account_created = True
             except Exception as exc:
-                logger.warning('Transfer-flow account creation failed: %s', exc)
+                logger.exception('Transfer-flow account creation failed')
 
     # Admin alert + customer "booking received" email
     try:
-        import threading
         from .emails import send_new_booking_admin_alert, send_booking_received
-        threading.Thread(target=send_new_booking_admin_alert, args=(booking,), daemon=True).start()
-        threading.Thread(target=send_booking_received, args=(booking,), daemon=True).start()
+        _fire_email(send_new_booking_admin_alert, booking)
+        _fire_email(send_booking_received, booking)
     except Exception as e:
-        logger.warning('Transfer booking email threads failed: %s', e)
+        logger.exception('Transfer booking email threads failed')
 
     return JsonResponse({
         'ok':                True,
@@ -327,6 +346,10 @@ def _booking_submit_transfer(request):
     })
 
 
+# ─────────────────────────────────────────────────────────────
+#  BOOKING — STEP 1 (validate + save reservation)
+# ─────────────────────────────────────────────────────────────
+@require_POST
 def booking_submit(request):
     try:
         # ── Branch: Airport Transfer bookings have a different field set,
@@ -437,12 +460,11 @@ def booking_submit(request):
         # background thread so the HTTP response returns immediately —
         # SMTP can take 1-3 seconds and would block the user.
         try:
-            import threading
             from .emails import send_new_booking_admin_alert, send_booking_received
-            threading.Thread(target=send_new_booking_admin_alert, args=(booking,), daemon=True).start()
-            threading.Thread(target=send_booking_received, args=(booking,), daemon=True).start()
+            _fire_email(send_new_booking_admin_alert, booking)
+            _fire_email(send_booking_received, booking)
         except Exception as e:
-            logger.warning('Booking-creation email threads failed: %s', e)
+            logger.exception('Booking-creation email threads failed')
 
         # Optional account creation
         account_created     = False
@@ -475,7 +497,7 @@ def booking_submit(request):
                     login(request, new_user, backend='core.auth_backends.EmailOrUsernameBackend')
                     account_created = True
                 except Exception as exc:
-                    logger.warning('Account creation failed: %s', exc)
+                    logger.exception('Account creation failed')
 
         # If the email is already taken, abort BEFORE creating the booking record
         # would be ideal, but the booking is already saved. Reverse that and ask
@@ -707,12 +729,11 @@ def payment_process(request):
             # Three emails: customer confirmation, customer receipt, admin alert.
             # Fire all in background threads — payment success page returns instantly.
             try:
-                import threading
                 from .emails import send_payment_receipt, send_payment_admin_alert
                 for fn in (send_booking_confirmation, send_payment_receipt, send_payment_admin_alert):
-                    threading.Thread(target=fn, args=(booking,), daemon=True).start()
+                    _fire_email(fn, booking)
             except Exception as e:
-                logger.warning('Post-payment email threads failed: %s', e)
+                logger.exception('Post-payment email threads failed')
             request.session.pop('pending_booking_id', None)
             return JsonResponse({
                 'ok':        True,
@@ -799,7 +820,24 @@ def paystack_webhook(request):
             data      = payload.get('data', {}) or {}
             reference = data.get('reference', '')
             if reference:
-                booking = Booking.objects.filter(reference=reference).first()
+                # Paystack sends back the SUFFIXED ref we passed at popup time
+                # (e.g. DK-2026-XXXXXX-abc123). Look up by:
+                #   1. payment_ref (exact match for the suffixed ref we stored)
+                #   2. reference   (exact match if no suffix was used)
+                #   3. reference   (prefix match — strip our suffix)
+                # That way ALL three call paths line up: JS callback, webhook,
+                # and any old bookings that pre-date the suffixing change.
+                booking = (
+                    Booking.objects.filter(payment_ref=reference).first()
+                    or Booking.objects.filter(reference=reference).first()
+                )
+                if booking is None and '-' in reference:
+                    # Suffix scheme is "{booking.reference}-{6-char-suffix}".
+                    # If the trailing segment is short, treat the rest as the booking ref.
+                    parts = reference.rsplit('-', 1)
+                    if len(parts) == 2 and 4 <= len(parts[1]) <= 10:
+                        booking = Booking.objects.filter(reference=parts[0]).first()
+
                 if booking and booking.payment_status != 'paid':
                     booking.payment_status = 'paid'
                     booking.status         = 'confirmed'
@@ -811,15 +849,19 @@ def paystack_webhook(request):
                         'payment_reminder_sent'])
                     # Fire customer + admin emails in background threads
                     try:
-                        import threading
                         from .emails import (send_booking_confirmation,
                                               send_payment_receipt,
                                               send_payment_admin_alert)
                         for fn in (send_booking_confirmation, send_payment_receipt, send_payment_admin_alert):
-                            threading.Thread(target=fn, args=(booking,), daemon=True).start()
+                            _fire_email(fn, booking)
                     except Exception as e:
-                        logger.warning('Webhook email threads failed for %s: %s', reference, e)
-                logger.info('Paystack webhook confirmed booking: %s', reference)
+                        logger.exception('Webhook email threads failed for %s', reference)
+                    logger.info('Paystack webhook confirmed booking: %s (payment_ref=%s)',
+                                booking.reference, reference)
+                elif booking:
+                    logger.info('Paystack webhook for already-paid booking: %s', booking.reference)
+                else:
+                    logger.warning('Paystack webhook: no booking found for reference %s', reference)
 
     except Exception as exc:
         logger.error('Paystack webhook error: %s', exc)
@@ -1091,7 +1133,7 @@ def dashboard(request):
                 if count:
                     logger.info('Claimed %d orphan bookings for user %s', count, request.user.email)
     except Exception as exc:
-        logger.warning('Orphan claim skipped: %s', exc)
+        logger.exception('Orphan claim skipped')
 
     try:
         # Show ONLY bookings where BOTH user FK matches AND email matches.
@@ -1252,8 +1294,8 @@ def support(request):
                 ticket.save()
                 try:
                     send_support_notification(ticket)
-                except Exception as e:
-                    logger.warning('Support email failed: %s', e)
+                except Exception:
+                    logger.exception('Support email failed')
                 submitted = True
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'ok': True, 'ticket_id': ticket.id})
