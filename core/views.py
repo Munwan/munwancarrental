@@ -546,18 +546,28 @@ def booking_summary(request):
     Returns booking JSON for the payment-step UI. Two ways to identify the booking:
       1. ?reference=DK-2025-XXXXXX (public — works for unpaid bookings from check-booking page)
       2. session pending_booking_id (default — set after booking_submit)
-    Only unpaid bookings are returned via the public reference path.
+    If the public reference points to a PAID booking, returns {ok: False,
+    already_paid: True} so the JS can redirect the customer to the
+    check-booking page instead of trying to pay again.
     """
     reference = (request.GET.get('reference') or '').strip()
     b = None
 
     if reference:
-        # Public resume: only allow unpaid bookings
+        # Public resume: look up the booking regardless of payment status.
         try:
-            b = Booking.objects.get(reference=reference, payment_status='unpaid')
-            request.session['pending_booking_id'] = b.id
+            b = Booking.objects.get(reference=reference)
         except Booking.DoesNotExist:
-            return _json_error('Booking not found or already paid.', 404)
+            return _json_error('Booking not found.', 404)
+        # If already paid, tell the JS so it can redirect to check-booking
+        # (clicking "Complete Payment" in an old email shouldn't double-charge).
+        if b.payment_status == 'paid':
+            return JsonResponse({
+                'ok':            False,
+                'already_paid':  True,
+                'reference':     b.reference,
+            })
+        request.session['pending_booking_id'] = b.id
     else:
         booking_id = request.session.get('pending_booking_id')
         if not booking_id:
@@ -568,10 +578,11 @@ def booking_summary(request):
             return _json_error('Booking not found.', 404)
 
     try:
+        is_transfer = (b.hire_type == 'transfer')
         return JsonResponse({
             'ok':          True,
             'reference':   b.reference,
-            'vehicle':     b.vehicle.name,
+            'vehicle':     b.vehicle.name if b.vehicle else 'Airport Transfer',
             'days':        b.days,
             'total_usd':   str(b.total_usd),
             'total_kes':   str(b.total_kes),
@@ -581,6 +592,7 @@ def booking_summary(request):
             'with_driver': b.with_driver,
             'baby_seat':   b.baby_seat,
             'baby_seat_fee': '10.00' if b.baby_seat else '0.00',
+            'is_transfer': is_transfer,
         })
     except Exception as exc:
         return _json_error(str(exc), 500)

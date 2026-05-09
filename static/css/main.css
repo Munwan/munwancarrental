@@ -156,10 +156,30 @@ nav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:cen
 }
 .hire-pill:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
-/* On narrow mobile, switch back to natural width with horizontal scroll
-   so pill text stays readable (instead of being squeezed to icons). */
+/* On mobile, all 5 hire-type pills must be visible without scrolling — many
+   first-time visitors don't realise a horizontal scroll exists, so the
+   Airport Transfer pill (which sits last) goes unnoticed. Solution: allow
+   wrap onto 2 rows. */
 @media (max-width: 600px){
-  .hire-pill{flex:0 0 auto;padding:7px 12px;font-size:.74rem}
+  .modal-hire-tabs{
+    flex-wrap:wrap;
+    gap:6px;
+    overflow-x:visible;     /* no horizontal scroll on mobile */
+    padding-bottom:10px;
+  }
+  .hire-pill{
+    flex:1 1 calc(33.333% - 6px);  /* 3-up first row, 2-up second */
+    padding:7px 4px;
+    font-size:.7rem;
+    min-width:0;
+    text-align:center;
+    white-space:normal;            /* allow text to wrap inside pill */
+    line-height:1.2;
+  }
+}
+@media (max-width: 380px){
+  /* Very narrow phones: 2-up grid (3 rows) so labels stay readable */
+  .hire-pill{flex:1 1 calc(50% - 6px); font-size:.72rem}
 }
 
 

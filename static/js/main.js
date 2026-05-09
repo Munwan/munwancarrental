@@ -84,13 +84,18 @@ document.addEventListener('DOMContentLoaded', function () {
       menu.classList.remove('open');
   });
 
-  // ── Resume unpaid booking from dashboard ─────────────
+  // ── Resume unpaid booking from email link ─────────────
+  // If the customer clicks "Complete Payment" in their email, we land here
+  // with ?resume=DK-2026-XXXXXX. Two outcomes:
+  //   • Booking still unpaid → fetch summary, jump to Step 2 (payment).
+  //   • Booking already paid → redirect to /check-booking/?reference=...
+  //     so the customer sees their PAID receipt instead of being asked
+  //     to pay again. (Common scenario: customer pays, then finds the
+  //     stale email and clicks the button.)
   try {
     const params = new URLSearchParams(window.location.search);
     const resumeRef = params.get('resume');
     if (resumeRef) {
-      // Fetch the pending booking summary & jump straight to payment step
-      // Pass the reference so this works for guest checkouts (no session cookie needed).
       fetch('/booking/summary/?reference=' + encodeURIComponent(resumeRef),
             { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(r => r.json())
@@ -106,6 +111,7 @@ document.addEventListener('DOMContentLoaded', function () {
               with_driver: data.with_driver,
               base_price:  data.base_price || data.total_usd,
               driver_fee:  data.driver_fee || '0',
+              is_transfer: !!data.is_transfer,
             };
             populateOrderSummary(pendingBooking);
             openBookingModal();
@@ -113,6 +119,10 @@ document.addEventListener('DOMContentLoaded', function () {
             updateStepUI();
             // Clean URL so refresh doesn't re-trigger
             window.history.replaceState({}, '', window.location.pathname);
+          } else if (data.already_paid) {
+            // Already paid — redirect to /booking/check/ with reference so the
+            // customer sees the PAID status instead of being asked to pay again.
+            window.location.replace('/booking/check/?reference=' + encodeURIComponent(data.reference));
           }
         })
         .catch(() => {});

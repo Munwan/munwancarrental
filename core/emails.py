@@ -181,11 +181,11 @@ def _details(rows):
 
 def _return_str(booking):
     """
-    Format the return date/time, returning '—' if not set (e.g. Airport
-    Transfer bookings are one-way and don't have a return).
+    Format the return date/time, returning '— (one-way)' if not set
+    (e.g. Airport Transfer bookings are one-way and don't have a return).
     """
     if booking.return_date and booking.return_time:
-        return _return_str(booking)
+        return f'{booking.return_date} at {booking.return_time.strftime("%H:%M")}'
     return '— (one-way)'
 
 
@@ -262,31 +262,66 @@ def send_booking_received(booking):
     """
     Customer email at Step 1 — booking is reserved but not yet paid.
     LEADS with the payment call-to-action; booking details follow.
+    For airport transfers, trip details show route/car-type instead of vehicle.
     """
     try:
-        details = _details([
-            ('Vehicle',   booking.vehicle.name),
-            ('Hire type', booking.get_hire_type_display()),
-            ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
-            ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
-            ('Return',    _return_str(booking)),
-            ('Pickup at', booking.get_pickup_location_display()),
-            ('Hotel',     booking.hotel_address if booking.hotel_address else None),
-            ('Baby seat', 'Included (+$10)' if booking.baby_seat else None),
-        ])
+        is_transfer = _is_transfer(booking)
+
+        if is_transfer:
+            # Airport transfer: route + car class. No specific vehicle name —
+            # the customer chose a category (Mid-size, Luxury…) and we'll
+            # assign whichever car is available on the day.
+            route_label = booking.transfer_destination or booking.dropoff_location or '—'
+            if booking.transfer_direction == 'TO':
+                pickup_label = route_label
+                drop_label   = 'JKIA'
+            else:  # FROM (or default)
+                pickup_label = 'JKIA'
+                drop_label   = route_label
+            details = _details([
+                ('Trip',       'Airport Transfer (one-way)'),
+                ('Pickup',     pickup_label),
+                ('Drop-off',   drop_label),
+                ('Zone',       booking.get_transfer_zone_display() if booking.transfer_zone else None),
+                ('Car class',  booking.get_transfer_car_type_display() if booking.transfer_car_type else None),
+                ('When',       f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
+                ('Night fare', 'Yes (+$8 surcharge)' if booking.is_night_surcharge else None),
+            ])
+        else:
+            details = _details([
+                ('Vehicle',   booking.vehicle.name),
+                ('Hire type', booking.get_hire_type_display()),
+                ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
+                ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
+                ('Return',    _return_str(booking)),
+                ('Pickup at', booking.get_pickup_location_display()),
+                ('Hotel',     booking.hotel_address if booking.hotel_address else None),
+                ('Baby seat', 'Included (+$10)' if booking.baby_seat else None),
+            ])
+
         pricing = _pricing(
             base=booking.base_price_usd, days=booking.days,
             driver_fee=booking.driver_fee_usd, baby_seat=booking.baby_seat,
             total_usd=booking.total_usd, total_kes=booking.total_kes,
         )
 
-        body = (
-            _h1(f'Hi {booking.first_name}, please complete your payment')
-            + _p(
+        # Top headline & lead paragraph — different for transfer vs rental
+        if is_transfer:
+            lead = (
+                f'Your <strong>airport transfer</strong> is reserved. '
+                f'To confirm, please complete payment of <strong>${booking.total_usd}</strong> '
+                f'using the button below.'
+            )
+        else:
+            lead = (
                 f'We\'ve reserved your <strong>{booking.vehicle.name}</strong>. '
                 f'To confirm your booking, complete payment of <strong>${booking.total_usd}</strong> '
                 f'using the button below.'
             )
+
+        body = (
+            _h1(f'Hi {booking.first_name}, please complete your payment')
+            + _p(lead)
             + _cta('Complete Payment →', _payment_url(booking))
             + _ref_pill(booking.reference)
             + _section_label('Trip details')
@@ -295,18 +330,31 @@ def send_booking_received(booking):
             + pricing
         )
 
-        text = (
-            f'Hi {booking.first_name},\n\n'
-            f'We\'ve reserved your {booking.vehicle.name}. '
-            f'Complete payment of ${booking.total_usd} to confirm:\n\n'
-            f'{_payment_url(booking)}\n\n'
-            f'Reference: {booking.reference}\n'
-            f'Pickup: {booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}\n'
-            f'Return: {_return_str(booking)}\n'
-            f'Total:  ${booking.total_usd} (KES {int(float(booking.total_kes)):,})\n\n'
-            f'WhatsApp: {_whatsapp_display()}\n'
-            f'Email:    {_info_email()}\n'
-        )
+        # Plain-text version
+        if is_transfer:
+            text = (
+                f'Hi {booking.first_name},\n\n'
+                f'Your airport transfer is reserved. Complete payment of ${booking.total_usd} to confirm:\n\n'
+                f'{_payment_url(booking)}\n\n'
+                f'Reference: {booking.reference}\n'
+                f'Pickup: {booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}\n'
+                f'Total:  ${booking.total_usd} (KES {int(float(booking.total_kes)):,})\n\n'
+                f'WhatsApp: {_whatsapp_display()}\n'
+                f'Email:    {_info_email()}\n'
+            )
+        else:
+            text = (
+                f'Hi {booking.first_name},\n\n'
+                f'We\'ve reserved your {booking.vehicle.name}. '
+                f'Complete payment of ${booking.total_usd} to confirm:\n\n'
+                f'{_payment_url(booking)}\n\n'
+                f'Reference: {booking.reference}\n'
+                f'Pickup: {booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}\n'
+                f'Return: {_return_str(booking)}\n'
+                f'Total:  ${booking.total_usd} (KES {int(float(booking.total_kes)):,})\n\n'
+                f'WhatsApp: {_whatsapp_display()}\n'
+                f'Email:    {_info_email()}\n'
+            )
 
         return _send_html(
             subject=f'Complete payment for booking {booking.reference}',
@@ -315,7 +363,7 @@ def send_booking_received(booking):
             text_body=text,
             preheader=f'Complete ${booking.total_usd} payment to confirm your booking.',
         )
-    except Exception as exc:
+    except Exception:
         logger.exception('send_booking_received failed')
         return False
 
@@ -323,23 +371,46 @@ def send_booking_received(booking):
 def send_booking_confirmation(booking):
     """Customer email after payment — booking is confirmed."""
     try:
-        details = _details([
-            ('Vehicle',   booking.vehicle.name),
-            ('Hire type', booking.get_hire_type_display()),
-            ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
-            ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
-            ('Return',    _return_str(booking)),
-            ('Pickup at', booking.get_pickup_location_display()),
-            ('Hotel',     booking.hotel_address if booking.hotel_address else None),
-            ('Baby seat', 'Included' if booking.baby_seat else None),
-        ])
+        is_transfer = _is_transfer(booking)
+
+        if is_transfer:
+            route_label = booking.transfer_destination or booking.dropoff_location or '—'
+            if booking.transfer_direction == 'TO':
+                pickup_label, drop_label = route_label, 'JKIA'
+            else:
+                pickup_label, drop_label = 'JKIA', route_label
+            details = _details([
+                ('Trip',       'Airport Transfer (one-way)'),
+                ('Pickup',     pickup_label),
+                ('Drop-off',   drop_label),
+                ('Zone',       booking.get_transfer_zone_display() if booking.transfer_zone else None),
+                ('Car class',  booking.get_transfer_car_type_display() if booking.transfer_car_type else None),
+                ('When',       f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
+                ('Night fare', 'Yes (+$8 surcharge)' if booking.is_night_surcharge else None),
+            ])
+            lead_h1   = f'Transfer confirmed, {booking.first_name}.'
+            lead_p    = ('Your airport transfer is locked in. '
+                         'We\'ll WhatsApp you with the driver\'s details before pickup.')
+            preheader = f'Your airport transfer is locked in for {booking.pickup_date}.'
+        else:
+            details = _details([
+                ('Vehicle',   booking.vehicle.name),
+                ('Hire type', booking.get_hire_type_display()),
+                ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
+                ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
+                ('Return',    _return_str(booking)),
+                ('Pickup at', booking.get_pickup_location_display()),
+                ('Hotel',     booking.hotel_address if booking.hotel_address else None),
+                ('Baby seat', 'Included' if booking.baby_seat else None),
+            ])
+            lead_h1   = f'Booking confirmed, {booking.first_name}.'
+            lead_p    = (f'Your <strong>{booking.vehicle.name}</strong> is locked in. '
+                         f'We\'ll WhatsApp you 24 hours before pickup with final details.')
+            preheader = f'Your {booking.vehicle.name} is locked in for {booking.pickup_date}.'
 
         body = (
-            _h1(f'Booking confirmed, {booking.first_name}.')
-            + _p(
-                f'Your <strong>{booking.vehicle.name}</strong> is locked in. '
-                f'We\'ll WhatsApp you 24 hours before pickup with final details.'
-            )
+            _h1(lead_h1)
+            + _p(lead_p)
             + _ref_pill(booking.reference)
             + _section_label('Confirmed details')
             + details
@@ -351,24 +422,39 @@ def send_booking_confirmation(booking):
             )
         )
 
-        text = (
-            f'Hi {booking.first_name},\n\n'
-            f'Your booking {booking.reference} is confirmed.\n\n'
-            f'Vehicle: {booking.vehicle.name}\n'
-            f'Pickup:  {booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}\n'
-            f'Return:  {_return_str(booking)}\n\n'
-            f'Bring at pickup: passport/ID, licence (and IDP if visiting), payment card/M-Pesa.\n\n'
-            f'WhatsApp: {_whatsapp_display()}\n'
-        )
+        text_lines = [
+            f'Hi {booking.first_name},',
+            '',
+            f'Your booking {booking.reference} is confirmed.',
+            '',
+        ]
+        if is_transfer:
+            text_lines += [
+                f'Transfer: {booking.get_transfer_car_type_display()} ({booking.get_transfer_zone_display()})',
+                f'When:     {booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}',
+            ]
+        else:
+            text_lines += [
+                f'Vehicle: {booking.vehicle.name}',
+                f'Pickup:  {booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}',
+                f'Return:  {_return_str(booking)}',
+            ]
+        text_lines += [
+            '',
+            'Bring at pickup: passport/ID, licence (and IDP if visiting), payment card/M-Pesa.',
+            '',
+            f'WhatsApp: {_whatsapp_display()}',
+        ]
+        text = '\n'.join(text_lines) + '\n'
 
         return _send_html(
             subject=f'Booking confirmed — {booking.reference}',
             to=booking.email,
             html_body=body,
             text_body=text,
-            preheader=f'Your {booking.vehicle.name} is locked in for {booking.pickup_date}.',
+            preheader=preheader,
         )
-    except Exception as exc:
+    except Exception:
         logger.exception('send_booking_confirmation failed')
         return False
 
@@ -376,18 +462,35 @@ def send_booking_confirmation(booking):
 def send_payment_receipt(booking):
     """Customer payment receipt — proof of payment."""
     try:
+        is_transfer = _is_transfer(booking)
         pricing = _pricing(
             base=booking.base_price_usd, days=booking.days,
             driver_fee=booking.driver_fee_usd, baby_seat=booking.baby_seat,
             total_usd=booking.total_usd, total_kes=booking.total_kes,
         )
-        details = _details([
-            ('Reference',  booking.reference),
-            ('Status',     '<span style="color:#06A66D;">Paid</span>'),
-            ('Method',     getattr(booking, 'payment_method', '') or 'Card'),
-            ('Vehicle',    booking.vehicle.name),
-            ('Dates',      (f'{booking.pickup_date} → {booking.return_date}' if booking.return_date else f'{booking.pickup_date} (one-way)')),
-        ])
+
+        if is_transfer:
+            service_label = (
+                f'Airport Transfer · {booking.get_transfer_car_type_display() or ""}'
+                f' · {booking.get_transfer_zone_display() or ""}'
+            ).strip(' ·')
+            details = _details([
+                ('Reference', booking.reference),
+                ('Status',    '<span style="color:#06A66D;">Paid</span>'),
+                ('Method',    getattr(booking, 'payment_method', '') or 'Card'),
+                ('Service',   service_label),
+                ('When',      f'{booking.pickup_date} (one-way)'),
+            ])
+        else:
+            details = _details([
+                ('Reference', booking.reference),
+                ('Status',    '<span style="color:#06A66D;">Paid</span>'),
+                ('Method',    getattr(booking, 'payment_method', '') or 'Card'),
+                ('Vehicle',   booking.vehicle.name if booking.vehicle else '—'),
+                ('Dates',     (f'{booking.pickup_date} → {booking.return_date}'
+                               if booking.return_date
+                               else f'{booking.pickup_date} (one-way)')),
+            ])
 
         body = (
             _h1('Payment received')
@@ -416,7 +519,7 @@ def send_payment_receipt(booking):
             text_body=text,
             preheader=f'Receipt for ${booking.total_usd}.',
         )
-    except Exception as exc:
+    except Exception:
         logger.exception('send_payment_receipt failed')
         return False
 
@@ -428,34 +531,67 @@ def send_payment_receipt(booking):
 def send_new_booking_admin_alert(booking):
     """Admin: new unpaid booking submitted."""
     try:
-        details = _details([
+        is_transfer = _is_transfer(booking)
+        common = [
             ('Reference', booking.reference),
             ('Customer',  f'{booking.first_name} {booking.last_name}'),
             ('Email',     booking.email),
             ('Phone',     booking.phone),
-            ('Vehicle',   booking.vehicle.name),
             ('Hire type', booking.get_hire_type_display()),
-            ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
-            ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
-            ('Return',    _return_str(booking)),
-            ('Pickup at', booking.get_pickup_location_display()),
-            ('Hotel',     booking.hotel_address if booking.hotel_address else None),
-            ('Baby seat', 'Yes' if booking.baby_seat else None),
-            ('Total',     f'${booking.total_usd} (KES {int(float(booking.total_kes)):,})'),
-            ('Status',    booking.status),
+        ]
+
+        if is_transfer:
+            route_label = booking.transfer_destination or booking.dropoff_location or '—'
+            if booking.transfer_direction == 'TO':
+                pickup_label, drop_label = route_label, 'JKIA'
+            else:
+                pickup_label, drop_label = 'JKIA', route_label
+            specific = [
+                ('Pickup',     pickup_label),
+                ('Drop-off',   drop_label),
+                ('Zone',       booking.get_transfer_zone_display() if booking.transfer_zone else None),
+                ('Car class',  booking.get_transfer_car_type_display() if booking.transfer_car_type else None),
+                ('When',       f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
+                ('Night fare', 'Yes (+$8 surcharge)' if booking.is_night_surcharge else None),
+            ]
+        else:
+            specific = [
+                ('Vehicle',   booking.vehicle.name if booking.vehicle else '—'),
+                ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
+                ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
+                ('Return',    _return_str(booking)),
+                ('Pickup at', booking.get_pickup_location_display()),
+                ('Hotel',     booking.hotel_address if booking.hotel_address else None),
+                ('Baby seat', 'Yes' if booking.baby_seat else None),
+            ]
+
+        details = _details(common + specific + [
+            ('Total',  f'${booking.total_usd} (KES {int(float(booking.total_kes)):,})'),
+            ('Status', booking.status),
         ])
+
         body = (
             _h1('New booking — payment pending')
             + _p('A customer just completed Step 1 and is on the payment page.')
             + _section_label('Booking')
             + details
         )
-        text = (
-            f'NEW BOOKING — {booking.reference}\n'
-            f'{booking.first_name} {booking.last_name} <{booking.email}>\n'
-            f'{booking.phone}\n'
-            f'{booking.vehicle.name} · ${booking.total_usd}\n'
-        )
+
+        if is_transfer:
+            text = (
+                f'NEW AIRPORT TRANSFER — {booking.reference}\n'
+                f'{booking.first_name} {booking.last_name} <{booking.email}>\n'
+                f'{booking.phone}\n'
+                f'{booking.get_transfer_car_type_display()} · {booking.get_transfer_zone_display()} · ${booking.total_usd}\n'
+            )
+        else:
+            text = (
+                f'NEW BOOKING — {booking.reference}\n'
+                f'{booking.first_name} {booking.last_name} <{booking.email}>\n'
+                f'{booking.phone}\n'
+                f'{booking.vehicle.name if booking.vehicle else "—"} · ${booking.total_usd}\n'
+            )
+
         return _send_html(
             subject=f'New booking {booking.reference} — ${booking.total_usd}',
             to=_admin_email(),
@@ -463,7 +599,7 @@ def send_new_booking_admin_alert(booking):
             text_body=text,
             preheader=f'{booking.first_name} {booking.last_name} — ${booking.total_usd}',
         )
-    except Exception as exc:
+    except Exception:
         logger.exception('send_new_booking_admin_alert failed')
         return False
 
