@@ -265,6 +265,12 @@ def _booking_submit_transfer(request):
         booking.user = request.user
     booking.save()
 
+    # CRITICAL: store pending_booking_id in session so /payments/process/
+    # can find this booking later. Without this, customer pays via Paystack
+    # but the callback's session lookup fails → "Session expired" + booking
+    # stays unpaid even though money was charged.
+    request.session['pending_booking_id'] = booking.id
+
     # ── Optional account creation (mirrors rental flow) ───────
     # New accounts created here are inactive until OTP-verified.
     # Booking is already saved — account creation is a side effect.
@@ -853,18 +859,24 @@ def check_booking(request):
             return _json_error('No reference provided.')
         try:
             b = Booking.objects.get(reference=ref)
+            is_transfer = (b.hire_type == 'transfer')
             return JsonResponse({
                 'ok':          True,
                 'reference':   b.reference,
+                'hire_type':   b.get_hire_type_display(),
+                'is_transfer': is_transfer,
                 'vehicle':     b.vehicle.name,
                 'pickup':      b.get_pickup_location_display(),
                 'pickup_date': b.pickup_date.strftime('%d %b %Y'),
-                'return_date': b.return_date.strftime('%d %b %Y'),
+                # Airport transfers are one-way — no return date.
+                'return_date': b.return_date.strftime('%d %b %Y') if b.return_date else '— (one-way)',
                 'status':      b.get_status_display(),
                 'payment':     b.get_payment_status_display(),
                 'total_usd':   str(b.total_usd),
                 'total_kes':   str(b.total_kes),
                 'with_driver': b.with_driver,
+                'transfer_zone':     b.get_transfer_zone_display() if is_transfer else '',
+                'transfer_destination': b.transfer_destination if is_transfer else '',
             })
         except Booking.DoesNotExist:
             return _json_error('No booking found for that reference.', 404)
@@ -1092,12 +1104,23 @@ def dashboard(request):
     except Exception:
         all_bookings = []
 
-    active_bookings = [b for b in all_bookings
-                       if b.return_date >= today
-                       and b.status not in ('completed', 'cancelled')]
-    past_bookings = [b for b in all_bookings
-                     if b.return_date < today
-                     or b.status in ('completed', 'cancelled')]
+    # Bookings without return_date (airport transfers) are "active" if they
+    # have a future PICKUP date and aren't completed/cancelled. Past = pickup
+    # date already passed OR explicitly completed/cancelled.
+    def _is_active(b):
+        if b.status in ('completed', 'cancelled'):
+            return False
+        ref_date = b.return_date or b.pickup_date  # transfers use pickup
+        return ref_date is None or ref_date >= today
+
+    def _is_past(b):
+        if b.status in ('completed', 'cancelled'):
+            return True
+        ref_date = b.return_date or b.pickup_date
+        return ref_date is not None and ref_date < today
+
+    active_bookings = [b for b in all_bookings if _is_active(b)]
+    past_bookings   = [b for b in all_bookings if _is_past(b)]
 
     # Calculate total spent
     total_spent = sum(float(b.total_usd or 0) for b in all_bookings)

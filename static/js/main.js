@@ -860,7 +860,14 @@ async function submitStep1() {
 // ── Populate summary — correctly adds driver fee ──────────
 function populateOrderSummary(data) {
   const days = parseInt(data.days) || 1;
-  setText('sum_vehicle_days', `${data.vehicle} × ${days} day${days!==1?'s':''}`);
+  // For airport transfer bookings, the "× N days" makes no sense — show
+  // "Airport Transfer · {vehicle}" instead.
+  const isTransfer = !!(data.is_transfer || (pendingBooking && pendingBooking.is_transfer));
+  if (isTransfer) {
+    setText('sum_vehicle_days', `✈️ Airport Transfer · ${data.vehicle}`);
+  } else {
+    setText('sum_vehicle_days', `${data.vehicle} × ${days} day${days!==1?'s':''}`);
+  }
   setText('sum_base', `$${parseFloat(data.base_price).toFixed(2)}`);
 
   const dRow = $id('sum_driver_row');
@@ -902,11 +909,13 @@ function selectPayTab(tab) {
   // Paystack inline. paypal disables the Pay button (PayPal renders own).
   const meth = $id('current_pay_method');
   if (meth) meth.value = tab === 'paypal' ? 'paypal' : 'paystack_card';
-  // PayPal renders its own button → hide the modal's Pay button so the
-  // customer doesn't get confused by two buttons or fire a blank popup.
-  // Paystack uses our Pay button → show it.
+
+  // BOTH payment options have their OWN inline pay button (Paystack's
+  // "🔒 Pay with Card or M-Pesa" and PayPal's rendered button). The
+  // modal's Continue button is redundant on Step 2 — hide it always.
   const payBtn = $id('btnNext');
-  if (payBtn) payBtn.style.display = (tab === 'paypal') ? 'none' : '';
+  if (payBtn) payBtn.style.display = 'none';
+
   if (tab==='paypal') initPayPal();
 }
 
@@ -970,12 +979,19 @@ function triggerPaystackCard() {
     return;
   }
 
+    // Paystack requires a UNIQUE ref per transaction attempt. If we re-use
+    // booking.reference, the second click hits "Duplicate Transaction
+    // Reference". So we append a short timestamp suffix per attempt. The
+    // ORIGINAL booking.reference is carried in metadata so the webhook can
+    // still match the payment back to the correct booking.
+    const paystackRef = `${booking.reference}-${Date.now().toString(36).slice(-6)}`;
+
   const handler = PaystackPop.setup({
     key:       pk,
     email:     ($id('b_email')||{}).value || '',
     amount:    amountKobo,
     currency:  'KES',
-    ref:       booking.reference,
+    ref:       paystackRef,
     // What channels the popup exposes. "bank_transfer" & "ussd" are optional.
     channels:  ['card', 'bank', 'ussd', 'mobile_money', 'bank_transfer'],
     metadata: {
@@ -1170,7 +1186,6 @@ async function submitStep1Transfer() {
         total_eur:  pendingBooking.total_eur,
         driver_fee: '0', with_driver: false, baby_seat: false, baby_seat_fee: '0',
       });
-      renderTransferSummary(pendingBooking);
       currentStep = 2; updateStepUI();
       return;
     }
@@ -1195,7 +1210,8 @@ async function submitStep1Transfer() {
     pendingBooking._sig = sigNow;
     // Map transfer response into the shape populateOrderSummary expects.
     // This populates the standard "Your Booking" card on Step 2 so the
-    // payment total isn't $0.
+    // payment total isn't $0. We deliberately do NOT add a second
+    // "transfer summary" card here — one summary is enough.
     populateOrderSummary({
       vehicle:       result.vehicle_name || 'Airport Transfer',
       days:          1,
@@ -1210,7 +1226,6 @@ async function submitStep1Transfer() {
     });
     currentStep = 2;
     updateStepUI();
-    renderTransferSummary(result);
     if (typeof renderPaymentTabs === 'function') renderPaymentTabs();
   } catch (err) {
     toast('Network error. Please try again.', 'error');
