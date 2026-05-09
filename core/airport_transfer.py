@@ -1,14 +1,13 @@
 """
 Airport Transfer pricing & zone detection.
 
-Single source of truth for KES base prices, currency conversion, and the
+Single source of truth for USD base prices, currency conversion, and the
 location → zone mapping. Both Python (views) and JavaScript (booking modal
 preview) read from these constants — Python directly, JS via a JSON dump
 embedded in the home template.
 
-If you need to change a price or add a zone, edit it here and run:
-    python manage.py shell -c "from core.airport_transfer import dump_js_constants; print(dump_js_constants())"
-…or just redeploy — home.html embeds the JSON via a template tag.
+If you need to change a price or add a zone, edit it here and redeploy —
+home.html embeds the JSON via a template tag.
 """
 from decimal import Decimal
 
@@ -39,23 +38,25 @@ ZONE_LABELS = {
     'outskirts': 'Outskirts',
 }
 
-# Base prices in KES — keyed by (zone, car_type)
-PRICES_KES = {
-    ('near',      'economy'):  2500,
-    ('near',      'midsize'):  3250,
-    ('near',      'luxury'):   4500,
-    ('near',      'van'):      5000,
-    ('nairobi',   'economy'):  3500,
-    ('nairobi',   'midsize'):  4500,
-    ('nairobi',   'luxury'):   6500,
-    ('nairobi',   'van'):      7000,
-    ('outskirts', 'economy'):  5000,
-    ('outskirts', 'midsize'):  6500,
-    ('outskirts', 'luxury'):   9000,
-    ('outskirts', 'van'):     10000,
+# ── Base prices in USD — keyed by (zone, car_type) ──────────────
+# These are the source of truth. KES & EUR are computed from these
+# at quote time. Customer pays the resulting KES total to Paystack.
+PRICES_USD = {
+    ('near',      'economy'):  19,
+    ('near',      'midsize'):  25,
+    ('near',      'luxury'):   35,
+    ('near',      'van'):      38,
+    ('nairobi',   'economy'):  27,
+    ('nairobi',   'midsize'):  35,
+    ('nairobi',   'luxury'):   50,
+    ('nairobi',   'van'):      54,
+    ('outskirts', 'economy'):  38,
+    ('outskirts', 'midsize'):  50,
+    ('outskirts', 'luxury'):   70,
+    ('outskirts', 'van'):      77,
 }
 
-# Night surcharge — flat fee in USD (per spec)
+# Night surcharge — flat fee in USD (10pm–6am pickup)
 NIGHT_SURCHARGE_USD = Decimal('8.00')
 NIGHT_START_HOUR = 22  # 10pm
 NIGHT_END_HOUR = 6     # 6am
@@ -63,7 +64,7 @@ NIGHT_END_HOUR = 6     # 6am
 # Currency conversion (fixed rates for display only — payment processors
 # handle real-time conversion on settlement).
 KES_PER_USD = Decimal('130')
-KES_PER_EUR = Decimal('140')
+EUR_PER_USD = Decimal('0.93')   # ~ EUR 0.93 per USD
 
 
 def detect_zone(location_text: str) -> str:
@@ -92,39 +93,38 @@ def is_night_pickup(pickup_time) -> bool:
 def quote(zone: str, car_type: str, pickup_time=None) -> dict:
     """
     Compute price for a transfer.
-    Returns: {ok, kes_base, kes_total, usd_total, eur_total, night, error}
+    Returns: {ok, usd_base, usd_night, usd_total, kes_total, eur_total, night, error}
     """
-    base = PRICES_KES.get((zone, car_type))
-    if base is None:
+    base_usd = PRICES_USD.get((zone, car_type))
+    if base_usd is None:
         return {'ok': False, 'error': f'No price for zone={zone!r}, car_type={car_type!r}'}
 
     night = is_night_pickup(pickup_time)
-    night_kes = (NIGHT_SURCHARGE_USD * KES_PER_USD) if night else Decimal('0')
-    total_kes = Decimal(base) + night_kes
-    total_usd = (total_kes / KES_PER_USD).quantize(Decimal('0.01'))
-    total_eur = (total_kes / KES_PER_EUR).quantize(Decimal('0.01'))
+    night_usd = NIGHT_SURCHARGE_USD if night else Decimal('0')
+    total_usd = (Decimal(base_usd) + night_usd).quantize(Decimal('0.01'))
+    total_kes = (total_usd * KES_PER_USD).quantize(Decimal('1'))   # whole KES
+    total_eur = (total_usd * EUR_PER_USD).quantize(Decimal('0.01'))
     return {
-        'ok': True,
-        'kes_base':       int(base),
-        'kes_night':      int(night_kes),
-        'kes_total':      int(total_kes),
-        'usd_total':      float(total_usd),
-        'eur_total':      float(total_eur),
-        'night':          night,
+        'ok':         True,
+        'usd_base':   float(Decimal(base_usd)),
+        'usd_night':  float(night_usd),
+        'usd_total':  float(total_usd),
+        'kes_total':  int(total_kes),
+        'eur_total':  float(total_eur),
+        'night':      night,
     }
 
 
 def dump_js_constants() -> str:
-    """Returns a JS object literal usable in the home template."""
+    """Returns a JSON string usable in the home template."""
     import json
     return json.dumps({
         'zone_locations':  ZONE_LOCATIONS,
         'zone_labels':     ZONE_LABELS,
-        'prices_kes':      {f'{z}|{c}': p for (z, c), p in PRICES_KES.items()},
+        'prices_usd':      {f'{z}|{c}': p for (z, c), p in PRICES_USD.items()},
         'night_usd':       float(NIGHT_SURCHARGE_USD),
-        'night_kes':       float(NIGHT_SURCHARGE_USD * KES_PER_USD),
         'kes_per_usd':     float(KES_PER_USD),
-        'kes_per_eur':     float(KES_PER_EUR),
+        'eur_per_usd':     float(EUR_PER_USD),
         'night_start':     NIGHT_START_HOUR,
         'night_end':       NIGHT_END_HOUR,
     })

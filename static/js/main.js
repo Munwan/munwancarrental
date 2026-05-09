@@ -515,6 +515,7 @@ function onTransferLocationChange() {
 // Recompute the live quote and update the price preview block.
 // Mirrors the server-side airport_transfer.quote() function — both are
 // used: this for instant UI, server for the locked-in price at booking.
+// USD is the base currency. KES & EUR are computed for display.
 function updateTransferQuote() {
   const carType  = val('b_transfer_car_type');
   const loc      = val('b_transfer_location');
@@ -523,39 +524,40 @@ function updateTransferQuote() {
   const preview  = $id('transferPricePreview');
 
   if (!preview) return;
-  if (!carType || !zone || !TRANSFER_CONSTS.prices_kes) {
+  if (!carType || !zone || !TRANSFER_CONSTS.prices_usd) {
     preview.style.display = 'none';
     return;
   }
 
-  const baseKes = TRANSFER_CONSTS.prices_kes[`${zone}|${carType}`];
-  if (baseKes == null) { preview.style.display = 'none'; return; }
+  const baseUsd = TRANSFER_CONSTS.prices_usd[`${zone}|${carType}`];
+  if (baseUsd == null) { preview.style.display = 'none'; return; }
 
-  const isNight   = isTransferNightPickup(pickTime);
-  const nightKes  = isNight ? (TRANSFER_CONSTS.night_kes || 0) : 0;
-  const totalKes  = baseKes + nightKes;
-  const totalUsd  = totalKes / (TRANSFER_CONSTS.kes_per_usd || 130);
-  const totalEur  = totalKes / (TRANSFER_CONSTS.kes_per_eur || 140);
+  const isNight  = isTransferNightPickup(pickTime);
+  const nightUsd = isNight ? (TRANSFER_CONSTS.night_usd || 0) : 0;
+  const totalUsd = baseUsd + nightUsd;
+  const totalKes = totalUsd * (TRANSFER_CONSTS.kes_per_usd || 130);
+  const totalEur = totalUsd * (TRANSFER_CONSTS.eur_per_usd || 0.93);
 
   preview.style.display = '';
   setText('tpp_zone_label', TRANSFER_CONSTS.zone_labels[zone] || zone);
   const carLabels = {economy:'Economy', midsize:'Mid-size', luxury:'Luxury', van:'Van/Group'};
   setText('tpp_car_label', carLabels[carType] || carType);
-  setText('tpp_base', `KES ${baseKes.toLocaleString()}`);
+  setText('tpp_base', `$${baseUsd}`);
 
   const nightRow = $id('tpp_night_row');
   if (isNight) {
     if (nightRow) nightRow.style.display = '';
-    setText('tpp_night', `+ KES ${nightKes.toLocaleString()}`);
+    setText('tpp_night', `+ $${nightUsd}`);
   } else {
     if (nightRow) nightRow.style.display = 'none';
   }
 
-  setText('tpp_total_kes', `KES ${totalKes.toLocaleString()}`);
   setText('tpp_total_usd', `$${totalUsd.toFixed(2)}`);
+  setText('tpp_total_kes', `KES ${Math.round(totalKes).toLocaleString()}`);
   setText('tpp_total_eur', `€${totalEur.toFixed(2)}`);
-  setText('tpp_total_pay', `KES ${totalKes.toLocaleString()} (≈ $${totalUsd.toFixed(2)})`);
+  setText('tpp_total_pay', `$${totalUsd.toFixed(2)} (≈ KES ${Math.round(totalKes).toLocaleString()})`);
 }
+
 
 // ── Pickup location toggle: shows hotel OR custom address field ───
 function toggleHotelField() {
@@ -875,22 +877,22 @@ function selectPayTab(tab) {
     if (pt) pt.classList.toggle('active', t===tab);
     if (pp) pp.style.display = t===tab ? '' : 'none';
   });
+  // Keep the hidden current_pay_method input in sync so submitPayment()
+  // routes correctly. paystack_card is the value for card-or-mpesa via
+  // Paystack inline. paypal disables the Pay button (PayPal renders own).
+  const meth = $id('current_pay_method');
+  if (meth) meth.value = tab === 'paypal' ? 'paypal' : 'paystack_card';
+  // PayPal renders its own button → hide the modal's Pay button so the
+  // customer doesn't get confused by two buttons or fire a blank popup.
+  // Paystack uses our Pay button → show it.
+  const payBtn = $id('btnNext');
+  if (payBtn) payBtn.style.display = (tab === 'paypal') ? 'none' : '';
   if (tab==='paypal') initPayPal();
 }
 
-// ── Paystack sub-tabs (card vs mpesa) ─────────────────────
-function selectFwSub(sub) {
-  currentFwSub = sub;
-  ['card','mpesa'].forEach(s => {
-    const btn=$id('fw_tab_'+s);
-    if (btn) btn.classList.toggle('active', s===sub);
-  });
-  const cardPanel=$id('fw_card_panel'), mpesaPanel=$id('fw_mpesa_panel');
-  if (cardPanel)  cardPanel.style.display  = sub==='card'  ? '' : 'none';
-  if (mpesaPanel) mpesaPanel.style.display = sub==='mpesa' ? '' : 'none';
-  const methInput=$id('current_pay_method');
-  if (methInput) methInput.value = sub==='card' ? 'paystack_card' : 'paystack_mpesa';
-}
+// ── Paystack sub-tabs (legacy, no longer in DOM) ──────────
+// Kept as a no-op so any cached HTML calling this doesn't error.
+function selectFwSub(sub) { /* removed; Paystack popup handles channel selection */ }
 
 // ── Mark checkout-in-progress so reminder cron skips this booking ─────
 // Fire-and-forget; we don't want to block the customer's payment flow if
@@ -965,43 +967,107 @@ function triggerPaystackCard() {
 }
 
 // ── M-Pesa STK push ───────────────────────────────────────
-async function triggerMpesaPayment() {
-  const phone = val('mpesa_phone').trim();
-  if (!phone) { setText('err_mpesa','Phone number required.'); return; }
-  markPaymentAttempt();  // record checkout-in-progress
-  const btn = $id('mpesaPayBtn');
-  btn.disabled=true; btn.textContent='⏳ Sending push…';
-  try {
-    await finalisePayment('mpesa', { mpesa_phone: phone, payment_method: 'mpesa' });
-  } finally { btn.disabled=false; btn.textContent='📱 Send STK Push to My Phone'; }
-}
+// REMOVED — Daraja direct integration retired in favour of Paystack's
+// unified payment popup, which handles M-Pesa, card, bank transfer,
+// and USSD inside a single "Pay with Card or M-Pesa" button.
+// The historical /payments/mpesa/callback/ URL is still wired up so
+// any old in-flight callbacks get logged, but new bookings flow
+// through Paystack only.
 
-// ── PayPal ────────────────────────────────────────────────
+
+// ── PayPal SDK & button management ─────────────────────────
+// Bug we're solving: the PayPal button container could end up rendered
+// twice (e.g. user toggles tab, SDK loads, render fires, then a second
+// click while SDK already loaded re-renders without clearing). The result
+// was a blank popup behind the live button — clicks bounced into the
+// stale instance. Fix: a single render guard + always clear the container
+// before re-rendering.
 let paypalInited = false;
+let paypalRendered = false;
+
 function initPayPal() {
-  if (paypalInited) return;
   const clientId = ($id('paypalClientId')||{}).value || '';
+  const c = $id('paypal-button-container');
+  if (!c) return;
   if (!clientId || clientId.includes('REPLACE_ME')) {
-    const c=$id('paypal-button-container');
-    if (c) c.innerHTML='<p style="color:var(--muted);font-size:.82rem;padding:10px 0">PayPal not configured yet. Add PAYPAL_CLIENT_ID to .env</p>';
+    c.innerHTML = '<p style="color:var(--muted);font-size:.82rem;padding:10px 0">PayPal not configured yet. Add PAYPAL_CLIENT_ID to .env</p>';
     return;
   }
-  if (!window.paypal) {
-    const s=document.createElement('script');
-    s.src=`https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
-    s.onload=renderPayPalButton;
-    document.head.appendChild(s);
-  } else { renderPayPalButton(); }
+
+  // Log client ID format for diagnostics. Live IDs start with "A" and are ~80
+  // chars. Sandbox IDs start with "AS" or similar. If you see a mismatch
+  // between PAYPAL_MODE and the prefix, that's why popups go blank.
+  console.log('[PayPal] Initialising with client ID prefix:', clientId.slice(0, 4));
+
+  if (window.paypal) {
+    // SDK already loaded — render (or re-render) the button
+    renderPayPalButton();
+    return;
+  }
+
+  // SDK not yet loaded
+  if (paypalInited) {
+    // We've already started loading; another load tag would create
+    // duplicate window.paypal globals. Just wait — onload will fire.
+    return;
+  }
   paypalInited = true;
+
+  const s = document.createElement('script');
+  s.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture`;
+  s.async = true;
+  s.onload = () => {
+    console.log('[PayPal] SDK loaded successfully');
+    renderPayPalButton();
+  };
+  s.onerror = () => {
+    console.error('[PayPal] SDK failed to load — check client ID, network, ad-blockers');
+    paypalInited = false;
+    if (c) {
+      c.innerHTML = '<p style="color:#DC2626;font-size:.82rem;padding:10px 0">PayPal could not load. Please pay with Card / M-Pesa, or disable any ad-blockers.</p>';
+    }
+  };
+  document.head.appendChild(s);
 }
+
 function renderPayPalButton() {
-  const c=$id('paypal-button-container'); if (!c||!window.paypal) return;
-  c.innerHTML='';
-  paypal.Buttons({
-    createOrder: async () => { markPaymentAttempt(); const r=await postJSON('/payments/paypal/create/',{}); if(r.ok) return r.orderID; throw new Error(r.error||'PayPal error'); },
-    onApprove:  async (data) => { await finalisePayment('paypal',{paypal_order_id:data.orderID,payment_method:'paypal'}); },
-    onError: err => toast('PayPal error: ' + err, 'error'),
-  }).render('#paypal-button-container');
+  const c = $id('paypal-button-container');
+  if (!c || !window.paypal) return;
+  // Always wipe the container before rendering — prevents the
+  // "blank popup behind a live button" bug from duplicate renders.
+  c.innerHTML = '';
+  paypalRendered = false;
+
+  try {
+    paypal.Buttons({
+      style: { layout: 'vertical', height: 45 },
+      createOrder: async () => {
+        markPaymentAttempt();
+        const r = await postJSON('/payments/paypal/create/', {});
+        if (r && r.ok) return r.orderID;
+        throw new Error((r && r.error) || 'PayPal order creation failed');
+      },
+      onApprove: async (data) => {
+        await finalisePayment('paypal', {
+          paypal_order_id: data.orderID,
+          payment_method: 'paypal',
+        });
+      },
+      onError: err => {
+        console.error('PayPal error:', err);
+        toast('PayPal error: ' + (err && err.message ? err.message : 'try again'), 'error');
+      },
+      onCancel: () => {
+        // User closed the popup — silently allow them to try again
+      },
+    }).render('#paypal-button-container').then(() => {
+      paypalRendered = true;
+    }).catch(err => {
+      console.error('PayPal render failed:', err);
+    });
+  } catch (err) {
+    console.error('PayPal init failed:', err);
+  }
 }
 
 // ── Step 1 — AIRPORT TRANSFER variant ──────────────────────
@@ -1106,10 +1172,14 @@ function renderTransferSummary(r) {
 
 
 // ── Step 2: submit payment ────────────────────────────────
+// All Paystack-handled methods (card, M-Pesa, bank, USSD) go through
+// triggerPaystackCard() — the popup itself lets the customer choose.
 async function submitPayment() {
   const method = ($id('current_pay_method')||{}).value || 'paystack_card';
-  if (method === 'paystack_card') { triggerPaystackCard(); return; }
-  if (method === 'paystack_mpesa') { await triggerMpesaPayment(); return; }
+  if (method === 'paystack_card' || method === 'paystack_mpesa') {
+    triggerPaystackCard();
+    return;
+  }
   // PayPal handled by its own button — nothing to do here
 }
 

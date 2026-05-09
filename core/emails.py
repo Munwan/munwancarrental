@@ -316,7 +316,7 @@ def send_booking_received(booking):
             preheader=f'Complete ${booking.total_usd} payment to confirm your booking.',
         )
     except Exception as exc:
-        logger.warning('send_booking_received failed: %s', exc)
+        logger.exception('send_booking_received failed')
         return False
 
 
@@ -369,7 +369,7 @@ def send_booking_confirmation(booking):
             preheader=f'Your {booking.vehicle.name} is locked in for {booking.pickup_date}.',
         )
     except Exception as exc:
-        logger.warning('send_booking_confirmation failed: %s', exc)
+        logger.exception('send_booking_confirmation failed')
         return False
 
 
@@ -417,7 +417,7 @@ def send_payment_receipt(booking):
             preheader=f'Receipt for ${booking.total_usd}.',
         )
     except Exception as exc:
-        logger.warning('send_payment_receipt failed: %s', exc)
+        logger.exception('send_payment_receipt failed')
         return False
 
 
@@ -464,7 +464,7 @@ def send_new_booking_admin_alert(booking):
             preheader=f'{booking.first_name} {booking.last_name} — ${booking.total_usd}',
         )
     except Exception as exc:
-        logger.warning('send_new_booking_admin_alert failed: %s', exc)
+        logger.exception('send_new_booking_admin_alert failed')
         return False
 
 
@@ -498,7 +498,7 @@ def send_payment_admin_alert(booking):
             preheader=f'${booking.total_usd} from {booking.first_name} {booking.last_name}',
         )
     except Exception as exc:
-        logger.warning('send_payment_admin_alert failed: %s', exc)
+        logger.exception('send_payment_admin_alert failed')
         return False
 
 
@@ -530,7 +530,7 @@ def send_support_notification(ticket):
             preheader=f'{ticket.name}: {ticket.subject}',
         )
     except Exception as exc:
-        logger.warning('send_support_notification failed: %s', exc)
+        logger.exception('send_support_notification failed')
         return False
 
 
@@ -581,5 +581,5 @@ def send_otp_email(*, to_email: str, code: str, first_name: str = '') -> bool:
             preheader=f'Your verification code is {code}. It expires in 15 minutes.',
         )
     except Exception as exc:
-        logger.warning('send_otp_email failed for %s: %s', to_email, exc)
+        logger.exception('send_otp_email failed for %s', to_email)
         return False

@@ -236,11 +236,13 @@ def _booking_submit_transfer(request):
         transfer_car_type    = car_type,
         transfer_destination = (P.get('transfer_destination_text') or '').strip()[:120],
         is_night_surcharge   = q['night'],
-        # Pricing (lock in)
+        # Pricing (lock in) — all three currencies required by model
         days            = 1,
         base_price_usd  = Decimal(str(q['usd_total'])),
         driver_fee_usd  = Decimal('0.00'),
         total_usd       = Decimal(str(q['usd_total'])),
+        total_kes       = Decimal(str(q['kes_total'])),
+        total_eur       = Decimal(str(q['eur_total'])),
         terms_accepted  = bool(P.get('terms_accepted')),
     )
     if request.user.is_authenticated:
@@ -279,13 +281,14 @@ def _booking_submit_transfer(request):
             except Exception as exc:
                 logger.warning('Transfer-flow account creation failed: %s', exc)
 
-    # Admin alert
+    # Admin alert + customer "booking received" email
     try:
         import threading
-        from .emails import send_new_booking_admin_alert
+        from .emails import send_new_booking_admin_alert, send_booking_received
         threading.Thread(target=send_new_booking_admin_alert, args=(booking,), daemon=True).start()
+        threading.Thread(target=send_booking_received, args=(booking,), daemon=True).start()
     except Exception as e:
-        logger.warning('Transfer booking admin email thread failed: %s', e)
+        logger.warning('Transfer booking email threads failed: %s', e)
 
     return JsonResponse({
         'ok':                True,
@@ -406,18 +409,16 @@ def booking_submit(request):
         # ("Complete Payment") is delayed: it fires from the
         # management command `send_payment_reminders` after 1 hour, ONLY if
         # the booking is still unpaid. If they pay within the hour, no email.
-        # Fire admin email in a background thread so the HTTP response returns
-        # immediately — SMTP can take 1-3 seconds and would block the user.
+        # Fire admin email + customer "we got your booking" email in a
+        # background thread so the HTTP response returns immediately —
+        # SMTP can take 1-3 seconds and would block the user.
         try:
             import threading
-            from .emails import send_new_booking_admin_alert
-            threading.Thread(
-                target=send_new_booking_admin_alert,
-                args=(booking,),
-                daemon=True,
-            ).start()
+            from .emails import send_new_booking_admin_alert, send_booking_received
+            threading.Thread(target=send_new_booking_admin_alert, args=(booking,), daemon=True).start()
+            threading.Thread(target=send_booking_received, args=(booking,), daemon=True).start()
         except Exception as e:
-            logger.warning('Booking-creation admin email thread failed: %s', e)
+            logger.warning('Booking-creation email threads failed: %s', e)
 
         # Optional account creation
         account_created     = False
