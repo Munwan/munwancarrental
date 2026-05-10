@@ -194,6 +194,12 @@ def _booking_submit_transfer(request):
     if email and ('@' not in email or '.' not in email or email.endswith('@')):
         errors['email'] = 'Please enter a valid email address (must contain @ and . — e.g. you@example.com).'
 
+    # Phone format check (same regex used by rental flow's clean_phone).
+    # Allows international format: optional leading +, 7-20 digits/spaces/dashes.
+    import re as _re
+    if phone and not _re.match(r'^\+?[\d\s\-\(\)]{7,20}$', phone):
+        errors['phone'] = 'Enter a valid phone number (e.g. +254 7XX XXX XXX).'
+
     # Terms must be accepted (matches rental flow)
     if not P.get('terms_accepted'):
         errors['terms_accepted'] = 'Please accept the Terms & Cancellation Policy.'
@@ -1530,6 +1536,66 @@ BLOG_POSTS = {
         'category':    'Safari Guides',
         'hero_emoji':  '🐘',
         'excerpt':     'Not every 4×4 is built for the Mara. Here\'s a frank comparison of the top safari rental vehicles in Kenya — what they cost, what they\'re great at, and what they\'re not.',
+    },
+    'driving-in-kenya-foreigners-guide': {
+        'slug':        'driving-in-kenya-foreigners-guide',
+        'title':       'Driving in Kenya as a Foreigner: Rules, Tips & What to Expect',
+        'meta_desc':   'Practical guide for foreign visitors driving in Kenya. International driving permit, traffic rules, road etiquette, police checkpoints, fuel, parking and safety tips.',
+        'date':        'February 2, 2025',
+        'read_time':   '8 min read',
+        'category':    'Travel Guides',
+        'hero_emoji':  '🌍',
+        'excerpt':     'Thinking of self-driving in Kenya? Here\'s the unfiltered guide every foreign visitor needs — from licence requirements to handling police checkpoints to surviving Nairobi traffic.',
+    },
+    'jkia-airport-arrival-survival-guide': {
+        'slug':        'jkia-airport-arrival-survival-guide',
+        'title':       'Arriving at JKIA Nairobi: A Complete Survival Guide for First-Timers',
+        'meta_desc':   'First time landing at Jomo Kenyatta International Airport? Visa-on-arrival, SIM cards, Kenya shillings, taxis vs Uber vs car rental, and getting to your hotel safely.',
+        'date':        'February 10, 2025',
+        'read_time':   '7 min read',
+        'category':    'Travel Guides',
+        'hero_emoji':  '✈️',
+        'excerpt':     'JKIA can feel chaotic if you\'ve never been. This is the step-by-step playbook locals wish every visitor had — from the immigration queue to leaving the airport without paying tourist prices.',
+    },
+    'two-week-kenya-itinerary-self-drive': {
+        'slug':        'two-week-kenya-itinerary-self-drive',
+        'title':       'The Perfect 2-Week Kenya Itinerary by Self-Drive (with Costs)',
+        'meta_desc':   'A complete 14-day Kenya road trip: Nairobi, Maasai Mara, Lake Naivasha, Lake Nakuru, Mount Kenya, Diani Beach. Daily driving times, costs, accommodation and routing.',
+        'date':        'February 18, 2025',
+        'read_time':   '11 min read',
+        'category':    'Travel Guides',
+        'hero_emoji':  '🗺️',
+        'excerpt':     'Two weeks, one rental car, half a country. This is the itinerary we\'d give a friend — Maasai Mara to Mount Kenya to Diani Beach, with real costs and the practical stuff guides skip.',
+    },
+    'kenya-honeymoon-road-trip-couples': {
+        'slug':        'kenya-honeymoon-road-trip-couples',
+        'title':       'A Kenya Honeymoon by Road: 10-Day Itinerary for Couples',
+        'meta_desc':   'Romantic Kenya honeymoon by self-drive: Nairobi, Lake Naivasha, Maasai Mara safari and Diani Beach. Boutique stays, sunset moments, costs and the road trip route.',
+        'date':        'March 4, 2025',
+        'read_time':   '9 min read',
+        'category':    'Couples Travel',
+        'hero_emoji':  '💕',
+        'excerpt':     'Kenya is one of the most underrated honeymoon destinations on the planet. Here\'s a 10-day road-trip itinerary for couples — bush, beach and a few quiet luxuries in between.',
+    },
+    'kenya-with-kids-family-safari-guide': {
+        'slug':        'kenya-with-kids-family-safari-guide',
+        'title':       'Kenya Family Safari with Kids: What to Expect & How to Plan',
+        'meta_desc':   'Planning a Kenya safari with children? Honest guide to ages, vaccinations, baby seats, family-friendly lodges, driving distances and surviving long days in the bush with kids.',
+        'date':        'March 14, 2025',
+        'read_time':   '10 min read',
+        'category':    'Family Travel',
+        'hero_emoji':  '👨‍👩‍👧‍👦',
+        'excerpt':     'Yes, you can take young kids on safari — and they\'ll love it. Here\'s the parent-tested playbook: which ages cope best, baby seat options, mid-range family lodges and how to keep everyone sane on long game drives.',
+    },
+    'digital-nomad-monthly-rental-nairobi': {
+        'slug':        'digital-nomad-monthly-rental-nairobi',
+        'title':       'Digital Nomad in Nairobi: Monthly Car Rental Guide',
+        'meta_desc':   'Living in Nairobi as a remote worker? Honest comparison of monthly car rental vs Uber/Bolt for digital nomads. Costs, neighbourhoods, parking, fuel and what locals do.',
+        'date':        'March 22, 2025',
+        'read_time':   '8 min read',
+        'category':    'Long-Term Travel',
+        'hero_emoji':  '💻',
+        'excerpt':     'If you\'re working remotely from Nairobi for a month or more, the rideshare math stops adding up. Here\'s when monthly rental wins — and when it doesn\'t — based on real numbers from nomads living in Westlands and Kilimani.',
     },
 }
 

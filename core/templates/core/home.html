@@ -226,7 +226,7 @@
         </div>
         <div class="frow full"><div class="fg"><label for="b_email">Email <span class="req">*</span></label><input type="email" id="b_email" placeholder="john@example.com" value="{{ user.email|default:'' }}"/><div class="ferr" id="err_email"></div></div></div>
         <div class="frow">
-          <div class="fg"><label for="b_phone">Phone / WhatsApp <span class="req">*</span></label><input type="tel" id="b_phone" placeholder="+254 7XX XXX XXX"/><div class="ferr" id="err_phone"></div></div>
+          <div class="fg"><label for="b_phone">Phone / WhatsApp <span class="req">*</span></label><input type="tel" id="b_phone" placeholder="+254 7XX XXX XXX or +1 555 0123" inputmode="tel" autocomplete="tel" pattern="^\+?[0-9\s\-\(\)]{7,20}$" minlength="7" maxlength="20" oninput="validatePhoneInput(this)"/><div class="ferr" id="err_phone"></div></div>
           <div class="fg"><label for="b_nationality">Nationality</label>
             <select id="b_nationality">
               <option value="Kenya">Kenya (Resident)</option><option value="United Kingdom">United Kingdom</option>
