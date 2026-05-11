@@ -81,12 +81,6 @@
         <div class="car-footer">
           <div>
             {% if v.category == 'safari' %}
-              {# Safari-ready cars: show price RANGE across destinations because
-                 the daily rate varies by where the customer is going. The
-                 lower bound is the cheapest destination (usually Nairobi NP or
-                 Naivasha); the upper is the most expensive (usually Samburu
-                 or Tsavo). See SafariPricing admin to adjust.                 #}
-              {% with range=v.safari_price_range %}
               <div class="price-usd">
                 ${{ range.0|floatformat:0 }}{% if range.0 != range.1 %}–${{ range.1|floatformat:0 }}{% endif %}
                 <span>/ day</span>
@@ -213,7 +207,7 @@
     <div class="seo-link-grid">
       <a href="{% url 'home' %}#booking" class="seo-link"><strong>Self drive car rental Nairobi</strong><span>From $28/day · pickup &amp; drop anywhere in the city</span></a>
       <a href="{% url 'home' %}#booking" class="seo-link"><strong>Cheap car rental Nairobi</strong><span>Toyota Vitz, Mazda Demio · clean, reliable, $28-35/day</span></a>
-      <a href="{% url 'jkia_landing' %}" class="seo-link"><strong>Car rental Nairobi airport (JKIA)</strong><span>Free delivery to JKIA · meet &amp; greet at arrivals</span></a>
+      <a href="{% url 'home' %}#booking" class="seo-link"><strong>Car rental Nairobi airport (JKIA)</strong><span>Free delivery to JKIA · meet &amp; greet at arrivals</span></a>
       <a href="{% url 'home' %}#booking" class="seo-link"><strong>4x4 car rental Nairobi</strong><span>Toyota Prado, Land Cruiser, X-Trail · safari-ready</span></a>
       <a href="{% url 'home' %}#booking" class="seo-link"><strong>Monthly car rental Nairobi</strong><span>Discounted long-term lease · 28+ days from $24/day</span></a>
       <a href="{% url 'home' %}#booking" class="seo-link"><strong>Car rental Nairobi prices</strong><span>Transparent pricing · no hidden fees · all-inclusive rates</span></a>
@@ -490,7 +484,7 @@
               <label for="b_transfer_location" id="transferLocationLabel">Destination <span class="req">*</span></label>
               <select id="b_transfer_location" onchange="onTransferLocationChange()">
                 <option value="">— Select Location —</option>
-                <optgroup label="Near Airport (lowest fare)">
+                <optgroup label="Near Airport">
                   <option value="embakasi">Embakasi</option>
                   <option value="fedha">Fedha</option>
                   <option value="south b">South B</option>
@@ -498,7 +492,7 @@
                   <option value="syokimau">Syokimau</option>
                   <option value="mombasa road">Mombasa Road</option>
                 </optgroup>
-                <optgroup label="Nairobi (mid fare)">
+                <optgroup label="Nairobi">
                   <option value="westlands">Westlands</option>
                   <option value="parklands">Parklands</option>
                   <option value="kilimani">Kilimani</option>
@@ -512,7 +506,7 @@
                   <option value="ngong road">Ngong Road</option>
                   <option value="yaya centre">Yaya Centre</option>
                 </optgroup>
-                <optgroup label="Outskirts (highest fare)">
+                <optgroup label="Nairobi Outskirts">
                   <option value="karen">Karen</option>
                   <option value="karen hardy">Karen Hardy</option>
                   <option value="runda">Runda</option>
@@ -566,7 +560,6 @@
           <div class="transfer-banner">
             🦁 <strong>Safari Package</strong> — pick your safari-ready 4×4 and one or more
             destinations. Price includes vehicle, professional safari driver and fuel.
-            <strong>Park entry fees are billed separately at cost.</strong>
           </div>
 
           <div class="frow">
@@ -632,7 +625,7 @@
             <div class="pp-row"><span>≈ Total in EUR</span><span id="spp_total_eur">—</span></div>
             <div class="pp-total"><span>You Pay</span><span id="spp_total_pay">—</span></div>
             <div style="font-size:.72rem;color:var(--muted);margin-top:6px;line-height:1.4">
-              Park entry fees are not included — billed separately at cost (KES 8,000-14,000/day per non-resident depending on park).
+              Park entry fees are not included — billed separately depending on park).
             </div>
           </div>
         </div>
