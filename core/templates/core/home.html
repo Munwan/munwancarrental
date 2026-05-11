@@ -88,11 +88,11 @@
               <div class="price-kes" style="font-size:.7rem">
                 Per-destination pricing · driver &amp; fuel included
               </div>
-              {% endwith %}
             {% else %}
               <div class="price-usd">${{ v.price_usd }} <span>/ day</span> &nbsp;<span class="price-eur">€{{ v.price_eur }}</span></div>
               <div class="price-kes">≈ KES {{ v.price_kes }}/day</div>
             {% endif %}
+            {% endwith %} 
           </div>
           <button class="book-btn" onclick="openBookingModalForCar('{{ v.id }}', '{{ v.name }}')">Book Now</button>
         </div>
