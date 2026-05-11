@@ -25,8 +25,6 @@
       <div class="result-row"><span class="rl">Reference</span><span class="rv">{{ booking.reference }}</span></div>
 
       {% if booking.hire_type == 'transfer' %}
-        {# Airport transfer: customer picked a car class, not a specific vehicle.
-           Show the service label + zone/destination instead of the assigned vehicle name. #}
         <div class="result-row"><span class="rl">Service</span><span class="rv">✈️ Airport Transfer · {{ booking.get_transfer_car_type_display }}</span></div>
         <div class="result-row"><span class="rl">Zone</span><span class="rv">{{ booking.get_transfer_zone_display }}</span></div>
         {% if booking.transfer_destination %}
