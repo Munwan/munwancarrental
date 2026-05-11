@@ -17,6 +17,10 @@ urlpatterns = [
     # ── SEO: Location landing pages ───────────────────────────
     path('car-rental-nairobi/',      views.loc_nairobi, name='location_nairobi'),
     path('car-rental-jkia-airport/', views.loc_jkia,    name='location_jkia'),
+    # Backwards-compat: old templates referenced `jkia_landing`. Same URL,
+    # second name. Django picks the first match when resolving urls.py;
+    # for {% url %} both names work.
+    path('car-rental-jkia-airport/', views.loc_jkia,    name='jkia_landing'),
     path('car-rental-mombasa/',      views.loc_mombasa, name='location_mombasa'),
     path('car-rental-diani/',        views.loc_diani,   name='location_diani'),
 
