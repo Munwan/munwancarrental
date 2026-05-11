@@ -329,8 +329,35 @@ function openBookingModal() {
   // Defeat browser autofill on password fields (Chrome ignores autocomplete=off,
   // but actively clearing fields after modal opens always works)
   ['b_password','b_password2'].forEach(id => { const el=$id(id); if(el) el.value=''; });
-  const today = new Date().toISOString().split('T')[0];
-  [$id('b_pickup_date'), $id('b_return_date')].forEach(el => { if (el) el.min = today; });
+  // ── Booking windows start TOMORROW, not today ────────────────
+  // We use ISO yyyy-mm-dd computed in local time so customers in any
+  // timezone get the right minimum. Date inputs respect `min` and refuse
+  // earlier values; we also clamp any pre-filled stale values.
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowISO = tomorrow.getFullYear() + '-' +
+    String(tomorrow.getMonth() + 1).padStart(2, '0') + '-' +
+    String(tomorrow.getDate()).padStart(2, '0');
+  // Day after tomorrow for return-date min (rentals are minimum 2 days)
+  const dayAfter = new Date();
+  dayAfter.setDate(dayAfter.getDate() + 2);
+  const dayAfterISO = dayAfter.getFullYear() + '-' +
+    String(dayAfter.getMonth() + 1).padStart(2, '0') + '-' +
+    String(dayAfter.getDate()).padStart(2, '0');
+
+  // Pickup-date inputs across all 3 booking flavours: rental, transfer, safari
+  ['b_pickup_date','b_transfer_pickup_date','b_safari_pickup_date',
+   'qs_pickup_date'].forEach(id => {
+    const el = $id(id); if (!el) return;
+    el.min = tomorrowISO;
+    if (el.value && el.value < tomorrowISO) el.value = '';
+  });
+  // Return-date can't be earlier than the day after tomorrow (2-day min rental)
+  ['b_return_date','qs_return_date'].forEach(id => {
+    const el = $id(id); if (!el) return;
+    el.min = dayAfterISO;
+    if (el.value && el.value < dayAfterISO) el.value = '';
+  });
   // Stamp form open time for bot time-trap (real humans take > 3s to fill)
   const ts = $id('b_form_started_at');
   if (ts && !ts.value) ts.value = String(Date.now());
@@ -710,18 +737,20 @@ function renderSafariDestList() {
   }
   wrap.innerHTML = SAFARI_DESTS.map(d => {
     const picked = safariSelected.includes(d.id);
-    const days = safariDays[d.id] || d.days;
+    const minDays = d.min_days || 1;
+    const days = Math.max(safariDays[d.id] || d.days, minDays);
     return `
       <div class="safari-dest ${picked ? 'picked' : ''}" data-id="${d.id}" onclick="toggleSafariDest(${d.id}, event)">
         <div class="sd-head">
           <div class="sd-name">${d.short_name}</div>
-          <div class="sd-meta">${d.distance_km} km · ${d.days} day${d.days!==1?'s':''} recommended</div>
+          <div class="sd-meta">${d.distance_km} km · min ${minDays} day${minDays!==1?'s':''}</div>
         </div>
         ${d.description ? `<div class="sd-desc">${d.description}</div>` : ''}
         ${picked ? `
           <div class="sd-days" onclick="event.stopPropagation()">
-            <label for="days_${d.id}" style="font-size:.74rem;color:var(--muted)">Days at this destination:</label>
-            <input type="number" id="days_${d.id}" min="1" max="14" value="${days}"
+            <label for="days_${d.id}" style="font-size:.74rem;color:var(--muted)">Days here (min ${minDays}):</label>
+            <input type="number" id="days_${d.id}" min="${minDays}" max="14" value="${days}"
+                   oninput="setSafariDays(${d.id}, this.value)"
                    onchange="setSafariDays(${d.id}, this.value)"
                    onclick="event.stopPropagation()"
                    style="width:70px;padding:4px 8px;font-weight:700"/>
@@ -741,7 +770,12 @@ function toggleSafariDest(destId, ev) {
   } else {
     safariSelected.push(destId);
     const d = (SAFARI_DESTS || []).find(x => x.id === destId);
-    if (d) safariDays[destId] = d.days;
+    if (d) {
+      // Initial value = max(recommended, min) so we never start below the
+      // physical minimum for that distance.
+      const minDays = d.min_days || 1;
+      safariDays[destId] = Math.max(d.days || minDays, minDays);
+    }
   }
   renderSafariDestList();
   updateSafariQuote();
@@ -749,10 +783,16 @@ function toggleSafariDest(destId, ev) {
 
 function setSafariDays(destId, val) {
   let n = parseInt(val, 10);
-  if (isNaN(n) || n < 1) n = 1;
+  // Look up destination's min based on distance
+  const d = (SAFARI_DESTS || []).find(x => x.id === destId);
+  const minDays = (d && d.min_days) ? d.min_days : 1;
+  if (isNaN(n) || n < minDays) n = minDays;
   if (n > 14) n = 14;
   safariDays[destId] = n;
-  updateSafariQuote();
+  // Debounce — typing "12" shouldn't fire two requests (one for "1", one for "12").
+  // 250ms is below the threshold where users perceive lag.
+  clearTimeout(window._safariQuoteTimer);
+  window._safariQuoteTimer = setTimeout(updateSafariQuote, 250);
 }
 
 // Hit the server for a fresh quote. Server is source of truth — we don't

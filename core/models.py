@@ -145,6 +145,25 @@ class SafariDestination(models.Model):
             self.short_name = self.name
         super().save(*args, **kwargs)
 
+    @property
+    def min_days(self):
+        """
+        Minimum days for this destination based on driving distance from
+        Nairobi. Operationally:
+        - ≤100 km  → 1 day  (Nairobi NP, Hell's Gate, Naivasha)
+        - ≤200 km  → 2 days (Lake Nakuru, Ol Pejeta)
+        - >200 km  → 3 days (Mara, Amboseli, Tsavo, Samburu)
+        Driver and vehicle can't economically cover further destinations
+        in less time than this. Enforced both client-side (input min)
+        and server-side (clamp in quote/submit).
+        """
+        d = self.distance_km or 0
+        if d <= 100:
+            return 1
+        if d <= 200:
+            return 2
+        return 3
+
 
 class SafariPricing(models.Model):
     """

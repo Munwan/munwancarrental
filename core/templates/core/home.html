@@ -12,7 +12,7 @@
   <div class="hero-content">
     <div class="hero-eyebrow">🌍 Trusted Car Hire Across Kenya</div>
     <h1>Premium Car Rental in Nairobi<span class="grad">Self Drive & Chauffeur Services</span></h1>
-    <p class="hero-sub">Hire a car anywhere in Kenya from <strong>$28/day</strong>. <strong>Free pickup at JKIA airport</strong> and Mombasa · Safari-ready 4×4s for Maasai Mara · <strong>Pay by <strong>M-Pesa, Visa, Mastercard or PayPal</strong>. Full insurance, GPS &amp; 24/7 roadside support included.</p>
+    <p class="hero-sub">Hire a car anywhere in Kenya from <strong>$28/day</strong>. <strong>Free pickup at JKIA airport</strong> and Mombasa · Safari-ready 4×4s for Maasai Mara · Pay by <strong>M-Pesa, Visa, Mastercard or PayPal</strong>. Full insurance, GPS &amp; 24/7 roadside support included.</p>
   </div>
 </section>
 
@@ -194,7 +194,7 @@
   </div>
 </section>
 
-    
+
 <section class="seo-block" id="popular-searches">
   <div class="seo-inner">
 
@@ -205,7 +205,7 @@
     </details>
     <details class="seo-faq">
       <summary>What's the cheapest car rental Nairobi has?</summary>
-      <p>Our Toyota Vitz at $28/day is among the cheapest car rentals in Nairobi from a registered, insured operator. It's compact, fuel-efficient (16 km/L), automatic, and perfect for Nairobi city driving and short trips. Listings on Jiji or classifieds may go lower — but they typically have no insurance, no roadside, and no recourse.</p>
+      <p>Our Toyota Vitz at $27/day is among the cheapest car rentals in Nairobi from a registered, insured operator. It's compact, fuel-efficient (16 km/L), automatic, and perfect for Nairobi city driving and short trips. Listings on Jiji or classifieds may go lower — but they typically have no insurance, no roadside, and no recourse.</p>
     </details>
     <details class="seo-faq">
       <summary>Do you offer monthly car rental in Nairobi?</summary>
@@ -217,11 +217,11 @@
     </details>
     <details class="seo-faq">
       <summary>Can I get a 4×4 car rental in Nairobi for safari?</summary>
-      <p>Yes — our safari fleet includes the Toyota Rav4 ($50/day), Nissan X-Trail ($55/day), Toyota Prado ($90/day) and Toyota Land Cruiser. All are 4×4, GPS-equipped, and proven on Maasai Mara, Amboseli and Samburu routes. Self-drive or with a professional safari driver.</p>
+      <p>Yes — our Safari Package fleet includes the <strong>Toyota Hilux</strong> (from $125/day), <strong>Toyota Hiace 4×4</strong> (from $135/day for groups), and the <strong>Toyota Land Cruiser Hardroof</strong> (from $225/day — the gold standard for Maasai Mara and Samburu). All are 4×4, fitted with pop-up roofs for game viewing, and include a professional safari driver and fuel. Daily rate varies by destination — closer parks (Nairobi NP, Lake Naivasha) are at the lower end; longer-distance parks (Samburu, Tsavo) at the upper end. Park entry fees are billed separately.</p>
     </details>
     <details class="seo-faq">
       <summary>What are typical car rental Nairobi prices?</summary>
-      <p>Daily rates: Toyota Vitz from $28, Mazda Demio $30, Toyota Axio $35, Honda Fit $32, Toyota Rav4 $50, Nissan X-Trail $55, Toyota Prado $90. All-inclusive — insurance, GPS, unlimited mileage, free city delivery. <a href="{% url 'fleet' %}">See the full price list →</a></p>
+      <p>Daily rates: Toyota Vitz from $27, Mazda Demio $27, Toyota Axio $35, Toyota Mark X $40, Toyota Rav4 $62, Nissan X-Trail $58, Toyota Prado $109. All-inclusive — insurance, GPS, unlimited mileage, free city delivery. Safari Package pricing is separate (per destination, $125-$325/day). <a href="{% url 'fleet' %}">See the full price list →</a></p>
     </details>
     <details class="seo-faq">
       <summary>Is your car rental cheaper than Jiji Kenya listings?</summary>
@@ -245,7 +245,7 @@
       "name": "What's the cheapest car rental Nairobi has?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Our Toyota Vitz at $28/day is among the cheapest car rentals in Nairobi from a registered, insured operator. It is compact, fuel-efficient at 16 km/L, automatic, and perfect for Nairobi city driving and short trips."
+        "text": "Our Toyota Vitz at $27/day is among the cheapest car rentals in Nairobi from a registered, insured operator. It is compact, fuel-efficient at 16 km/L, automatic, and perfect for Nairobi city driving and short trips."
       }
     },
     {
@@ -261,7 +261,7 @@
       "name": "Can I get a 4x4 car rental in Nairobi for safari?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. Our safari fleet includes Toyota Rav4 at $50/day, Nissan X-Trail at $55/day, Toyota Prado at $90/day and Toyota Land Cruiser. All are 4x4, GPS-equipped, and proven on Maasai Mara, Amboseli and Samburu routes. Available self-drive or with a professional safari driver."
+        "text": "Yes. Our Safari Package fleet includes the Toyota Hilux from $125/day, Toyota Hiace 4x4 from $135/day for groups, and Toyota Land Cruiser Hardroof from $225/day. All include professional safari driver and fuel. Daily rate varies by destination. Proven on Maasai Mara, Amboseli, Samburu and Tsavo routes."
       }
     },
     {
@@ -342,13 +342,15 @@
               <option value="Kenya">Kenya (Resident)</option><option value="United Kingdom">United Kingdom</option>
               <option value="United States">United States</option><option value="Germany">Germany</option>
               <option value="France">France</option><option value="Australia">Australia</option>
-              <option value="Canada">Canada</option><option value="Japan">Japan</option><option value="Other">Other</option>
+              <option value="Canada">Canada</option><option value="Japan">Japan</option>
+              <option value="China">China</option><option value="United Arab Emirates">United Arab Emirates</option>
+              <option value="Saudi Arabia">Saudi Arabia</option><option value="Other">Other</option>
             </select>
           </div>
         </div>
         <!-- ═══ RENTAL fields (Normal/Long/Corporate/Safari) ═══ -->
         <div id="rentalFields">
-          <div class="frow">
+          <div class="frow full">
             <div class="fg"><label for="b_vehicle">Vehicle <span class="req">*</span></label>
               <select id="b_vehicle" onchange="updatePricingPreview()">
                 <option value="">— Select Vehicle —</option>
@@ -541,7 +543,7 @@
             destinations. Price includes vehicle, professional safari driver and fuel.
           </div>
 
-          <div class="frow">
+          <div class="frow full">
             <div class="fg"><label for="b_safari_vehicle">Safari Vehicle <span class="req">*</span></label>
               <select id="b_safari_vehicle" onchange="updateSafariQuote()">
                 <option value="">— Select Safari 4×4 —</option>
@@ -604,7 +606,7 @@
             <div class="pp-row"><span>≈ Total in EUR</span><span id="spp_total_eur">—</span></div>
             <div class="pp-total"><span>You Pay</span><span id="spp_total_pay">—</span></div>
             <div style="font-size:.72rem;color:var(--muted);margin-top:6px;line-height:1.4">
-              Park entry fees are not included — billed separately depending on park).
+              Park entry fees are not included — billed separately depending on park.
             </div>
           </div>
         </div>

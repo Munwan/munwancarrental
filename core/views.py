@@ -165,7 +165,8 @@ def safari_destinations(request):
                 'slug':         d.slug,
                 'description':  d.description,
                 'distance_km':  d.distance_km,
-                'days':         d.recommended_days,
+                'days':         max(d.recommended_days, d.min_days),
+                'min_days':     d.min_days,
             }
             for d in dests
         ],
@@ -236,7 +237,10 @@ def safari_quote(request):
             days = int(request.POST.get(days_key) or d.recommended_days)
         except ValueError:
             days = d.recommended_days
-        days = max(1, min(days, 14))   # clamp 1..14
+        # Enforce destination min based on driving distance from Nairobi.
+        # Customer cannot book fewer days than is physically possible for a
+        # round trip — e.g. Samburu (350km) needs minimum 3 days.
+        days = max(d.min_days, min(days, 14))
 
         subtotal = (daily * Decimal(days)).quantize(Decimal('0.01'))
         total_usd += subtotal
@@ -333,6 +337,14 @@ def _booking_submit_safari(request):
             'pickup_date': 'Invalid date or time.'
         }}, status=400)
 
+    # Reject same-day and past dates
+    from django.utils import timezone as _tz
+    tomorrow = _tz.localdate() + timedelta(days=1)
+    if pickup_date < tomorrow:
+        return JsonResponse({'ok': False, 'errors': {
+            'safari_pickup_date': 'Safari start date must be tomorrow or later. WhatsApp us for urgent bookings.'
+        }}, status=400)
+
     # Resolve destinations (preserving customer's order)
     dests_by_id = {d.id: d for d in SafariDestination.objects.filter(
         id__in=dest_ids, is_active=True)}
@@ -358,7 +370,9 @@ def _booking_submit_safari(request):
             days = int(P.get(f'days_{d.id}') or d.recommended_days)
         except ValueError:
             days = d.recommended_days
-        days = max(1, min(days, 14))
+        # Same min-days enforcement as safari_quote — keep the two paths
+        # in sync or customers will see different totals between preview and submit.
+        days = max(d.min_days, min(days, 14))
 
         subtotal = (daily * Decimal(days)).quantize(Decimal('0.01'))
         total_usd += subtotal
@@ -538,12 +552,20 @@ def _booking_submit_transfer(request):
 
     # ── Parse date/time ──────────────────────────────────────
     try:
-        from datetime import datetime
+        from datetime import datetime, timedelta as _td
         pickup_date = datetime.strptime(pickup_date_str, '%Y-%m-%d').date()
         pickup_time = datetime.strptime(pickup_time_str, '%H:%M').time()
     except ValueError:
         return JsonResponse({'ok': False, 'errors': {
             'transfer_pickup_date': 'Invalid date or time.'
+        }}, status=400)
+
+    # Reject same-day and past dates (we need at least 1 day to confirm)
+    from django.utils import timezone as _tz
+    tomorrow = _tz.localdate() + _td(days=1)
+    if pickup_date < tomorrow:
+        return JsonResponse({'ok': False, 'errors': {
+            'transfer_pickup_date': 'Pickup must be tomorrow or later. WhatsApp us for urgent transfers.'
         }}, status=400)
 
     # ── Pick a vehicle of the right type ─────────────────────

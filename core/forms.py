@@ -134,10 +134,16 @@ class BookingStep1Form(forms.Form):
         return_time  = cleaned.get('return_time')
 
         from django.utils import timezone
-        today = timezone.localdate()
+        from datetime import timedelta as _td
+        today    = timezone.localdate()
+        tomorrow = today + _td(days=1)
 
-        if pickup_date and pickup_date < today:
-            self.add_error('pickup_date', 'Pick-up date cannot be in the past.')
+        if pickup_date and pickup_date < tomorrow:
+            # Reject both past dates AND today (same-day bookings aren't allowed
+            # operationally — we need at least 1 day to allocate a car and
+            # confirm with the customer).
+            self.add_error('pickup_date',
+                'Pick-up date must be tomorrow or later. Same-day bookings aren\'t available — please WhatsApp us for urgent requests.')
 
         if pickup_date and return_date:
             if return_date < pickup_date:
