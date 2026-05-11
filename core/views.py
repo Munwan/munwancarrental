@@ -920,12 +920,27 @@ def check_booking(request):
         try:
             b = Booking.objects.get(reference=ref)
             is_transfer = (b.hire_type == 'transfer')
+
+            # For airport transfers, the customer chose a CAR CLASS (Economy /
+            # Mid-size / Luxury / Van) — not a specific vehicle — so we hide
+            # the assigned vehicle name and show "Airport Transfer · {class}"
+            # as the service label instead.
+            if is_transfer:
+                class_label = b.get_transfer_car_type_display() or ''
+                service_label = (
+                    f'Airport Transfer · {class_label}'.rstrip(' ·')
+                )
+            else:
+                service_label = b.vehicle.name if b.vehicle else '—'
+
             return JsonResponse({
                 'ok':          True,
                 'reference':   b.reference,
                 'hire_type':   b.get_hire_type_display(),
                 'is_transfer': is_transfer,
-                'vehicle':     b.vehicle.name,
+                # For transfers: "Airport Transfer · Mid-size"
+                # For rentals:   actual vehicle name
+                'vehicle':     service_label,
                 'pickup':      b.get_pickup_location_display(),
                 'pickup_date': b.pickup_date.strftime('%d %b %Y'),
                 # Airport transfers are one-way — no return date.
@@ -935,7 +950,8 @@ def check_booking(request):
                 'total_usd':   str(b.total_usd),
                 'total_kes':   str(b.total_kes),
                 'with_driver': b.with_driver,
-                'transfer_zone':     b.get_transfer_zone_display() if is_transfer else '',
+                'transfer_zone':        b.get_transfer_zone_display() if is_transfer else '',
+                'transfer_car_type':    b.get_transfer_car_type_display() if is_transfer else '',
                 'transfer_destination': b.transfer_destination if is_transfer else '',
             })
         except Booking.DoesNotExist:

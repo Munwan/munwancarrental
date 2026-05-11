@@ -23,9 +23,22 @@
       <div style="font-size:1.8rem;margin-bottom:10px">✅</div>
       <div style="font-weight:800;font-size:1rem;margin-bottom:14px">Booking Found</div>
       <div class="result-row"><span class="rl">Reference</span><span class="rv">{{ booking.reference }}</span></div>
-      <div class="result-row"><span class="rl">Vehicle</span><span class="rv">{{ booking.vehicle.name }}</span></div>
-      <div class="result-row"><span class="rl">Pick-up</span><span class="rv">{{ booking.get_pickup_location_display }} · {{ booking.pickup_date|date:"d M Y" }}</span></div>
-      <div class="result-row"><span class="rl">Return</span><span class="rv">{{ booking.return_date|date:"d M Y" }}</span></div>
+
+      {% if booking.hire_type == 'transfer' %}
+        {# Airport transfer: customer picked a car class, not a specific vehicle.
+           Show the service label + zone/destination instead of the assigned vehicle name. #}
+        <div class="result-row"><span class="rl">Service</span><span class="rv">✈️ Airport Transfer · {{ booking.get_transfer_car_type_display }}</span></div>
+        <div class="result-row"><span class="rl">Zone</span><span class="rv">{{ booking.get_transfer_zone_display }}</span></div>
+        {% if booking.transfer_destination %}
+        <div class="result-row"><span class="rl">{% if booking.transfer_direction == 'TO' %}Pickup{% else %}Drop-off{% endif %}</span><span class="rv">{{ booking.transfer_destination }}</span></div>
+        {% endif %}
+        <div class="result-row"><span class="rl">When</span><span class="rv">{{ booking.pickup_date|date:"d M Y" }} at {{ booking.pickup_time|time:"H:i" }}</span></div>
+      {% else %}
+        <div class="result-row"><span class="rl">Vehicle</span><span class="rv">{{ booking.vehicle.name }}</span></div>
+        <div class="result-row"><span class="rl">Pick-up</span><span class="rv">{{ booking.get_pickup_location_display }} · {{ booking.pickup_date|date:"d M Y" }}</span></div>
+        <div class="result-row"><span class="rl">Return</span><span class="rv">{% if booking.return_date %}{{ booking.return_date|date:"d M Y" }}{% else %}— (one-way){% endif %}</span></div>
+      {% endif %}
+
       <div class="result-row"><span class="rl">Status</span><span class="rv status-ok">{{ booking.get_status_display }}</span></div>
       <div class="result-row"><span class="rl">Payment</span><span class="rv">{{ booking.get_payment_status_display }}</span></div>
       <div class="result-row"><span class="rl">Total</span><span class="rv">${{ booking.total_usd }} (KES {{ booking.total_kes }})</span></div>
