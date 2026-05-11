@@ -81,11 +81,6 @@
         <div class="car-footer">
           <div>
             {% if v.category == 'safari' %}
-              {# Safari-ready cars: show price RANGE across destinations because
-                 the daily rate varies by where the customer is going. The
-                 lower bound is the cheapest destination (usually Nairobi NP or
-                 Naivasha); the upper is the most expensive (usually Samburu
-                 or Tsavo). See SafariPricing admin to adjust.                 #}
               {% with range=v.safari_price_range %}
               <div class="price-usd">
                 ${{ range.0|floatformat:0 }}{% if range.0 != range.1 %}–${{ range.1|floatformat:0 }}{% endif %}
@@ -202,12 +197,6 @@
     
 <section class="seo-block" id="popular-searches">
   <div class="seo-inner">
-    <h2 class="section-title">Popular Car Rental Searches in Nairobi</h2>
-    <p class="seo-lede">Whatever you're looking for — cheap car rental, an airport pickup, a safari 4×4, or a monthly long-term hire — we've covered it. Here's where most of our customers start.</p>
-
-    <h3 class="seo-h3">Why Munwan Car Rental?</h3>
-    <p>Most search results for "car rental Nairobi" lead to listings on Jiji Kenya or classifieds — which means individual car owners with no insurance, no roadside support, and no recourse if something goes wrong. Munwan is a registered car rental company. Every vehicle carries comprehensive insurance, GPS tracking, 24/7 roadside assistance, and a real office address. We've served thousands of self-drive and chauffeured rentals across Nairobi, Mombasa, and the Maasai Mara.</p>
-    <p>Our base fleet starts with the <strong>Toyota Vitz</strong> at $28/day for short city rentals; we also have <strong>Mazda Demio</strong> at $30, <strong>Toyota Rav4</strong> at $50 (great for the Mara), <strong>Nissan X-Trail</strong> at $55, and <strong>Toyota Prado</strong> at $90. <a href="{% url 'fleet' %}">See the full fleet and prices →</a></p>
 
     <h3 class="seo-h3">Common questions</h3>
     <details class="seo-faq">
