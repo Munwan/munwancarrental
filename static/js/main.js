@@ -189,6 +189,40 @@ function $id(id) { return document.getElementById(id); }
 function val(id) { const e=$id(id); if(!e) return ''; return e.type==='checkbox' ? e.checked : e.value; }
 function setText(id, t) { const e=$id(id); if(e) e.textContent=String(t); }
 function setHTML(id, h) { const e=$id(id); if(e) e.innerHTML=h; }
+
+// Real-time phone input cleaner. Strips anything that isn't:
+//   • digits 0-9
+//   • optional leading +
+//   • spaces, dashes, parentheses (display-only chars common in international formats)
+// Also enforces minimum length feedback. The actual format is validated
+// server-side; this is just to prevent obvious garbage like "asdf" or
+// embedded letters that customers sometimes paste.
+function validatePhoneInput(el) {
+  if (!el) return;
+  let v = el.value || '';
+  // Allow only +, digits, space, dash, parentheses
+  let cleaned = v.replace(/[^+\d\s\-\(\)]/g, '');
+  // Only one + and only at the start
+  if (cleaned.indexOf('+') > 0) cleaned = cleaned.replace(/\+/g, '');
+  // Multiple + at start collapse to one
+  cleaned = cleaned.replace(/^\++/, '+');
+  if (cleaned !== v) el.value = cleaned;
+
+  // Show inline error if too short, but only after they've typed something
+  const errEl = $id('err_' + el.id.replace('b_', ''));
+  if (errEl) {
+    const digits = cleaned.replace(/\D/g, '');
+    if (cleaned.length === 0) {
+      errEl.textContent = '';
+    } else if (digits.length < 7) {
+      errEl.textContent = 'Phone number is too short.';
+    } else if (digits.length > 15) {
+      errEl.textContent = 'Phone number is too long.';
+    } else {
+      errEl.textContent = '';
+    }
+  }
+}
 function clearErrors() {
   document.querySelectorAll('.ferr').forEach(e => e.textContent = '');
   document.querySelectorAll('.fg input.error,.fg select.error').forEach(e => e.classList.remove('error'));
@@ -325,8 +359,28 @@ function openBookingModalForCar(vehicleId) {
     return;
   }
   openBookingModal();
-  const sel = $id('b_vehicle');
-  if (sel) { sel.value = String(vehicleId); updatePricingPreview(); }
+
+  // Detect whether this is a safari-only car. Safari cars are hidden from
+  // the standard rental dropdown, so we need to pivot the modal into Safari
+  // mode before trying to pre-select.
+  const v = (VEHICLES || []).find(x => String(x.id) === String(vehicleId));
+  // Fallback to checking the safari select if VEHICLES doesn't have category
+  let isSafariCar = false;
+  const safariSel = $id('b_safari_vehicle');
+  if (safariSel) {
+    isSafariCar = Array.from(safariSel.options).some(o => o.value === String(vehicleId));
+  }
+
+  if (isSafariCar) {
+    if (typeof setHireType === 'function') setHireType('safari');
+    if (safariSel) {
+      safariSel.value = String(vehicleId);
+      if (typeof updateSafariQuote === 'function') updateSafariQuote();
+    }
+  } else {
+    const sel = $id('b_vehicle');
+    if (sel) { sel.value = String(vehicleId); updatePricingPreview(); }
+  }
 }
 
 // Service card helper — sets hire type and opens modal
@@ -394,36 +448,56 @@ function setHireType(type) {
   if (hidden) hidden.value = type;
 
   // ── Swap which field section is visible ───────────────────
-  // 'transfer' shows the Airport Transfer form; everything else shows
-  // the regular rental form. We toggle CSS display + the `required`
-  // attribute on inputs so HTML5 validation only checks the visible set.
+  // Three modes:
+  //   transfer → airport transfer form (no rental/safari fields)
+  //   safari   → safari package form (no rental/transfer fields)
+  //   else     → standard rental form (no transfer/safari fields)
+  // We toggle CSS display + the `required` attribute on inputs so HTML5
+  // validation only checks the visible set.
   const isTransfer = (type === 'transfer');
+  const isSafari   = (type === 'safari');
+  const isRental   = !(isTransfer || isSafari);
+
   const rental   = $id('rentalFields');
   const transfer = $id('transferFields');
-  if (rental)   rental.style.display   = isTransfer ? 'none' : '';
+  const safari   = $id('safariFields');
+  if (rental)   rental.style.display   = isRental   ? '' : 'none';
   if (transfer) transfer.style.display = isTransfer ? '' : 'none';
+  if (safari)   safari.style.display   = isSafari   ? '' : 'none';
 
-  // Toggle required-ness so hidden inputs don't block submit
+  // Toggle required attribute per visible section
+  // Rental fields
   ['b_vehicle','b_pickup_location','b_pickup_date','b_pickup_time',
    'b_return_date','b_return_time'].forEach(id => {
     const el = $id(id); if (!el) return;
-    if (isTransfer) el.removeAttribute('required');
-    else            el.setAttribute('required', '');
+    if (isRental) el.setAttribute('required', '');
+    else          el.removeAttribute('required');
   });
+  // Transfer fields
   ['b_transfer_direction','b_transfer_car_type','b_transfer_location',
    'b_transfer_pickup_date','b_transfer_pickup_time'].forEach(id => {
     const el = $id(id); if (!el) return;
     if (isTransfer) el.setAttribute('required', '');
     else            el.removeAttribute('required');
   });
+  // Safari fields
+  ['b_safari_vehicle','b_safari_pickup_date','b_safari_pickup_time',
+   'b_safari_pickup_location'].forEach(id => {
+    const el = $id(id); if (!el) return;
+    if (isSafari) el.setAttribute('required', '');
+    else          el.removeAttribute('required');
+  });
 
-  // Update transfer location label based on direction (in case user toggled before)
+  // Per-mode init
   if (isTransfer && typeof onTransferDirectionChange === 'function') {
     onTransferDirectionChange();
     updateTransferQuote();
   }
+  if (isSafari && typeof loadSafariDestinations === 'function') {
+    loadSafariDestinations();   // lazy-load destination list on first show
+  }
 
-  // Run downstream filters (Safari vehicle filter etc.)
+  // Run downstream filters (rental vehicle filter etc.)
   if (typeof onHireTypeChange === 'function') onHireTypeChange();
   else updatePricingPreview();
 }
@@ -461,6 +535,10 @@ function onHireTypeChange() {
 
   if (!veh) { updatePricingPreview(); return; }
 
+  // Vehicle visibility per hire type:
+  //   safari      → ONLY safari-ready cars shown
+  //   normal/etc. → ALL cars EXCEPT safari-ready (safari cars are a
+  //                 specialised, priced-per-destination product)
   const wantSafariOnly = (hire === 'safari');
   let clearedSelection = false;
 
@@ -468,16 +546,24 @@ function onHireTypeChange() {
     if (!opt.value) { opt.hidden = false; return; }   // keep "— Select Vehicle —"
     const cat = opt.dataset.category || '';
     const isSafari = (cat === 'safari');
-    opt.hidden = wantSafariOnly && !isSafari;
+    if (wantSafariOnly) {
+      opt.hidden = !isSafari;             // safari mode: hide non-safari
+    } else {
+      opt.hidden = isSafari;              // any other mode: hide safari cars
+    }
     if (opt.selected && opt.hidden) {
-      veh.value = '';                                  // unselect hidden choice
+      veh.value = '';
       clearedSelection = true;
     }
   });
 
   if (clearedSelection) {
     const errEl = $id('err_vehicle');
-    if (errEl) errEl.textContent = 'Safari Package requires a Safari-Ready vehicle. Please pick one from the list.';
+    if (errEl) {
+      errEl.textContent = wantSafariOnly
+        ? 'Safari Package requires a Safari-Ready vehicle. Please pick one from the list.'
+        : 'That vehicle is only available under the Safari Package hire type. Please pick a different vehicle.';
+    }
   } else {
     const errEl = $id('err_vehicle');
     if (errEl) errEl.textContent = '';
@@ -586,6 +672,138 @@ function updateTransferQuote() {
   setText('tpp_total_kes', `KES ${Math.round(totalKes).toLocaleString()}`);
   setText('tpp_total_eur', `€${totalEur.toFixed(2)}`);
   setText('tpp_total_pay', `$${totalUsd.toFixed(2)} (≈ KES ${Math.round(totalKes).toLocaleString()})`);
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+//  SAFARI PACKAGE — destinations, chips, live quote
+// ════════════════════════════════════════════════════════════════════
+
+// Cached safari destination list (fetched once on first safari mode entry).
+let SAFARI_DESTS = null;
+// Customer's currently selected destination IDs, in pick order.
+let safariSelected = [];
+// Per-destination day overrides — keyed by destination ID, value = days.
+let safariDays = {};
+
+// Load destinations from server. Idempotent — only fetches once per page.
+function loadSafariDestinations() {
+  if (SAFARI_DESTS !== null) return;          // already loaded
+  fetch('/safari/destinations/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) { SAFARI_DESTS = []; return; }
+      SAFARI_DESTS = data.destinations || [];
+      renderSafariDestList();
+    })
+    .catch(() => { SAFARI_DESTS = []; });
+}
+
+// Render destination chips. Each chip toggles on click; selected chips
+// expand to show a days slider.
+function renderSafariDestList() {
+  const wrap = $id('safariDestList');
+  if (!wrap) return;
+  if (!SAFARI_DESTS || !SAFARI_DESTS.length) {
+    wrap.innerHTML = '<div style="color:var(--muted);font-size:.82rem">No safari destinations available right now. Please WhatsApp us to book.</div>';
+    return;
+  }
+  wrap.innerHTML = SAFARI_DESTS.map(d => {
+    const picked = safariSelected.includes(d.id);
+    const days = safariDays[d.id] || d.days;
+    return `
+      <div class="safari-dest ${picked ? 'picked' : ''}" data-id="${d.id}" onclick="toggleSafariDest(${d.id}, event)">
+        <div class="sd-head">
+          <div class="sd-name">${d.short_name}</div>
+          <div class="sd-meta">${d.distance_km} km · ${d.days} day${d.days!==1?'s':''} recommended</div>
+        </div>
+        ${d.description ? `<div class="sd-desc">${d.description}</div>` : ''}
+        ${picked ? `
+          <div class="sd-days" onclick="event.stopPropagation()">
+            <label for="days_${d.id}" style="font-size:.74rem;color:var(--muted)">Days at this destination:</label>
+            <input type="number" id="days_${d.id}" min="1" max="14" value="${days}"
+                   onchange="setSafariDays(${d.id}, this.value)"
+                   onclick="event.stopPropagation()"
+                   style="width:70px;padding:4px 8px;font-weight:700"/>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleSafariDest(destId, ev) {
+  if (ev) ev.stopPropagation();
+  const idx = safariSelected.indexOf(destId);
+  if (idx >= 0) {
+    safariSelected.splice(idx, 1);
+    delete safariDays[destId];
+  } else {
+    safariSelected.push(destId);
+    const d = (SAFARI_DESTS || []).find(x => x.id === destId);
+    if (d) safariDays[destId] = d.days;
+  }
+  renderSafariDestList();
+  updateSafariQuote();
+}
+
+function setSafariDays(destId, val) {
+  let n = parseInt(val, 10);
+  if (isNaN(n) || n < 1) n = 1;
+  if (n > 14) n = 14;
+  safariDays[destId] = n;
+  updateSafariQuote();
+}
+
+// Hit the server for a fresh quote. Server is source of truth — we don't
+// recompute in JS to avoid prices drifting from the admin.
+function updateSafariQuote() {
+  const vehicleId = val('b_safari_vehicle');
+  const preview = $id('safariPricePreview');
+  if (!preview) return;
+  if (!vehicleId || !safariSelected.length) {
+    preview.style.display = 'none';
+    return;
+  }
+
+  const fd = new FormData();
+  fd.append('csrfmiddlewaretoken', getCsrf());
+  fd.append('vehicle_id', vehicleId);
+  fd.append('destinations', safariSelected.join(','));
+  safariSelected.forEach(id => {
+    if (safariDays[id]) fd.append(`days_${id}`, safariDays[id]);
+  });
+
+  fetch('/safari/quote/', { method: 'POST', body: fd, credentials: 'same-origin' })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) {
+        preview.style.display = 'none';
+        return;
+      }
+      const rowsHtml = data.breakdown.map(b => `
+        <div class="pp-row">
+          <span>${b.name} (${b.days} day${b.days!==1?'s':''} × $${b.daily_usd.toFixed(2)})</span>
+          <span>$${b.subtotal_usd.toFixed(2)}</span>
+        </div>
+      `).join('');
+      const breakdownDiv = $id('safari_breakdown_rows');
+      if (breakdownDiv) breakdownDiv.innerHTML = rowsHtml;
+      setText('spp_total_days', data.total_days);
+      setText('spp_total_usd', `$${data.total_usd.toFixed(2)}`);
+      setText('spp_total_kes', `KES ${data.total_kes.toLocaleString()}`);
+      setText('spp_total_eur', `€${data.total_eur.toFixed(2)}`);
+      setText('spp_total_pay', `$${data.total_usd.toFixed(2)} (≈ KES ${data.total_kes.toLocaleString()})`);
+      preview.style.display = '';
+    })
+    .catch(() => { preview.style.display = 'none'; });
+}
+
+// Show/hide hotel address field for safari pickup
+function onSafariPickupChange() {
+  const loc = val('b_safari_pickup_location');
+  const wrap = $id('safariHotelWrap');
+  if (wrap) wrap.style.display = (loc === 'HOTEL' || loc === 'other') ? '' : 'none';
 }
 
 
@@ -707,6 +925,9 @@ async function submitStep1() {
   // ── Airport Transfer has its own field set & validation ─────
   if (hireType === 'transfer') {
     return submitStep1Transfer();
+  }
+  if (hireType === 'safari') {
+    return submitStep1Safari();
   }
 
   const fields = {
@@ -870,11 +1091,14 @@ async function submitStep1() {
 // ── Populate summary — correctly adds driver fee ──────────
 function populateOrderSummary(data) {
   const days = parseInt(data.days) || 1;
-  // For airport transfer bookings, the "× N days" makes no sense — show
-  // "Airport Transfer · {vehicle}" instead.
+  // For airport transfer / safari bookings, the "× N days" makes no sense —
+  // show the booking type and vehicle/service label instead.
   const isTransfer = !!(data.is_transfer || (pendingBooking && pendingBooking.is_transfer));
+  const isSafari   = !!(data.is_safari   || (pendingBooking && pendingBooking.is_safari));
   if (isTransfer) {
     setText('sum_vehicle_days', `✈️ Airport Transfer · ${data.vehicle}`);
+  } else if (isSafari) {
+    setText('sum_vehicle_days', `🦁 Safari Package · ${data.vehicle} · ${days} day${days!==1?'s':''}`);
   } else {
     setText('sum_vehicle_days', `${data.vehicle} × ${days} day${days!==1?'s':''}`);
   }
@@ -1233,6 +1457,120 @@ async function submitStep1Transfer() {
       with_driver:   false,
       baby_seat:     false,
       baby_seat_fee: '0',
+    });
+    currentStep = 2;
+    updateStepUI();
+    if (typeof renderPaymentTabs === 'function') renderPaymentTabs();
+  } catch (err) {
+    toast('Network error. Please try again.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Next →'; }
+  }
+}
+
+// ── Step 1 — SAFARI PACKAGE variant ─────────────────────────
+async function submitStep1Safari() {
+  clearErrors();
+
+  // Validate destinations + days before sending
+  if (!safariSelected.length) {
+    showFieldError('safari_destinations', 'Pick at least one safari destination.');
+    return;
+  }
+
+  const fields = {
+    first_name:               val('b_first_name'),
+    last_name:                val('b_last_name'),
+    email:                    val('b_email'),
+    phone:                    val('b_phone'),
+    nationality:              val('b_nationality'),
+    hire_type:                'safari',
+    vehicle:                  val('b_safari_vehicle'),
+    safari_destinations:      safariSelected.join(','),
+    pickup_date:              val('b_safari_pickup_date'),
+    pickup_time:              val('b_safari_pickup_time'),
+    pickup_location:          val('b_safari_pickup_location'),
+    hotel_address:            val('b_safari_hotel'),
+    create_account:           accOpen ? 'on' : '',
+    password:                 val('b_password'),
+    password_confirm:         val('b_password2'),
+    terms_accepted:           val('b_terms_accepted') ? 'on' : '',
+    website:                  val('b_website') || '',
+    form_started_at:          val('b_form_started_at') || '',
+  };
+  // Per-destination day overrides
+  Object.entries(safariDays).forEach(([id, days]) => {
+    fields[`days_${id}`] = days;
+  });
+
+  let hasError = false;
+  ['first_name','last_name','email','phone','vehicle',
+   'pickup_date','pickup_time'].forEach(f => {
+    const key = f === 'vehicle' ? 'vehicle' : f;
+    if (!fields[key] || !String(fields[key]).trim()) {
+      showFieldError(f === 'vehicle' ? 'safari_vehicle' : ('safari_' + f), 'This field is required.');
+      hasError = true;
+    }
+  });
+  if (fields.email && fields.email.trim()) {
+    const e = fields.email.trim();
+    if (!e.includes('@') || e.indexOf('@') === e.length - 1 || !e.includes('.')) {
+      showFieldError('email', 'Please enter a valid email address.');
+      hasError = true;
+    }
+  }
+  if (hasError) return;
+
+  // Edit-vs-create signature (mirrors transfer flow)
+  const sigNow = `safari|${fields.vehicle}|${fields.safari_destinations}|${JSON.stringify(safariDays)}|${fields.pickup_date}|${fields.email}`;
+  if (pendingBooking && pendingBooking.reference && pendingBooking.is_safari) {
+    if ((pendingBooking._sig || '') === sigNow) {
+      populateOrderSummary({
+        vehicle:    pendingBooking.vehicle_name,
+        days:       pendingBooking.total_days,
+        base_price: pendingBooking.total_usd,
+        total_usd:  pendingBooking.total_usd,
+        total_kes:  pendingBooking.total_kes,
+        total_eur:  pendingBooking.total_eur,
+        driver_fee: '0', with_driver: true, baby_seat: false, baby_seat_fee: '0',
+        is_safari:  true,
+      });
+      currentStep = 2; updateStepUI();
+      return;
+    }
+    fields.edit_ref = pendingBooking.reference;
+  }
+
+  const btn = $id('btnNext');
+  if (btn) { btn.disabled = true; btn.textContent = 'Booking…'; }
+  try {
+    const result = await postJSON('/booking/submit/', fields);
+    if (!result.ok) {
+      Object.entries(result.errors || {}).forEach(([k,v]) => {
+        // Map server field names back to form input IDs where they differ
+        const formField = ({
+          vehicle:             'safari_vehicle',
+          safari_destinations: 'safari_destinations',
+          pickup_date:         'safari_pickup_date',
+          pickup_time:         'safari_pickup_time',
+        })[k] || k;
+        showFieldError(formField, v);
+      });
+      toast('Please fix the errors and try again.', 'error');
+      return;
+    }
+    pendingBooking = result;
+    pendingBooking.is_safari = true;
+    pendingBooking._sig = sigNow;
+    populateOrderSummary({
+      vehicle:    result.vehicle_name,
+      days:       result.total_days,
+      base_price: result.total_usd,
+      total_usd:  result.total_usd,
+      total_kes:  result.total_kes,
+      total_eur:  result.total_eur,
+      driver_fee: '0', with_driver: true, baby_seat: false, baby_seat_fee: '0',
+      is_safari:  true,
     });
     currentStep = 2;
     updateStepUI();

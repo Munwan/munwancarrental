@@ -24,7 +24,8 @@ from .forms import (
     CheckBookingForm, LoginForm, RegisterForm, SupportForm,
 )
 from .middleware import get_client_ip
-from .models import Booking, EmailOTP, PaymentLog, Review, SupportTicket, Vehicle
+from .models import (Booking, EmailOTP, PaymentLog, Review, SafariDestination,
+                     SafariPricing, SupportTicket, Vehicle)
 from .payments import PaystackBackend, MpesaBackend, PayPalBackend
 
 logger = logging.getLogger('drivekenya.views')
@@ -142,6 +143,334 @@ def privacy(request):
     """Privacy Policy page."""
     return render(request, 'core/privacy.html', {
         'whatsapp_number': getattr(settings, 'WHATSAPP_NUMBER', '254727745907'),
+    })
+
+
+# ─────────────────────────────────────────────────────────────
+#  SAFARI — quote endpoint & destination list
+# ─────────────────────────────────────────────────────────────
+def safari_destinations(request):
+    """
+    Returns the list of active safari destinations for the booking form.
+    Public, GET only, cached at the CDN edge for speed (small payload).
+    """
+    dests = SafariDestination.objects.filter(is_active=True).order_by('order', 'name')
+    return JsonResponse({
+        'ok': True,
+        'destinations': [
+            {
+                'id':           d.id,
+                'name':         d.name,
+                'short_name':   d.short_name,
+                'slug':         d.slug,
+                'description':  d.description,
+                'distance_km':  d.distance_km,
+                'days':         d.recommended_days,
+            }
+            for d in dests
+        ],
+    })
+
+
+@require_POST
+def safari_quote(request):
+    """
+    Returns a live quote for a safari given:
+      vehicle_id: int
+      destinations: comma-separated SafariDestination IDs (e.g. "3,1,7")
+    Optional:
+      days_override: dict-like form data with days_<destid> overrides
+
+    Response shape matches what the JS price preview expects:
+      { ok, total_usd, total_kes, total_eur, breakdown: [{name, days, daily_usd, subtotal_usd}] }
+
+    Pricing logic: for each chosen destination, look up SafariPricing for
+    that (destination, vehicle); use the per-day rate × days. Days defaults
+    to destination.recommended_days but can be overridden per leg via form.
+    """
+    from decimal import Decimal
+    try:
+        vehicle_id = int(request.POST.get('vehicle_id') or 0)
+    except ValueError:
+        return _json_error('Invalid vehicle.', 400)
+
+    dest_ids_raw = (request.POST.get('destinations') or '').strip()
+    if not dest_ids_raw:
+        return _json_error('Pick at least one safari destination.', 400)
+    try:
+        dest_ids = [int(x) for x in dest_ids_raw.split(',') if x.strip()]
+    except ValueError:
+        return _json_error('Invalid destination IDs.', 400)
+
+    try:
+        vehicle = Vehicle.objects.get(id=vehicle_id, category='safari', is_available=True)
+    except Vehicle.DoesNotExist:
+        return _json_error('Vehicle is not safari-ready or unavailable.', 404)
+
+    # Preserve the order the customer picked the destinations.
+    dests = list(SafariDestination.objects.filter(id__in=dest_ids, is_active=True))
+    dests_by_id = {d.id: d for d in dests}
+    ordered = [dests_by_id[i] for i in dest_ids if i in dests_by_id]
+    if not ordered:
+        return _json_error('Destinations not found or inactive.', 404)
+
+    # Build the breakdown
+    breakdown = []
+    total_usd = Decimal('0')
+    KES_PER_USD = Decimal('130')
+    EUR_PER_USD = Decimal('0.93')
+
+    for d in ordered:
+        try:
+            cell = SafariPricing.objects.get(destination=d, vehicle=vehicle)
+            daily = cell.price_usd
+        except SafariPricing.DoesNotExist:
+            # No price set for this combination — fall back to vehicle's
+            # base daily rate. Admin should fill this in but we don't want
+            # to silently exclude the destination.
+            daily = vehicle.price_usd
+
+        # Per-destination day override (e.g. "days_3=2" for destination 3)
+        days_key = f'days_{d.id}'
+        try:
+            days = int(request.POST.get(days_key) or d.recommended_days)
+        except ValueError:
+            days = d.recommended_days
+        days = max(1, min(days, 14))   # clamp 1..14
+
+        subtotal = (daily * Decimal(days)).quantize(Decimal('0.01'))
+        total_usd += subtotal
+        breakdown.append({
+            'destination_id': d.id,
+            'name':           d.short_name,
+            'days':           days,
+            'daily_usd':      float(daily),
+            'subtotal_usd':   float(subtotal),
+        })
+
+    total_kes = (total_usd * KES_PER_USD).quantize(Decimal('1'))
+    total_eur = (total_usd * EUR_PER_USD).quantize(Decimal('0.01'))
+
+    return JsonResponse({
+        'ok':           True,
+        'vehicle_id':   vehicle.id,
+        'vehicle_name': vehicle.name,
+        'total_usd':    float(total_usd),
+        'total_kes':    int(total_kes),
+        'total_eur':    float(total_eur),
+        'total_days':   sum(b['days'] for b in breakdown),
+        'breakdown':    breakdown,
+    })
+
+
+@require_POST
+def _booking_submit_safari(request):
+    """
+    Handle a Safari Package booking. Customer picks one or more destinations
+    (sequential trip). Total = sum over (vehicle_daily_at_destination × days).
+    Driver is always included; no return_date concept (pickup_date + total_days).
+    """
+    from datetime import datetime, timedelta
+    from decimal import Decimal
+
+    P = request.POST
+    errors = {}
+
+    def _grab(key, label, max_len=200):
+        v = (P.get(key) or '').strip()
+        if not v:
+            errors[key] = f'{label} is required.'
+        return v[:max_len]
+
+    first_name  = _grab('first_name', 'First name', 60)
+    last_name   = _grab('last_name',  'Last name',  60)
+    email       = _grab('email',      'Email')
+    phone       = _grab('phone',      'Phone')
+    nationality = (P.get('nationality') or 'Kenya').strip()[:60]
+
+    # Vehicle: must be safari-ready
+    try:
+        vehicle_id = int(P.get('vehicle') or 0)
+        vehicle    = Vehicle.objects.get(id=vehicle_id, category='safari', is_available=True)
+    except (ValueError, Vehicle.DoesNotExist):
+        errors['vehicle'] = 'Pick a safari-ready vehicle.'
+        vehicle = None
+
+    # Destinations: comma-separated IDs
+    dest_ids_raw = (P.get('safari_destinations') or '').strip()
+    dest_ids = []
+    if dest_ids_raw:
+        try:
+            dest_ids = [int(x) for x in dest_ids_raw.split(',') if x.strip()]
+        except ValueError:
+            errors['safari_destinations'] = 'Invalid destination IDs.'
+    if not dest_ids:
+        errors['safari_destinations'] = 'Pick at least one safari destination.'
+
+    pickup_date_str  = _grab('pickup_date', 'Pickup date')
+    pickup_time_str  = (P.get('pickup_time') or '08:00').strip()
+    pickup_location  = (P.get('pickup_location') or 'JKIA').strip()
+
+    # Email + phone validation
+    import re as _re
+    if email and ('@' not in email or '.' not in email or email.endswith('@')):
+        errors['email'] = 'Please enter a valid email address.'
+    if phone and not _re.match(r'^\+?[\d\s\-\(\)]{7,20}$', phone):
+        errors['phone'] = 'Enter a valid phone number.'
+
+    if not P.get('terms_accepted'):
+        errors['terms_accepted'] = 'Please accept the Terms & Cancellation Policy.'
+
+    if errors:
+        return JsonResponse({'ok': False, 'errors': errors}, status=400)
+
+    # Parse pickup
+    try:
+        pickup_date = datetime.strptime(pickup_date_str, '%Y-%m-%d').date()
+        pickup_time = datetime.strptime(pickup_time_str, '%H:%M').time()
+    except ValueError:
+        return JsonResponse({'ok': False, 'errors': {
+            'pickup_date': 'Invalid date or time.'
+        }}, status=400)
+
+    # Resolve destinations (preserving customer's order)
+    dests_by_id = {d.id: d for d in SafariDestination.objects.filter(
+        id__in=dest_ids, is_active=True)}
+    ordered = [dests_by_id[i] for i in dest_ids if i in dests_by_id]
+    if not ordered:
+        return JsonResponse({'ok': False, 'errors': {
+            'safari_destinations': 'Destinations not found.'
+        }}, status=400)
+
+    # Compute price (server is source of truth, mirrors safari_quote)
+    breakdown = []
+    total_usd = Decimal('0')
+    KES_PER_USD = Decimal('130')
+    EUR_PER_USD = Decimal('0.93')
+
+    for d in ordered:
+        try:
+            daily = SafariPricing.objects.get(destination=d, vehicle=vehicle).price_usd
+        except SafariPricing.DoesNotExist:
+            daily = vehicle.price_usd
+
+        try:
+            days = int(P.get(f'days_{d.id}') or d.recommended_days)
+        except ValueError:
+            days = d.recommended_days
+        days = max(1, min(days, 14))
+
+        subtotal = (daily * Decimal(days)).quantize(Decimal('0.01'))
+        total_usd += subtotal
+        breakdown.append({
+            'destination_id': d.id,
+            'name':           d.short_name,
+            'days':           days,
+            'daily_usd':      float(daily),
+            'subtotal_usd':   float(subtotal),
+        })
+
+    total_days  = sum(b['days'] for b in breakdown)
+    return_date = pickup_date + timedelta(days=total_days)
+    total_kes   = (total_usd * KES_PER_USD).quantize(Decimal('1'))
+    total_eur   = (total_usd * EUR_PER_USD).quantize(Decimal('0.01'))
+
+    # ── Edit-instead-of-duplicate (mirrors transfer flow) ────
+    booking = None
+    existing_ref = (P.get('edit_ref') or '').strip()
+    if existing_ref:
+        try:
+            booking = Booking.objects.get(
+                reference=existing_ref,
+                payment_status='unpaid',
+                email__iexact=email.lower(),
+            )
+        except Booking.DoesNotExist:
+            booking = None
+
+    if booking is None:
+        booking = Booking(
+            ip_address = get_client_ip(request),
+            user_agent = request.META.get('HTTP_USER_AGENT', '')[:500],
+        )
+
+    booking.first_name  = first_name
+    booking.last_name   = last_name
+    booking.email       = email.lower()
+    booking.phone       = phone
+    booking.nationality = nationality
+    booking.vehicle     = vehicle
+    booking.hire_type   = 'safari'
+    booking.with_driver = True    # safari always includes driver
+    booking.baby_seat   = False
+    booking.pickup_location  = pickup_location
+    booking.pickup_date      = pickup_date
+    booking.pickup_time      = pickup_time
+    booking.return_date      = return_date
+    booking.return_time      = pickup_time
+    booking.days             = total_days
+    booking.base_price_usd   = total_usd
+    booking.driver_fee_usd   = Decimal('0.00')   # driver baked into daily
+    booking.total_usd        = total_usd
+    booking.total_kes        = total_kes
+    booking.total_eur        = total_eur
+    booking.terms_accepted   = bool(P.get('terms_accepted'))
+    booking.safari_breakdown = breakdown
+
+    if request.user.is_authenticated:
+        booking.user = request.user
+    booking.save()
+    # M2M can only be set after the booking has a PK
+    booking.safari_destinations.set([d.id for d in ordered])
+
+    request.session['pending_booking_id'] = booking.id
+
+    # Account creation (matches rental/transfer flow)
+    account_created = False
+    if P.get('create_account') == 'on' and P.get('password'):
+        existing = User.objects.filter(email__iexact=email.lower()).first()
+        if existing and request.user.is_authenticated and request.user == existing:
+            booking.user = existing
+            booking.save(update_fields=['user'])
+        elif not existing:
+            try:
+                new_user = User.objects.create_user(
+                    username=email.lower(), email=email.lower(),
+                    password=P.get('password'),
+                    first_name=first_name, last_name=last_name,
+                )
+                new_user.is_active = False
+                new_user.save(update_fields=['is_active'])
+                booking.user = new_user
+                booking.save(update_fields=['user'])
+                try:
+                    _create_and_send_otp(new_user)
+                    request.session['otp_user_pk'] = new_user.pk
+                except Exception:
+                    logger.exception('Safari-flow OTP send failed for %s', email)
+                account_created = True
+            except Exception:
+                logger.exception('Safari-flow account creation failed')
+
+    # Fire customer + admin emails in background
+    try:
+        from .emails import send_new_booking_admin_alert, send_booking_received
+        _fire_email(send_new_booking_admin_alert, booking)
+        _fire_email(send_booking_received, booking)
+    except Exception:
+        logger.exception('Safari booking email threads failed')
+
+    return JsonResponse({
+        'ok':             True,
+        'reference':      booking.reference,
+        'total_usd':      float(booking.total_usd),
+        'total_kes':      int(booking.total_kes),
+        'total_eur':      float(booking.total_eur),
+        'vehicle_name':   vehicle.name,
+        'total_days':     total_days,
+        'breakdown':      breakdown,
+        'is_safari':      True,
+        'account_created': account_created,
     })
 
 
@@ -358,10 +687,15 @@ def _booking_submit_transfer(request):
 @require_POST
 def booking_submit(request):
     try:
+        hire_type = (request.POST.get('hire_type') or '').strip()
         # ── Branch: Airport Transfer bookings have a different field set,
         # so they go through their own validation/save path.
-        if (request.POST.get('hire_type') or '').strip() == 'transfer':
+        if hire_type == 'transfer':
             return _booking_submit_transfer(request)
+        # ── Branch: Safari Package bookings let the customer pick 1+
+        # destinations; pricing is computed from SafariPricing rows.
+        if hire_type == 'safari':
+            return _booking_submit_safari(request)
 
         form = BookingStep1Form(request.POST)
         if not form.is_valid():

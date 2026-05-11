@@ -1,5 +1,6 @@
 from django.contrib import admin, messages
-from .models import Vehicle, Booking, PaymentLog, Review, SupportTicket, RateLimitEntry
+from .models import (Vehicle, Booking, PaymentLog, Review, SupportTicket,
+                     RateLimitEntry, SafariDestination, SafariPricing)
 
 
 @admin.register(Vehicle)
@@ -100,3 +101,66 @@ class SupportTicketAdmin(admin.ModelAdmin):
 class RateLimitEntryAdmin(admin.ModelAdmin):
     list_display = ['ip_address', 'action', 'count', 'window_start']
     list_filter  = ['action']
+
+
+# ─────────────────────────────────────────────────────────────
+#  SAFARI — Destinations and per-vehicle pricing matrix
+# ─────────────────────────────────────────────────────────────
+class SafariPricingInline(admin.TabularInline):
+    """
+    Inline pricing rows on the SafariDestination edit page.
+    Lets the operator set a price for each safari-ready vehicle at this
+    destination without leaving the destination view. The cell for a
+    missing (destination, vehicle) combination is treated as "not offered".
+    """
+    model = SafariPricing
+    extra = 0
+    fields = ['vehicle', 'price_usd', 'notes']
+    autocomplete_fields = ['vehicle']
+    verbose_name = 'Vehicle price at this destination'
+    verbose_name_plural = 'Vehicle prices at this destination (per day, USD)'
+
+
+@admin.register(SafariDestination)
+class SafariDestinationAdmin(admin.ModelAdmin):
+    list_display = ['name', 'short_name', 'distance_km', 'recommended_days',
+                    'is_active', 'order', 'price_summary']
+    list_editable = ['order', 'is_active']
+    list_filter = ['is_active']
+    search_fields = ['name', 'short_name']
+    prepopulated_fields = {'slug': ('name',)}
+    inlines = [SafariPricingInline]
+    fieldsets = (
+        ('Destination', {
+            'fields': ('name', 'short_name', 'slug', 'description'),
+        }),
+        ('Trip planning', {
+            'fields': ('distance_km', 'recommended_days'),
+        }),
+        ('Display', {
+            'fields': ('is_active', 'order'),
+        }),
+    )
+
+    def price_summary(self, obj):
+        """Cheapest → most expensive across vehicles at this destination."""
+        prices = list(obj.pricing.values_list('price_usd', flat=True))
+        if not prices:
+            return '—'
+        if len(prices) == 1 or min(prices) == max(prices):
+            return f'${prices[0]}/day'
+        return f'${min(prices)}–${max(prices)}/day'
+    price_summary.short_description = 'Price range / day'
+
+
+@admin.register(SafariPricing)
+class SafariPricingAdmin(admin.ModelAdmin):
+    """
+    Flat list view for power-edit across all (destination × vehicle) cells.
+    Useful when adjusting prices across the board (e.g. fuel hike).
+    """
+    list_display = ['destination', 'vehicle', 'price_usd', 'notes']
+    list_filter = ['destination', 'vehicle']
+    list_editable = ['price_usd', 'notes']
+    autocomplete_fields = ['destination', 'vehicle']
+    list_select_related = ['destination', 'vehicle']

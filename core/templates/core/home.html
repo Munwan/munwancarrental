@@ -1,8 +1,8 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Premium Car Rental in Nairobi Kenya | Self Drive &amp; Chauffeur from $28/day | Munwan Car Rental{% endblock %}
-{% block meta_description %}Premium car rental in Nairobi, Kenya from $28/day. Self-drive &amp; chauffeur services, free JKIA airport pickup, safari-ready 4x4s for Maasai Mara. Pay by M-Pesa, Visa, Mastercard or PayPal. Full insurance included.{% endblock %}
+{% block title %}Self Drive Car Rental Nairobi Kenya — Cheap 4x4, Airport, Monthly Hire from $28/day | Munwan Car Rental{% endblock %}
+{% block meta_description %}Affordable self drive car rental Nairobi Kenya from $28/day. 4x4 SUVs, monthly long-term hire, JKIA airport transfers, with or without driver. Full insurance, GPS, M-Pesa & card payment. Cheap, reliable, 24/7 support.{% endblock %}
 {% block canonical %}https://munwancarrental.com/{% endblock %}
 
 {% block content %}
@@ -11,8 +11,8 @@
 <section class="hero">
   <div class="hero-content">
     <div class="hero-eyebrow">🌍 Trusted Car Hire Across Kenya</div>
-    <h1>Premium Car Rental in Nairobi<span class="grad">Self Drive &amp; Chauffeur Services</span></h1>
-    <p class="hero-sub">Hire a car anywhere in Kenya from <strong>$28/day</strong>. <strong>Free pickup at JKIA</strong> and Mombasa airports · Safari-ready 4×4s for Maasai Mara · Pay by <strong>M-Pesa, card or PayPal</strong> · Full insurance &amp; GPS included.</p>
+    <h1>Premium Car Rental in Nairobi<span class="grad">Self Drive & Chauffeur Services</span></h1>
+    <p class="hero-sub">Hire a car anywhere in Kenya from <strong>$28/day</strong>. <strong>Free pickup at JKIA airport</strong> and Mombasa · Safari-ready 4×4s for Maasai Mara · <strong>Monthly long-term car hire</strong> with corporate discounts · Pay by <strong>M-Pesa, Visa, Mastercard or PayPal</strong>. Full insurance, GPS &amp; 24/7 roadside support included.</p>
   </div>
 </section>
 
@@ -80,8 +80,25 @@
         <div class="car-specs">{% for spec in v.specs_display %}<span class="spec">{{ spec }}</span>{% endfor %}</div>
         <div class="car-footer">
           <div>
-            <div class="price-usd">${{ v.price_usd }} <span>/ day</span> &nbsp;<span class="price-eur">€{{ v.price_eur }}</span></div>
-            <div class="price-kes">≈ KES {{ v.price_kes }}/day</div>
+            {% if v.category == 'safari' %}
+              {# Safari-ready cars: show price RANGE across destinations because
+                 the daily rate varies by where the customer is going. The
+                 lower bound is the cheapest destination (usually Nairobi NP or
+                 Naivasha); the upper is the most expensive (usually Samburu
+                 or Tsavo). See SafariPricing admin to adjust.                 #}
+              {% with range=v.safari_price_range %}
+              <div class="price-usd">
+                ${{ range.0|floatformat:0 }}{% if range.0 != range.1 %}–${{ range.1|floatformat:0 }}{% endif %}
+                <span>/ day</span>
+              </div>
+              <div class="price-kes" style="font-size:.7rem">
+                Per-destination pricing · driver &amp; fuel included
+              </div>
+              {% endwith %}
+            {% else %}
+              <div class="price-usd">${{ v.price_usd }} <span>/ day</span> &nbsp;<span class="price-eur">€{{ v.price_eur }}</span></div>
+              <div class="price-kes">≈ KES {{ v.price_kes }}/day</div>
+            {% endif %}
           </div>
           <button class="book-btn" onclick="openBookingModalForCar('{{ v.id }}', '{{ v.name }}')">Book Now</button>
         </div>
@@ -181,6 +198,126 @@
     {% endfor %}
   </div>
 </section>
+
+<!-- ═══════ SEO CONTENT BLOCK ═══════
+     Search engines weight in-page content + anchor link text heavily for
+     local-intent ("car rental nairobi") queries. This section serves both
+     visitors (genuinely useful info) AND search engines (keyword-rich
+     internal anchors). Every phrase is a real query people type into
+     Google. Do NOT keyword-stuff. -->
+<section class="seo-block" id="popular-searches">
+  <div class="seo-inner">
+    <h2 class="section-title">Popular Car Rental Searches in Nairobi</h2>
+    <p class="seo-lede">Whatever you're looking for — cheap car rental, an airport pickup, a safari 4×4, or a monthly long-term hire — we've covered it. Here's where most of our customers start.</p>
+
+    <div class="seo-link-grid">
+      <a href="{% url 'home' %}#booking" class="seo-link"><strong>Self drive car rental Nairobi</strong><span>From $28/day · pickup &amp; drop anywhere in the city</span></a>
+      <a href="{% url 'home' %}#booking" class="seo-link"><strong>Cheap car rental Nairobi</strong><span>Toyota Vitz, Mazda Demio · clean, reliable, $28-35/day</span></a>
+      <a href="{% url 'jkia_landing' %}" class="seo-link"><strong>Car rental Nairobi airport (JKIA)</strong><span>Free delivery to JKIA · meet &amp; greet at arrivals</span></a>
+      <a href="{% url 'home' %}#booking" class="seo-link"><strong>4x4 car rental Nairobi</strong><span>Toyota Prado, Land Cruiser, X-Trail · safari-ready</span></a>
+      <a href="{% url 'home' %}#booking" class="seo-link"><strong>Monthly car rental Nairobi</strong><span>Discounted long-term lease · 28+ days from $24/day</span></a>
+      <a href="{% url 'home' %}#booking" class="seo-link"><strong>Car rental Nairobi prices</strong><span>Transparent pricing · no hidden fees · all-inclusive rates</span></a>
+      <a href="{% url 'home' %}#booking" class="seo-link"><strong>Car rental Nairobi with driver</strong><span>Professional chauffeurs · airport, business, safari</span></a>
+      <a href="{% url 'home' %}#booking" class="seo-link"><strong>Airport transfer Nairobi</strong><span>Fixed-rate one-way rides · JKIA to any Nairobi destination</span></a>
+    </div>
+
+    <h3 class="seo-h3">Why Munwan Car Rental?</h3>
+    <p>Most search results for "car rental Nairobi" lead to listings on Jiji Kenya or classifieds — which means individual car owners with no insurance, no roadside support, and no recourse if something goes wrong. Munwan is a registered car rental company. Every vehicle carries comprehensive insurance, GPS tracking, 24/7 roadside assistance, and a real office address. We've served thousands of self-drive and chauffeured rentals across Nairobi, Mombasa, and the Maasai Mara.</p>
+    <p>Our base fleet starts with the <strong>Toyota Vitz</strong> at $28/day for short city rentals; we also have <strong>Mazda Demio</strong> at $30, <strong>Toyota Rav4</strong> at $50 (great for the Mara), <strong>Nissan X-Trail</strong> at $55, and <strong>Toyota Prado</strong> at $90. <a href="{% url 'fleet' %}">See the full fleet and prices →</a></p>
+
+    <h3 class="seo-h3">Common questions</h3>
+    <details class="seo-faq">
+      <summary>Do you deliver to JKIA airport?</summary>
+      <p>Yes — free pickup and drop-off at JKIA arrivals. We meet you at the meeting point with a name sign. Wilson Airport and Mombasa airport (MIA) are also free. Other Nairobi locations are free; outside the city we charge a small delivery fee.</p>
+    </details>
+    <details class="seo-faq">
+      <summary>What's the cheapest car rental Nairobi has?</summary>
+      <p>Our Toyota Vitz at $28/day is among the cheapest car rentals in Nairobi from a registered, insured operator. It's compact, fuel-efficient (16 km/L), automatic, and perfect for Nairobi city driving and short trips. Listings on Jiji or classifieds may go lower — but they typically have no insurance, no roadside, and no recourse.</p>
+    </details>
+    <details class="seo-faq">
+      <summary>Do you offer monthly car rental in Nairobi?</summary>
+      <p>Yes. Long-term rentals (28+ days) get 15-25% off the daily rate. The Vitz starts at <strong>$24/day</strong> for monthly hire (~$720/month). Common with expats, NGO consultants, digital nomads and corporates on 1-3 month assignments. Includes unlimited mileage, full insurance and one free vehicle swap.</p>
+    </details>
+    <details class="seo-faq">
+      <summary>Self drive or with driver — which is cheaper?</summary>
+      <p>Self drive is always cheaper — no driver allowance, no overnight allowance. With driver typically adds $25-40/day depending on duration and destination. <a href="{% url 'blog_post' slug='self-drive-vs-with-driver-kenya' %}">Read our full breakdown →</a></p>
+    </details>
+    <details class="seo-faq">
+      <summary>Can I get a 4×4 car rental in Nairobi for safari?</summary>
+      <p>Yes — our safari fleet includes the Toyota Rav4 ($50/day), Nissan X-Trail ($55/day), Toyota Prado ($90/day) and Toyota Land Cruiser. All are 4×4, GPS-equipped, and proven on Maasai Mara, Amboseli and Samburu routes. Self-drive or with a professional safari driver.</p>
+    </details>
+    <details class="seo-faq">
+      <summary>What are typical car rental Nairobi prices?</summary>
+      <p>Daily rates: Toyota Vitz from $28, Mazda Demio $30, Toyota Axio $35, Honda Fit $32, Toyota Rav4 $50, Nissan X-Trail $55, Toyota Prado $90. All-inclusive — insurance, GPS, unlimited mileage, free city delivery. <a href="{% url 'fleet' %}">See the full price list →</a></p>
+    </details>
+    <details class="seo-faq">
+      <summary>Is your car rental cheaper than Jiji Kenya listings?</summary>
+      <p>Sometimes the listed price on Jiji is lower — but Jiji car hire Nairobi is mostly individual car owners with no insurance, no GPS and no roadside support. If something goes wrong (breakdown, accident, vehicle defect), you're on your own. Munwan is a registered company with comprehensive insurance, 24/7 roadside, real office, and recourse if anything goes wrong. Worth the small premium.</p>
+    </details>
+    <details class="seo-faq">
+      <summary>Do you accept M-Pesa?</summary>
+      <p>Yes. Pay by M-Pesa, Visa, Mastercard, or PayPal. M-Pesa is the most popular for Kenyan customers; international visitors usually use cards or PayPal. All payments are processed securely through Paystack and PayPal.</p>
+    </details>
+  </div>
+</section>
+
+<!-- FAQ schema for Google rich results — only the questions Google would feature -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What's the cheapest car rental Nairobi has?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Our Toyota Vitz at $28/day is among the cheapest car rentals in Nairobi from a registered, insured operator. It is compact, fuel-efficient at 16 km/L, automatic, and perfect for Nairobi city driving and short trips."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do you offer monthly car rental in Nairobi?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Long-term rentals of 28 days or more get 15-25% off the daily rate. The Toyota Vitz starts at $24/day for monthly hire, around $720/month, with unlimited mileage, full insurance and one free vehicle swap included."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I get a 4x4 car rental in Nairobi for safari?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Our safari fleet includes Toyota Rav4 at $50/day, Nissan X-Trail at $55/day, Toyota Prado at $90/day and Toyota Land Cruiser. All are 4x4, GPS-equipped, and proven on Maasai Mara, Amboseli and Samburu routes. Available self-drive or with a professional safari driver."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do you deliver to JKIA airport?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Free pickup and drop-off at JKIA arrivals. We meet you at the meeting point with a name sign. Wilson Airport and Mombasa airport are also free. Other Nairobi locations are free; outside the city we charge a small delivery fee."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Self drive or with driver — which is cheaper?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Self drive is always cheaper. With-driver rentals typically add $25-40/day depending on duration and destination, because of the driver's daily allowance and overnight allowance for trips outside Nairobi."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do you accept M-Pesa?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Pay by M-Pesa, Visa, Mastercard, or PayPal. M-Pesa is the most popular for Kenyan customers; international visitors usually use cards or PayPal. All payments are processed securely through Paystack and PayPal."
+      }
+    }
+  ]
+}
+</script>
 
 <!-- BOOKING MODAL -->
 <div class="modal-overlay" id="bookingOverlay">
@@ -361,7 +498,7 @@
                   <option value="syokimau">Syokimau</option>
                   <option value="mombasa road">Mombasa Road</option>
                 </optgroup>
-                <optgroup label="Nairobi">
+                <optgroup label="Nairobi (mid fare)">
                   <option value="westlands">Westlands</option>
                   <option value="parklands">Parklands</option>
                   <option value="kilimani">Kilimani</option>
@@ -375,7 +512,7 @@
                   <option value="ngong road">Ngong Road</option>
                   <option value="yaya centre">Yaya Centre</option>
                 </optgroup>
-                <optgroup label="Nairobi Outskirts">
+                <optgroup label="Outskirts (highest fare)">
                   <option value="karen">Karen</option>
                   <option value="karen hardy">Karen Hardy</option>
                   <option value="runda">Runda</option>
@@ -423,6 +560,83 @@
           </div>
         </div>
         <!-- ═══ END transferFields ═══ -->
+
+        <!-- ═══ SAFARI PACKAGE fields ═══ -->
+        <div id="safariFields" style="display:none">
+          <div class="transfer-banner">
+            🦁 <strong>Safari Package</strong> — pick your safari-ready 4×4 and one or more
+            destinations. Price includes vehicle, professional safari driver and fuel.
+            <strong>Park entry fees are billed separately at cost.</strong>
+          </div>
+
+          <div class="frow">
+            <div class="fg"><label for="b_safari_vehicle">Safari Vehicle <span class="req">*</span></label>
+              <select id="b_safari_vehicle" onchange="updateSafariQuote()">
+                <option value="">— Select Safari 4×4 —</option>
+                {% for v in vehicles %}
+                  {% if v.category == 'safari' %}
+                  <option value="{{ v.id }}" data-base="{{ v.price_usd }}">{{ v.name }} — from ${{ v.price_usd }}/day</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+              <div class="ferr" id="err_safari_vehicle"></div>
+            </div>
+          </div>
+
+          <div class="frow full">
+            <span class="form-group-heading">Destinations <span class="req">*</span></span>
+            <div style="font-size:.74rem;color:var(--muted);margin:-2px 0 8px">
+              Tap to add. You can visit multiple parks in one trip — tap again to remove.
+              Adjust days per destination after selecting.
+            </div>
+            <div id="safariDestList" class="safari-dest-grid">
+              <!-- Populated by JS from /safari/destinations/ -->
+              <div class="safari-dest-loading">Loading destinations…</div>
+            </div>
+            <div class="ferr" id="err_safari_destinations"></div>
+          </div>
+
+          <div class="frow">
+            <div class="fg"><label for="b_safari_pickup_date">Trip Start Date <span class="req">*</span></label>
+              <input type="date" id="b_safari_pickup_date" onchange="updateSafariQuote()"/>
+              <div class="ferr" id="err_safari_pickup_date"></div>
+            </div>
+            <div class="fg"><label for="b_safari_pickup_time">Pickup Time <span class="req">*</span></label>
+              <input type="time" id="b_safari_pickup_time" value="07:00"/>
+              <div class="ferr" id="err_safari_pickup_time"></div>
+            </div>
+          </div>
+
+          <div class="frow full">
+            <div class="fg"><label for="b_safari_pickup_location">Pickup Location <span class="req">*</span></label>
+              <select id="b_safari_pickup_location" onchange="onSafariPickupChange()">
+                <option value="JKIA">JKIA Airport</option>
+                <option value="HOTEL">My Hotel (specify below)</option>
+                <option value="other">Other Nairobi Location</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="frow full" id="safariHotelWrap" style="display:none">
+            <div class="fg"><label for="b_safari_hotel">Hotel / Pickup Address</label>
+              <input type="text" id="b_safari_hotel" placeholder="Hotel name and full address"/>
+            </div>
+          </div>
+
+          <!-- Live cost breakdown -->
+          <div class="price-preview" id="safariPricePreview" style="display:none">
+            <div id="safari_breakdown_rows"><!-- per-leg rows injected here --></div>
+            <div class="pp-row"><span>Total days</span><span id="spp_total_days">—</span></div>
+            <div class="pp-row"><span>Total in USD</span><span id="spp_total_usd" style="font-weight:700">—</span></div>
+            <div class="pp-row"><span>≈ Total in KES</span><span id="spp_total_kes">—</span></div>
+            <div class="pp-row"><span>≈ Total in EUR</span><span id="spp_total_eur">—</span></div>
+            <div class="pp-total"><span>You Pay</span><span id="spp_total_pay">—</span></div>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:6px;line-height:1.4">
+              Park entry fees are not included — billed separately at cost (KES 8,000-14,000/day per non-resident depending on park).
+            </div>
+          </div>
+        </div>
+        <!-- ═══ END safariFields ═══ -->
 
         {% if not user.is_authenticated %}
         <div class="acc-opt">

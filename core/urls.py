@@ -32,6 +32,10 @@ urlpatterns = [
     path('booking/resume/',     views.booking_resume,    name='booking_resume'),
     path('booking/check/',      views.check_booking,     name='check_booking'),
 
+    # ── Safari Package: destinations & live quote ─────────────
+    path('safari/destinations/', views.safari_destinations, name='safari_destinations'),
+    path('safari/quote/',        views.safari_quote,        name='safari_quote'),
+
     # ── Payments ──────────────────────────────────────────────
     path('payments/attempt/',            views.payment_attempt,      name='payment_attempt'),
     path('payments/process/',            views.payment_process,      name='payment_process'),

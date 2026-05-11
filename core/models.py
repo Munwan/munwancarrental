@@ -82,6 +82,97 @@ class Vehicle(models.Model):
             specs.append('📡 GPS')
         return specs
 
+    # ── Safari helpers ───────────────────────────────────────
+    def is_safari_ready(self):
+        """True if vehicle can be booked under the Safari Package hire type."""
+        return self.category == 'safari'
+
+    def safari_price_range(self):
+        """
+        Returns (min_daily, max_daily) in USD across all active safari
+        destinations for this vehicle. Used to show "$X–$Y/day" on the
+        frontend fleet card. Returns (price_usd, price_usd) if no safari
+        pricing rows exist yet.
+        """
+        if not self.is_safari_ready():
+            return (None, None)
+        prices = list(
+            self.safari_prices.filter(destination__is_active=True)
+                 .values_list('price_usd', flat=True)
+        )
+        if not prices:
+            base = float(self.price_usd)
+            return (base, base)
+        return (float(min(prices)), float(max(prices)))
+
+
+# ─────────────────────────────────────────────────────────────
+#  SAFARI — Destinations & per-vehicle pricing
+# ─────────────────────────────────────────────────────────────
+class SafariDestination(models.Model):
+    """
+    A safari destination (e.g. Maasai Mara, Amboseli) bookable under the
+    Safari Package hire type. Customers can pick 1+ destinations for a
+    sequential safari trip; pricing per vehicle lives in SafariPricing.
+    """
+    name              = models.CharField(max_length=80, unique=True,
+                                         help_text='e.g. "Maasai Mara National Reserve"')
+    short_name        = models.CharField(max_length=40, blank=True,
+                                         help_text='Optional shorter label for UI. Defaults to name.')
+    slug              = models.SlugField(unique=True, blank=True)
+    description       = models.CharField(max_length=300, blank=True,
+                                         help_text='1-2 sentence pitch shown on the booking form.')
+    distance_km       = models.PositiveSmallIntegerField(
+        default=0, help_text='One-way distance from Nairobi in km.')
+    recommended_days  = models.PositiveSmallIntegerField(
+        default=2, help_text='Recommended minimum days for this destination.')
+    is_active         = models.BooleanField(
+        default=True, help_text='Uncheck to hide from the booking form without deleting.')
+    order             = models.PositiveSmallIntegerField(
+        default=0, help_text='Lower = shown first.')
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            from django.utils.text import slugify
+            self.slug = slugify(self.name)[:50]
+        if not self.short_name:
+            self.short_name = self.name
+        super().save(*args, **kwargs)
+
+
+class SafariPricing(models.Model):
+    """
+    Per-day price for a (destination × vehicle) combination. This is the
+    cell in the pricing matrix. We deliberately store the FULL daily rate
+    (vehicle + driver + fuel) here rather than a multiplier — easier for
+    admins to reason about and to override case-by-case.
+    """
+    destination = models.ForeignKey(
+        SafariDestination, on_delete=models.CASCADE, related_name='pricing')
+    vehicle     = models.ForeignKey(
+        Vehicle, on_delete=models.CASCADE, related_name='safari_prices',
+        limit_choices_to={'category': 'safari'})
+    price_usd   = models.DecimalField(
+        max_digits=8, decimal_places=2,
+        help_text='Daily rate for this vehicle at this destination, USD. Includes vehicle + driver + fuel. Park fees not included.')
+    notes       = models.CharField(max_length=200, blank=True,
+                                   help_text='Internal admin notes. Not shown to customers.')
+
+    class Meta:
+        unique_together = [('destination', 'vehicle')]
+        ordering = ['destination__order', 'vehicle__order']
+        verbose_name = 'Safari price'
+        verbose_name_plural = 'Safari pricing'
+
+    def __str__(self):
+        return f'{self.destination.short_name} × {self.vehicle.name} = ${self.price_usd}/day'
+
 
 # ─────────────────────────────────────────────────────────────
 #  BOOKING
@@ -184,6 +275,16 @@ class Booking(models.Model):
         help_text='Free-text destination/pickup point (e.g. "Sarova Stanley, CBD"). For transfers only.')
     is_night_surcharge  = models.BooleanField(default=False,
         help_text='Pickup is between 22:00 and 06:00 — adds $8 to total.')
+
+    # ── Safari Package fields (only used when hire_type='safari') ────
+    # Multi-destination sequential trip. Each chosen destination contributes
+    # (vehicle_daily_at_that_destination × days_at_that_destination) to total.
+    safari_destinations = models.ManyToManyField(
+        'SafariDestination', blank=True, related_name='bookings',
+        help_text='Safari destinations selected for this trip (sequential).')
+    safari_breakdown    = models.JSONField(blank=True, null=True,
+        help_text='Snapshot of safari cost breakdown at booking time. '
+                  'Shape: [{destination_id, name, days, daily_usd, subtotal_usd}, ...]')
 
     # Pricing (snapshotted at booking time)
     days            = models.PositiveSmallIntegerField(default=1)

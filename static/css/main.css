@@ -196,6 +196,45 @@ nav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:cen
   border-radius:100px;font-size:.72rem;font-weight:700;letter-spacing:.05em
 }
 
+/* ── Safari destination chips ─────────────────────────────────
+   Customer picks 1+ destinations for a sequential safari. Each chip
+   toggles on click; picked chips expand to show a days-input. */
+.safari-dest-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:8px;margin-top:4px
+}
+.safari-dest-loading{
+  grid-column:1/-1;padding:14px;text-align:center;
+  color:var(--muted);font-size:.85rem
+}
+.safari-dest{
+  padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;
+  cursor:pointer;background:var(--white);
+  transition:border-color .15s, background .15s, box-shadow .15s
+}
+.safari-dest:hover:not(.picked){border-color:var(--blue-light)}
+.safari-dest.picked{
+  border-color:var(--blue);background:rgba(21,101,255,.06);
+  box-shadow:0 0 0 1px var(--blue) inset
+}
+.safari-dest .sd-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.safari-dest .sd-name{font-weight:700;font-size:.86rem;color:var(--ink)}
+.safari-dest .sd-meta{font-size:.7rem;color:var(--muted);text-align:right;line-height:1.2}
+.safari-dest .sd-desc{font-size:.74rem;color:var(--muted);margin-top:4px;line-height:1.35}
+.safari-dest .sd-days{
+  margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);
+  display:flex;align-items:center;gap:8px
+}
+.safari-dest .sd-days input{
+  border:1.5px solid var(--border);border-radius:6px;font-size:.85rem;
+  font-family:'Poppins',sans-serif
+}
+.safari-dest .sd-days input:focus{outline:2px solid var(--blue);outline-offset:1px}
+
+@media (max-width:600px){
+  .safari-dest-grid{grid-template-columns:1fr}
+}
+
 
 .search-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:13px;align-items:end}
 .sg label{display:block;font-size:.68rem;font-weight:700;letter-spacing:.1em;
@@ -1519,4 +1558,75 @@ details[open] .danger-summary::before { content: '▾ '; }
   }
   .toast.toast-in{transform:translateY(0)}
   .toast.toast-out{transform:translateY(120%)}
+}
+
+/* ── SEO content block (homepage) ─────────────────────────────
+   Sits between reviews and the booking modal. The link grid feeds
+   internal anchor text to crawlers; the FAQ block addresses real
+   questions from Google Search Console search-term reports. */
+.seo-block{
+  background:var(--bg-soft, #FAFBFD);
+  padding:60px 24px 50px;
+  border-top:1px solid var(--border)
+}
+.seo-inner{max-width:1100px;margin:0 auto}
+.seo-lede{
+  font-size:1.05rem;color:var(--muted);
+  max-width:720px;margin:0 auto 36px;
+  text-align:center;line-height:1.55
+}
+.seo-link-grid{
+  display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+  gap:12px;margin:0 auto 50px;max-width:1000px
+}
+.seo-link{
+  display:block;padding:14px 16px;
+  background:var(--white);border:1px solid var(--border);
+  border-radius:10px;text-decoration:none;color:var(--ink);
+  transition:border-color .15s, transform .15s, box-shadow .15s
+}
+.seo-link:hover{
+  border-color:var(--blue);transform:translateY(-2px);
+  box-shadow:0 4px 12px rgba(21,101,255,.08)
+}
+.seo-link strong{
+  display:block;color:var(--blue-dark);
+  font-size:.95rem;margin-bottom:3px
+}
+.seo-link span{
+  display:block;color:var(--muted);
+  font-size:.78rem;line-height:1.4
+}
+.seo-h3{
+  font-size:1.25rem;font-weight:700;
+  margin:36px 0 14px;color:var(--ink)
+}
+.seo-block p{color:var(--muted);line-height:1.65;margin-bottom:14px}
+.seo-block a{color:var(--blue);text-decoration:none;font-weight:600}
+.seo-block a:hover{text-decoration:underline}
+.seo-faq{
+  background:var(--white);border:1px solid var(--border);
+  border-radius:10px;padding:0;margin-bottom:10px;
+  overflow:hidden
+}
+.seo-faq summary{
+  padding:14px 18px;cursor:pointer;font-weight:600;
+  list-style:none;display:flex;justify-content:space-between;
+  align-items:center;color:var(--ink);font-size:.95rem
+}
+.seo-faq summary::after{
+  content:'+';color:var(--blue);font-size:1.3rem;
+  font-weight:400;transition:transform .2s
+}
+.seo-faq[open] summary::after{transform:rotate(45deg)}
+.seo-faq[open] summary{border-bottom:1px solid var(--border)}
+.seo-faq p{padding:14px 18px 18px;margin:0;font-size:.9rem;line-height:1.65}
+
+@media (max-width:600px){
+  .seo-block{padding:42px 16px 36px}
+  .seo-link-grid{grid-template-columns:1fr;gap:10px;margin-bottom:36px}
+  .seo-link{padding:12px 14px}
+  .seo-h3{font-size:1.1rem}
+  .seo-faq summary{padding:12px 14px;font-size:.88rem}
+  .seo-faq p{padding:12px 14px 14px;font-size:.85rem}
 }
