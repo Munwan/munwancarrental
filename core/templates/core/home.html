@@ -92,13 +92,13 @@
               <div class="price-usd">${{ v.price_usd }} <span>/ day</span> &nbsp;<span class="price-eur">€{{ v.price_eur }}</span></div>
               <div class="price-kes">≈ KES {{ v.price_kes }}/day</div>
             {% endif %}
-            {% endwith %} 
           </div>
           <button class="book-btn" onclick="openBookingModalForCar('{{ v.id }}', '{{ v.name }}')">Book Now</button>
         </div>
       </div>
     </div>
     {% empty %}
+    {% endwith %}
     <p style="text-align:center;color:var(--muted);padding:40px 0;grid-column:1/-1">No vehicles available at the moment.</p>
     {% endfor %}
   </div>
