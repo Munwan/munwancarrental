@@ -1,22 +1,15 @@
 """
-Adds SafariDestination + SafariPricing models and the M2M / JSON fields
-on Booking that track which destinations were chosen and their per-leg costs.
-
-Seed data: 10 standard Kenyan safari destinations with the price ranges
-the operator provided, mapped to the 3 existing safari-ready vehicles
-(Land Cruiser Hardroof, Toyota Hiace, Toyota Hilux). Prices use the mid
-of the provided range so admins can adjust each cell up or down later.
+Production-safe version of the safari destinations migration.
+The tables were already created when this was numbered 0011.
+We use SeparateDatabaseAndState to update Django's model state
+without re-running CREATE TABLE, then re-run only the safe parts
+(AddField on Booking, and the seed data).
 """
 from django.db import migrations, models
 import django.db.models.deletion
 
 
-# Seed prices in USD/day per (destination, vehicle.name).
-# Hilux interpolated where competitor data was Hiace-only; Hilux sits
-# between Land Cruiser and Hiace in operating cost so we price it ~40%
-# below Land Cruiser by default. Operator can tweak each cell.
 SEED_DESTINATIONS = [
-    # (slug, name, short, distance_km, days, order, description)
     ('maasai-mara',  'Maasai Mara National Reserve', 'Maasai Mara',
      270, 3, 1, "World-famous game reserve — Big Five, Great Migration July-October."),
     ('amboseli',     'Amboseli National Park', 'Amboseli',
@@ -35,14 +28,11 @@ SEED_DESTINATIONS = [
      350, 3, 8, "Northern reserve — special-five (Grevy zebra, reticulated giraffe, etc.)."),
     ('nairobi-np',   'Nairobi National Park', 'Nairobi NP',
      10, 1, 9, "Big game inside the city. 5-hour half-day trip."),
-    ('hells-gate',   'Hell\'s Gate National Park', "Hell's Gate",
+    ('hells-gate',   "Hell's Gate National Park", "Hell's Gate",
      90, 1, 10, "Cycle and walk among zebra/giraffe. Day trip from Nairobi."),
 ]
 
-# Per-vehicle daily rate, USD. Land Cruiser uses upper-mid of range,
-# Hiace uses upper of range, Hilux estimated.
 SEED_PRICING = {
-    # destination_slug: {vehicle_name: price_usd}
     'maasai-mara':   {'Land Cruiser HardRoof': 300, 'Toyota Hiace': 195, 'Toyota Hilux': 175},
     'amboseli':      {'Land Cruiser HardRoof': 275, 'Toyota Hiace': 185, 'Toyota Hilux': 165},
     'lake-nakuru':   {'Land Cruiser HardRoof': 265, 'Toyota Hiace': 165, 'Toyota Hilux': 150},
@@ -57,12 +47,10 @@ SEED_PRICING = {
 
 
 def seed_safari_data(apps, schema_editor):
-    """Populate destinations + pricing cells based on the seed dicts above."""
     SafariDestination = apps.get_model('core', 'SafariDestination')
     SafariPricing     = apps.get_model('core', 'SafariPricing')
     Vehicle           = apps.get_model('core', 'Vehicle')
 
-    # Create destinations
     dest_objs = {}
     for slug, name, short, dist, days, order, desc in SEED_DESTINATIONS:
         d, _ = SafariDestination.objects.update_or_create(
@@ -75,15 +63,12 @@ def seed_safari_data(apps, schema_editor):
         )
         dest_objs[slug] = d
 
-    # Create pricing cells for whichever safari vehicles exist
     for slug, prices in SEED_PRICING.items():
         dest = dest_objs[slug]
         for vehicle_name, price in prices.items():
             try:
                 v = Vehicle.objects.get(name=vehicle_name, category='safari')
             except Vehicle.DoesNotExist:
-                # Vehicle wasn't named exactly that, or hasn't been categorised
-                # as safari yet — skip silently. Admin can add the row by hand.
                 continue
             SafariPricing.objects.update_or_create(
                 destination=dest, vehicle=v,
@@ -92,7 +77,6 @@ def seed_safari_data(apps, schema_editor):
 
 
 def unseed_safari_data(apps, schema_editor):
-    """Reverse migration — wipes all safari destinations & pricing."""
     apps.get_model('core', 'SafariPricing').objects.all().delete()
     apps.get_model('core', 'SafariDestination').objects.all().delete()
 
@@ -104,62 +88,99 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='SafariDestination',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=80, unique=True,
-                    help_text='e.g. "Maasai Mara National Reserve"')),
-                ('short_name', models.CharField(max_length=40, blank=True,
-                    help_text='Optional shorter label for UI. Defaults to name.')),
-                ('slug', models.SlugField(unique=True, blank=True)),
-                ('description', models.CharField(max_length=300, blank=True,
-                    help_text='1-2 sentence pitch shown on the booking form.')),
-                ('distance_km', models.PositiveSmallIntegerField(default=0,
-                    help_text='One-way distance from Nairobi in km.')),
-                ('recommended_days', models.PositiveSmallIntegerField(default=2,
-                    help_text='Recommended minimum days for this destination.')),
-                ('is_active', models.BooleanField(default=True,
-                    help_text='Uncheck to hide from the booking form without deleting.')),
-                ('order', models.PositiveSmallIntegerField(default=0,
-                    help_text='Lower = shown first.')),
+        # ── Tables already exist in production — update state only, skip DB ──
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.CreateModel(
+                    name='SafariDestination',
+                    fields=[
+                        ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('name', models.CharField(max_length=80, unique=True)),
+                        ('short_name', models.CharField(max_length=40, blank=True)),
+                        ('slug', models.SlugField(unique=True, blank=True)),
+                        ('description', models.CharField(max_length=300, blank=True)),
+                        ('distance_km', models.PositiveSmallIntegerField(default=0)),
+                        ('recommended_days', models.PositiveSmallIntegerField(default=2)),
+                        ('is_active', models.BooleanField(default=True)),
+                        ('order', models.PositiveSmallIntegerField(default=0)),
+                    ],
+                    options={'ordering': ['order', 'name']},
+                ),
+                migrations.CreateModel(
+                    name='SafariPricing',
+                    fields=[
+                        ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('price_usd', models.DecimalField(max_digits=8, decimal_places=2)),
+                        ('notes', models.CharField(max_length=200, blank=True)),
+                        ('destination', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                            related_name='pricing', to='core.safaridestination')),
+                        ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                            related_name='safari_prices', to='core.vehicle',
+                            limit_choices_to={'category': 'safari'})),
+                    ],
+                    options={
+                        'verbose_name': 'Safari price',
+                        'verbose_name_plural': 'Safari pricing',
+                        'ordering': ['destination__order', 'vehicle__order'],
+                        'unique_together': {('destination', 'vehicle')},
+                    },
+                ),
             ],
-            options={'ordering': ['order', 'name']},
+            database_operations=[],  # skip CREATE TABLE — tables already exist
         ),
-        migrations.CreateModel(
-            name='SafariPricing',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('price_usd', models.DecimalField(max_digits=8, decimal_places=2,
-                    help_text='Daily rate for this vehicle at this destination, USD. Includes vehicle + driver + fuel. Park fees not included.')),
-                ('notes', models.CharField(max_length=200, blank=True,
-                    help_text='Internal admin notes. Not shown to customers.')),
-                ('destination', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
-                    related_name='pricing', to='core.safaridestination')),
-                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
-                    related_name='safari_prices', to='core.vehicle',
-                    limit_choices_to={'category': 'safari'})),
+
+        # ── AddField on Booking — safe, uses IF NOT EXISTS logic via Django ──
+        # If these columns already exist this will also crash, so we guard them.
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.AddField(
+                    model_name='booking',
+                    name='safari_destinations',
+                    field=models.ManyToManyField(blank=True, related_name='bookings',
+                        to='core.safaridestination'),
+                ),
+                migrations.AddField(
+                    model_name='booking',
+                    name='safari_breakdown',
+                    field=models.JSONField(blank=True, null=True),
+                ),
             ],
-            options={
-                'verbose_name': 'Safari price',
-                'verbose_name_plural': 'Safari pricing',
-                'ordering': ['destination__order', 'vehicle__order'],
-                'unique_together': {('destination', 'vehicle')},
-            },
+            database_operations=[
+                # Only add the columns if they don't already exist
+                migrations.RunSQL(
+                    sql="""
+                        DO $$
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns
+                                WHERE table_name='core_booking'
+                                AND column_name='safari_breakdown'
+                            ) THEN
+                                ALTER TABLE core_booking ADD COLUMN safari_breakdown jsonb;
+                            END IF;
+                        END $$;
+
+                        DO $$
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.tables
+                                WHERE table_name='core_booking_safari_destinations'
+                            ) THEN
+                                CREATE TABLE core_booking_safari_destinations (
+                                    id SERIAL PRIMARY KEY,
+                                    booking_id INTEGER NOT NULL REFERENCES core_booking(id) DEFERRABLE INITIALLY DEFERRED,
+                                    safaridestination_id INTEGER NOT NULL REFERENCES core_safaridestination(id) DEFERRABLE INITIALLY DEFERRED
+                                );
+                                CREATE UNIQUE INDEX core_booking_safari_destinations_unique
+                                    ON core_booking_safari_destinations (booking_id, safaridestination_id);
+                            END IF;
+                        END $$;
+                    """,
+                    reverse_sql=migrations.RunSQL.noop,
+                ),
+            ],
         ),
-        migrations.AddField(
-            model_name='booking',
-            name='safari_destinations',
-            field=models.ManyToManyField(blank=True, related_name='bookings',
-                to='core.safaridestination',
-                help_text='Safari destinations selected for this trip (sequential).'),
-        ),
-        migrations.AddField(
-            model_name='booking',
-            name='safari_breakdown',
-            field=models.JSONField(blank=True, null=True,
-                help_text='Snapshot of safari cost breakdown at booking time. '
-                          'Shape: [{destination_id, name, days, daily_usd, subtotal_usd}, ...]'),
-        ),
+
+        # ── Seed data — update_or_create is idempotent, safe to re-run ──
         migrations.RunPython(seed_safari_data, reverse_code=unseed_safari_data),
     ]
