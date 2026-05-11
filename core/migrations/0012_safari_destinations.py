@@ -100,7 +100,7 @@ def unseed_safari_data(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0010_airport_transfer'),
+        ('core', '0011_merge_0006_payment_reminde_flag_0010_airport_transfer'),
     ]
 
     operations = [
