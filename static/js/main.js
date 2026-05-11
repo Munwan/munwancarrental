@@ -735,34 +735,64 @@ function renderSafariDestList() {
     wrap.innerHTML = '<div style="color:var(--muted);font-size:.82rem">No safari destinations available right now. Please WhatsApp us to book.</div>';
     return;
   }
+  // Render chips WITHOUT per-chip onclick — we use a single delegated
+  // listener on the wrap (attached once on first render). Per-chip
+  // handlers got dropped when innerHTML rewrote the DOM mid-tap,
+  // causing intermittent "tap doesn't work" on mobile.
   wrap.innerHTML = SAFARI_DESTS.map(d => {
     const picked = safariSelected.includes(d.id);
     const minDays = d.min_days || 1;
     const days = Math.max(safariDays[d.id] || d.days, minDays);
     return `
-      <div class="safari-dest ${picked ? 'picked' : ''}" data-id="${d.id}" onclick="toggleSafariDest(${d.id}, event)">
+      <div class="safari-dest ${picked ? 'picked' : ''}" data-id="${d.id}" role="button" tabindex="0" aria-pressed="${picked}">
         <div class="sd-head">
           <div class="sd-name">${d.short_name}</div>
           <div class="sd-meta">${d.distance_km} km · min ${minDays} day${minDays!==1?'s':''}</div>
         </div>
         ${d.description ? `<div class="sd-desc">${d.description}</div>` : ''}
         ${picked ? `
-          <div class="sd-days" onclick="event.stopPropagation()">
+          <div class="sd-days" data-no-toggle="1">
             <label for="days_${d.id}" style="font-size:.74rem;color:var(--muted)">Days here (min ${minDays}):</label>
             <input type="number" id="days_${d.id}" min="${minDays}" max="14" value="${days}"
                    oninput="setSafariDays(${d.id}, this.value)"
                    onchange="setSafariDays(${d.id}, this.value)"
-                   onclick="event.stopPropagation()"
+                   data-no-toggle="1"
                    style="width:70px;padding:4px 8px;font-weight:700"/>
           </div>
         ` : ''}
       </div>
     `;
   }).join('');
+
+  // Attach delegated listener ONCE — flagged on the wrap so we don't
+  // double-bind on re-render. The listener walks up the DOM from the
+  // tapped element to find the .safari-dest ancestor, then toggles.
+  if (!wrap._safariBound) {
+    wrap._safariBound = true;
+    wrap.addEventListener('click', function(ev) {
+      // Bail if the tap originated inside .sd-days (days input or its label).
+      // Both have data-no-toggle="1" so we can detect them without coupling to
+      // class names. closest() walks up the tree from the actual target.
+      if (ev.target.closest('[data-no-toggle]')) return;
+      const chip = ev.target.closest('.safari-dest');
+      if (!chip || !wrap.contains(chip)) return;
+      const id = parseInt(chip.dataset.id, 10);
+      if (!isNaN(id)) toggleSafariDest(id);
+    });
+    // Keyboard a11y — Enter or Space on a focused chip toggles
+    wrap.addEventListener('keydown', function(ev) {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      if (ev.target.closest('[data-no-toggle]')) return;
+      const chip = ev.target.closest('.safari-dest');
+      if (!chip) return;
+      ev.preventDefault();
+      const id = parseInt(chip.dataset.id, 10);
+      if (!isNaN(id)) toggleSafariDest(id);
+    });
+  }
 }
 
-function toggleSafariDest(destId, ev) {
-  if (ev) ev.stopPropagation();
+function toggleSafariDest(destId) {
   const idx = safariSelected.indexOf(destId);
   if (idx >= 0) {
     safariSelected.splice(idx, 1);

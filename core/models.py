@@ -206,7 +206,6 @@ def make_reference():
 class Booking(models.Model):
     HIRE_TYPE_CHOICES = [
         ('normal',    'Normal Hire'),
-        ('long',      'Long-Term Lease'),
         ('corporate', 'Corporate Hire'),
         ('safari',    'Safari Package'),
         ('transfer',  'Airport Transfer'),

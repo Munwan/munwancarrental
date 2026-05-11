@@ -1959,16 +1959,6 @@ BLOG_POSTS = {
         'hero_emoji':  '👨‍👩‍👧‍👦',
         'excerpt':     'Yes, you can take young kids on safari — and they\'ll love it. Here\'s the parent-tested playbook: which ages cope best, baby seat options, mid-range family lodges and how to keep everyone sane on long game drives.',
     },
-    'digital-nomad-monthly-rental-nairobi': {
-        'slug':        'digital-nomad-monthly-rental-nairobi',
-        'title':       'Digital Nomad in Nairobi: Monthly Car Rental Guide',
-        'meta_desc':   'Living in Nairobi as a remote worker? Honest comparison of monthly car rental vs Uber/Bolt for digital nomads. Costs, neighbourhoods, parking, fuel and what locals do.',
-        'date':        'March 22, 2025',
-        'read_time':   '8 min read',
-        'category':    'Long-Term Travel',
-        'hero_emoji':  '💻',
-        'excerpt':     'If you\'re working remotely from Nairobi for a month or more, the rideshare math stops adding up. Here\'s when monthly rental wins — and when it doesn\'t — based on real numbers from nomads living in Westlands and Kilimani.',
-    },
 }
 
 

@@ -1,8 +1,8 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Self Drive Car Rental Nairobi Kenya — Cheap 4x4, Airport, Monthly Hire from $28/day | Munwan Car Rental{% endblock %}
-{% block meta_description %}Affordable self drive car rental Nairobi Kenya from $28/day. 4x4 SUVs, monthly long-term hire, JKIA airport transfers, with or without driver. Full insurance, GPS, M-Pesa & card payment. Cheap, reliable, 24/7 support.{% endblock %}
+{% block title %}Self Drive Car Rental Nairobi Kenya — Cheap 4x4, Airport, Safari from $28/day | Munwan Car Rental{% endblock %}
+{% block meta_description %}Affordable self drive car rental Nairobi Kenya from $28/day. 4x4 SUVs, JKIA airport transfers, safari packages, with or without driver. Full insurance, GPS, M-Pesa & card payment. Cheap, reliable, 24/7 support.{% endblock %}
 {% block canonical %}https://munwancarrental.com/{% endblock %}
 
 {% block content %}
@@ -21,7 +21,6 @@
   <div class="search-card">
     <div class="search-tabs" id="hireTabs">
       <div class="tab active" data-type="normal">Normal Hire</div>
-      <div class="tab" data-type="long">Long-Term Lease</div>
       <div class="tab" data-type="corporate">Corporate Hire</div>
       <div class="tab" data-type="safari">Safari Package</div>
       <div class="tab" data-type="transfer">Airport Transfer</div>
@@ -120,11 +119,6 @@
       <div class="why-desc">Daily car rental for any trip — self-drive or with a driver. All vehicles fully insured with GPS included.</div>
       <div class="why-cta">Book Normal Hire →</div>
     </div>
-    <div class="why-card why-card-link" onclick="openBookingModalWithType('long')" role="button" tabindex="0">
-      <div class="why-icon-wrap">📅</div><div class="why-title">Long-Term Lease</div>
-      <div class="why-desc">Weekly and monthly leases for extended stays, relocations, or expatriate assignments across Kenya.</div>
-      <div class="why-cta">Get Long-Term Quote →</div>
-    </div>
     <div class="why-card why-card-link" onclick="openBookingModalWithType('corporate')" role="button" tabindex="0">
       <div class="why-icon-wrap">🏢</div><div class="why-title">Corporate Hire</div>
       <div class="why-desc">Executive vehicles for business travellers. Invoices, receipts &amp; corporate accounts available.</div>
@@ -208,10 +202,6 @@
       <p>Our Toyota Vitz at $27/day is among the cheapest car rentals in Nairobi from a registered, insured operator. It's compact, fuel-efficient (16 km/L), automatic, and perfect for Nairobi city driving and short trips. Listings on Jiji or classifieds may go lower — but they typically have no insurance, no roadside, and no recourse.</p>
     </details>
     <details class="seo-faq">
-      <summary>Do you offer monthly car rental in Nairobi?</summary>
-      <p>Yes. Long-term rentals (28+ days) get 15-25% off the daily rate. The Vitz starts at <strong>$24/day</strong> for monthly hire (~$720/month). Common with expats, NGO consultants, digital nomads and corporates on 1-3 month assignments. Includes unlimited mileage, full insurance and one free vehicle swap.</p>
-    </details>
-    <details class="seo-faq">
       <summary>Self drive or with driver — which is cheaper?</summary>
       <p>Self drive is always cheaper — no driver allowance, no overnight allowance. With driver typically adds $25-40/day depending on duration and destination. <a href="{% url 'blog_post' slug='self-drive-vs-with-driver-kenya' %}">Read our full breakdown →</a></p>
     </details>
@@ -221,7 +211,7 @@
     </details>
     <details class="seo-faq">
       <summary>What are typical car rental Nairobi prices?</summary>
-      <p>Daily rates: Toyota Vitz from $27, Mazda Demio $27, Toyota Axio $35, Toyota Mark X $40, Toyota Rav4 $62, Nissan X-Trail $58, Toyota Prado $109. All-inclusive — insurance, GPS, unlimited mileage, free city delivery. Safari Package pricing is separate (per destination, $125-$325/day). <a href="{% url 'fleet' %}">See the full price list →</a></p>
+      <p>Daily rates: Toyota Vitz from $27, Mazda Demio $27, Toyota Axio $35, Toyota Mark X $40, Toyota Rav4 $62, Nissan X-Trail $58, Toyota Prado $109. All-inclusive — insurance, GPS, unlimited mileage, free city delivery. Safari Package pricing is separate (per destination, $125-$325/day). <a href="{% url 'home' %}#fleet">See the full price list →</a></p>
     </details>
     <details class="seo-faq">
       <summary>Is your car rental cheaper than Jiji Kenya listings?</summary>
@@ -246,14 +236,6 @@
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Our Toyota Vitz at $27/day is among the cheapest car rentals in Nairobi from a registered, insured operator. It is compact, fuel-efficient at 16 km/L, automatic, and perfect for Nairobi city driving and short trips."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Do you offer monthly car rental in Nairobi?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. Long-term rentals of 28 days or more get 15-25% off the daily rate. The Toyota Vitz starts at $24/day for monthly hire, around $720/month, with unlimited mileage, full insurance and one free vehicle swap included."
       }
     },
     {
@@ -322,7 +304,6 @@
              state for visual consistency. Default = Normal Hire. -->
         <div class="modal-hire-tabs" id="modalHireTabs" role="tablist">
           <button type="button" class="hire-pill active" data-type="normal" onclick="setHireType('normal')">Normal Hire</button>
-          <button type="button" class="hire-pill" data-type="long" onclick="setHireType('long')">Long-Term Lease</button>
           <button type="button" class="hire-pill" data-type="corporate" onclick="setHireType('corporate')">Corporate Hire</button>
           <button type="button" class="hire-pill" data-type="safari" onclick="setHireType('safari')">Safari Package</button>
           <button type="button" class="hire-pill" data-type="transfer" onclick="setHireType('transfer')">Airport Transfer</button>
@@ -765,7 +746,6 @@
         <li><a href="javascript:void(0)" onclick="openBookingModalWithType('safari')">Safari Packages</a></li>
         <li><a href="javascript:void(0)" onclick="openBookingModalWithType('transfer')">Airport Transfers</a></li>
         <li><a href="javascript:void(0)" onclick="openBookingModalWithType('corporate')">Corporate Hire</a></li>
-        <li><a href="javascript:void(0)" onclick="openBookingModalWithType('long')">Long-Term Lease</a></li>
       </ul>
     </div>
     <div class="footer-col">
