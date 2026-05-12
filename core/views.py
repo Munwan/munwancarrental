@@ -1048,6 +1048,22 @@ def booking_extend(request):
         return _json_error('Safari extensions require a custom quote — please WhatsApp us.', 400)
     if not original.return_date:
         return _json_error('Original booking has no return date — contact support.', 400)
+    # One-extension-only rule: if an extension child already exists, refuse.
+    # The customer can still extend further by contacting support directly.
+    if original.has_extension:
+        return _json_error(
+            'This booking has already been extended once. '
+            'For further extensions please WhatsApp us at +254 727 745 907.',
+            400
+        )
+    # Also block extending an EXTENSION (extensions of extensions).
+    # If this booking is itself the child of a parent, it can't be re-extended.
+    if original.parent_booking_id:
+        return _json_error(
+            'Extension bookings cannot be extended further. '
+            'Please WhatsApp us at +254 727 745 907 for additional days.',
+            400
+        )
 
     from django.utils import timezone
     today = timezone.localdate()
@@ -1095,6 +1111,7 @@ def booking_extend(request):
         total_kes        = extra_kes,
         total_eur        = extra_eur,
         terms_accepted   = True,                  # inherited from original
+        parent_booking   = original,              # mark as extension of original
         ip_address       = get_client_ip(request),
         user_agent       = request.META.get('HTTP_USER_AGENT', '')[:500],
     )

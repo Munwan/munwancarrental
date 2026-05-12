@@ -286,7 +286,13 @@ button.account-continue-btn:hover{
           </button>
           {% endif %}
           {% if b.payment_status == 'paid' and b.hire_type != 'transfer' %}
-            {% if b.hire_type == 'safari' %}
+            {% if b.has_extension or b.parent_booking_id %}
+            {# Already extended — or this IS an extension. Show a small note
+               instead of the button. Customer can WhatsApp for more days. #}
+            <span class="account-extend-done" title="Bookings can only be extended once. WhatsApp us for further extensions.">
+              ✓ Extended
+            </span>
+            {% elif b.hire_type == 'safari' %}
             <a class="account-extend-btn" href="https://wa.me/254727745907?text=I'd%20like%20to%20extend%20my%20safari%20booking%20{{ b.reference }}" target="_blank" rel="noopener">
               🦁 Extend Safari (WhatsApp)
             </a>
@@ -532,9 +538,19 @@ button.account-continue-btn:hover{
         <span>New return date</span>
         <strong id="extendNewReturn">—</strong>
       </div>
-      <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px dashed rgba(21,101,255,.25);font-size:1rem">
-        <span style="font-weight:700">Additional charge</span>
-        <strong id="extendExtraCost" style="color:var(--blue-dark);font-size:1.15rem">$0</strong>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(21,101,255,.25)">
+        <div style="display:flex;justify-content:space-between;font-size:1rem;margin-bottom:8px">
+          <span style="font-weight:700">Additional charge</span>
+          <strong id="extendExtraCost" style="color:var(--blue-dark);font-size:1.15rem">$0</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted)">
+          <span>In KES</span>
+          <strong id="extendExtraCostKes" style="color:var(--ink);font-weight:600">—</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-top:3px">
+          <span>In EUR</span>
+          <strong id="extendExtraCostEur" style="color:var(--ink);font-weight:600">—</strong>
+        </div>
       </div>
     </div>
 
@@ -922,37 +938,53 @@ function closeExtendModal() {
 // IMPORTANT: don't clamp/overwrite the user's input during typing — that
 // makes "1" feel uneditable. We only normalise the *displayed cost*.
 // Real clamping happens on blur and on submit.
+//
+// Currency conversion rates match the backend (core/views.py).
+// If you change them server-side, change them here too.
+var _EXT_KES_PER_USD = 130;
+var _EXT_EUR_PER_USD = 0.93;
+
 function updateExtendCost() {
   var input = document.getElementById('extendDays');
   var raw = input.value.trim();
+  var costEl    = document.getElementById('extendExtraCost');
+  var costKesEl = document.getElementById('extendExtraCostKes');
+  var costEurEl = document.getElementById('extendExtraCostEur');
+  var newRetEl  = document.getElementById('extendNewReturn');
+
+  function _zero() {
+    if (costEl) costEl.textContent = '$0';
+    if (costKesEl) costKesEl.textContent = '—';
+    if (costEurEl) costEurEl.textContent = '—';
+    if (newRetEl) newRetEl.textContent = '—';
+  }
   // Empty input → don't compute (user is mid-edit). Just zero the preview.
-  if (raw === '') {
-    document.getElementById('extendExtraCost').textContent = '$0';
-    document.getElementById('extendNewReturn').textContent = '—';
-    return;
-  }
+  if (raw === '') { _zero(); return; }
   var n = parseInt(raw, 10);
-  if (isNaN(n) || n < 1) {
-    document.getElementById('extendExtraCost').textContent = '$0';
-    document.getElementById('extendNewReturn').textContent = '—';
-    return;
-  }
+  if (isNaN(n) || n < 1) { _zero(); return; }
   // Don't allow > 60 in the cost preview either (visual cap)
   var effective = Math.min(n, 60);
 
-  var cost = (_extendState.dailyRate * effective);
-  document.getElementById('extendExtraCost').textContent = '$' + cost.toFixed(2);
+  var costUsd = (_extendState.dailyRate * effective);
+  var costKes = costUsd * _EXT_KES_PER_USD;
+  var costEur = costUsd * _EXT_EUR_PER_USD;
+
+  if (costEl)    costEl.textContent    = '$' + costUsd.toFixed(2);
+  if (costKesEl) costKesEl.textContent = 'KES ' + Math.round(costKes).toLocaleString();
+  if (costEurEl) costEurEl.textContent = '€' + costEur.toFixed(2);
 
   // Compute new return date locally
   if (_extendState.currentReturn) {
     var parts = _extendState.currentReturn.split('-').map(Number);
     var d = new Date(parts[0], parts[1] - 1, parts[2]);
     d.setDate(d.getDate() + effective);
-    document.getElementById('extendNewReturn').textContent = _formatHumanDate(
-      d.getFullYear() + '-' +
-      String(d.getMonth() + 1).padStart(2, '0') + '-' +
-      String(d.getDate()).padStart(2, '0')
-    );
+    if (newRetEl) {
+      newRetEl.textContent = _formatHumanDate(
+        d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0')
+      );
+    }
   }
 }
 
@@ -1003,6 +1035,20 @@ async function submitExtension() {
     });
     var data = await r.json();
     if (data.ok) {
+      // Remember the extension in sessionStorage. If the customer hits
+      // Back from the payment page, they land on the dashboard and we
+      // see this flag → re-open the extend modal pre-filled. Without this
+      // they'd land on the dashboard with no modal, looking like nothing
+      // happened (which feels like a blank page).
+      try {
+        sessionStorage.setItem('munwan_pending_extension', JSON.stringify({
+          ref: _extendState.ref,
+          vehicle: document.getElementById('extendVehicleName').textContent,
+          dailyRate: _extendState.dailyRate,
+          currentReturn: _extendState.currentReturn,
+          extraDays: days,
+        }));
+      } catch (e) {}
       // Server has created a new "extension booking" with its own ref.
       // Redirect to home with the extension ref so the customer lands at
       // the payment step. The original booking stays paid; the new one is
@@ -1019,6 +1065,33 @@ async function submitExtension() {
     btn.textContent = orig;
   }
 }
+
+// On dashboard page load, if sessionStorage has a pending extension AND
+// we're not on the home page (i.e. we got here via Back from payment),
+// reopen the modal pre-filled. Also clears the flag so refresh doesn't loop.
+(function reopenExtendOnReturn() {
+  try {
+    var stored = sessionStorage.getItem('munwan_pending_extension');
+    if (!stored) return;
+    var data = JSON.parse(stored);
+    // Only fire on the dashboard, not on the home page where the
+    // payment modal handles ?resume= itself.
+    if (window.location.pathname.indexOf('/account') === -1) return;
+    // Delay so the dashboard finishes rendering the booking cards first.
+    setTimeout(function() {
+      if (typeof openExtendModal === 'function') {
+        openExtendModal(data.ref, data.vehicle || '', data.dailyRate || 0, data.currentReturn || '');
+        // Restore the days they had entered
+        if (data.extraDays && data.extraDays > 1) {
+          var inp = document.getElementById('extendDays');
+          if (inp) { inp.value = data.extraDays; updateExtendCost(); }
+        }
+      }
+    }, 150);
+    // Clear so a refresh on dashboard doesn't keep reopening
+    sessionStorage.removeItem('munwan_pending_extension');
+  } catch (e) {}
+})();
 
 // Esc + backdrop close
 document.addEventListener('keydown', function(e){

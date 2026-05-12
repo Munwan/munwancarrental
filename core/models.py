@@ -328,6 +328,13 @@ class Booking(models.Model):
     user_agent      = models.TextField(blank=True)
     terms_accepted  = models.BooleanField(default=False,
                         help_text="Customer accepted Terms & Conditions and Cancellation Policy at booking time")
+    # When this booking is an extension of another booking, this points at
+    # the original. Used to enforce the "only one extension per booking"
+    # rule and to show the relationship in the customer's dashboard.
+    parent_booking  = models.ForeignKey('self', null=True, blank=True,
+                        on_delete=models.SET_NULL,
+                        related_name='extensions',
+                        help_text="Original booking, if this is an extension.")
     created_at      = models.DateTimeField(auto_now_add=True)
     updated_at      = models.DateTimeField(auto_now=True)
     notes           = models.TextField(blank=True)
@@ -364,6 +371,16 @@ class Booking(models.Model):
         if self.with_driver:
             rate += float(getattr(self.vehicle, 'driver_fee_usd', 0) or 0)
         return rate
+
+    @property
+    def has_extension(self):
+        """
+        True if this booking has already been extended. Bookings can only
+        be extended once — the customer can extend further only by
+        contacting us directly. Used by the dashboard to hide the
+        Extend button on already-extended bookings.
+        """
+        return self.extensions.exists()
 
     def calculate_totals(self):
         """

@@ -835,6 +835,18 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .account-extend-btn:hover{
   background:var(--blue);color:var(--white);transform:translateY(-1px);
 }
+/* "✓ Extended" pill — replaces the Extend button when a booking has
+   already been extended once. Conveys "this action is no longer
+   available" without looking broken. Hover tooltip explains why. */
+.account-extend-done{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:8px;
+  background:rgba(16,185,129,.08);
+  color:#059669;
+  border:1.5px solid rgba(16,185,129,.3);
+  font-family:'Poppins',sans-serif;font-weight:700;font-size:.82rem;
+  cursor:help;
+}
 
 /* ── DASHBOARD ───────────────────────────────────────── */
 .dash-page{padding:96px 52px 60px;min-height:100vh}
