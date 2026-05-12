@@ -287,8 +287,6 @@ button.account-continue-btn:hover{
           {% endif %}
           {% if b.payment_status == 'paid' and b.hire_type != 'transfer' %}
             {% if b.has_extension or b.parent_booking_id %}
-            {# Already extended — or this IS an extension. Show a small note
-               instead of the button. Customer can WhatsApp for more days. #}
             <span class="account-extend-done" title="Bookings can only be extended once. WhatsApp us for further extensions.">
               ✓ Extended
             </span>
@@ -1066,32 +1064,59 @@ async function submitExtension() {
   }
 }
 
-// On dashboard page load, if sessionStorage has a pending extension AND
-// we're not on the home page (i.e. we got here via Back from payment),
-// reopen the modal pre-filled. Also clears the flag so refresh doesn't loop.
-(function reopenExtendOnReturn() {
-  try {
-    var stored = sessionStorage.getItem('munwan_pending_extension');
-    if (!stored) return;
-    var data = JSON.parse(stored);
-    // Only fire on the dashboard, not on the home page where the
-    // payment modal handles ?resume= itself.
-    if (window.location.pathname.indexOf('/account') === -1) return;
-    // Delay so the dashboard finishes rendering the booking cards first.
-    setTimeout(function() {
-      if (typeof openExtendModal === 'function') {
-        openExtendModal(data.ref, data.vehicle || '', data.dailyRate || 0, data.currentReturn || '');
-        // Restore the days they had entered
-        if (data.extraDays && data.extraDays > 1) {
-          var inp = document.getElementById('extendDays');
-          if (inp) { inp.value = data.extraDays; updateExtendCost(); }
-        }
-      }
-    }, 150);
-    // Clear so a refresh on dashboard doesn't keep reopening
-    sessionStorage.removeItem('munwan_pending_extension');
-  } catch (e) {}
-})();
+// On dashboard page load, if sessionStorage has a pending extension,
+// reopen the modal pre-filled. This handles the case where the customer
+// clicked Back on the payment page — they land on the dashboard and
+// would otherwise have no indication of what just happened.
+//
+// We fire on DOMContentLoaded (booking cards have rendered by then) and
+// clear the flag immediately so refresh/reload doesn't loop.
+function _reopenExtendIfPending() {
+  var stored;
+  try { stored = sessionStorage.getItem('munwan_pending_extension'); }
+  catch (e) { return; }
+  if (!stored) return;
+  var data;
+  try { data = JSON.parse(stored); } catch (e) {
+    try { sessionStorage.removeItem('munwan_pending_extension'); } catch (_) {}
+    return;
+  }
+  // Clear FIRST so any error below doesn't cause a reopen loop on refresh.
+  try { sessionStorage.removeItem('munwan_pending_extension'); } catch (e) {}
+
+  if (typeof openExtendModal !== 'function') return;
+  // Tiny delay so the booking card render finishes; the modal needs to
+  // sit on top of a fully-laid-out page.
+  setTimeout(function() {
+    openExtendModal(
+      data.ref || '',
+      data.vehicle || '',
+      data.dailyRate || 0,
+      data.currentReturn || ''
+    );
+    // Restore the days the customer had entered
+    if (data.extraDays && data.extraDays >= 1) {
+      var inp = document.getElementById('extendDays');
+      if (inp) { inp.value = data.extraDays; updateExtendCost(); }
+    }
+  }, 200);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _reopenExtendIfPending);
+} else {
+  // Document already parsed (script came after body) — fire immediately
+  _reopenExtendIfPending();
+}
+
+// bfcache (back-forward cache) handling: when the browser restores this
+// page from cache (instant Back), DOMContentLoaded does NOT fire — only
+// pageshow. We re-check the sessionStorage flag here so back-from-payment
+// still triggers the modal reopen.
+window.addEventListener('pageshow', function(ev) {
+  // Only re-fire when actually restored from bfcache, not on first load.
+  if (ev.persisted) _reopenExtendIfPending();
+});
 
 // Esc + backdrop close
 document.addEventListener('keydown', function(e){

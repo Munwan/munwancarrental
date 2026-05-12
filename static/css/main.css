@@ -667,6 +667,49 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .pay-method-label{font-size:.66rem;font-weight:800;letter-spacing:.1em;
   text-transform:uppercase;color:var(--muted);margin:14px 0 10px}
 .pay-method-tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+
+/* ──────────────────────────────────────────────────────────────────
+   DESKTOP-ONLY: payment step (#fs2) is shorter when its summary card
+   and payment-method panel sit side-by-side. The previous all-stacked
+   layout left a tall vertical wall of content even when the modal had
+   horizontal room. Switching #fs2 to a 2-column grid at ≥820px halves
+   the height without changing markup.
+   The modal itself widens to accommodate the side-by-side layout.
+   On tablet/mobile (<820px) we keep the original stacked layout — there
+   isn't enough horizontal space to gain anything.
+   ────────────────────────────────────────────────────────────────── */
+@media (min-width: 820px) {
+  /* When the modal is showing Step 2, give it room to breathe. The
+     :has() selector matches the modal whose body contains an active fs2.
+     We target the parent .modal rather than .modal-overlay so the modal
+     itself widens, not the dim overlay. */
+  .modal:has(#fs2.active){max-width:880px}
+
+  #fs2.active{
+    display:grid;
+    grid-template-columns:1.05fr .95fr;   /* summary slightly wider than methods */
+    gap:24px;
+    align-items:start;
+  }
+  /* Summary occupies the LEFT column — slightly tighter spacing */
+  #fs2.active .pay-summary-card{margin-bottom:0;padding:18px 20px}
+  /* Method label has no top margin since it's no longer following content */
+  #fs2.active .pay-method-label{margin-top:0}
+  /* Method tabs side-by-side already; stays 2-col */
+  #fs2.active .pay-panel{margin-top:6px}
+  /* The method-label + tabs + panel all sit in the RIGHT column.
+     We wrap them in an implicit group via grid-row spans. */
+  #fs2.active .pay-summary-card{grid-row:1; grid-column:1}
+  #fs2.active .pay-method-label{grid-row:1; grid-column:2; align-self:start}
+  #fs2.active .pay-method-tabs{grid-row:2; grid-column:2}
+  #fs2.active .pay-panel{grid-row:3; grid-column:2}
+  #fs2.active input[type="hidden"]{grid-row:4; grid-column:1 / -1}
+}
+
+/* Fallback for browsers without :has() (very old Safari/Firefox).
+   Without the wider modal the 2-col grid still works inside the
+   default 580px width — it's just a bit squeezed. Browsers that
+   support :has() get the polish. */
 .pay-tab{border:2px solid var(--border);border-radius:var(--radius-lg);
   padding:13px 14px;cursor:pointer;transition:all .2s;background:var(--white)}
 .pay-tab:hover{border-color:var(--blue-light)}
