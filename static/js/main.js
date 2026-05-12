@@ -117,8 +117,17 @@ document.addEventListener('DOMContentLoaded', function () {
             openBookingModal();
             currentStep = 2;
             updateStepUI();
-            // Clean URL so refresh doesn't re-trigger
-            window.history.replaceState({}, '', window.location.pathname);
+            // NOTE: we DO NOT clean ?resume= from the URL here.
+            // If the customer clicks Back in their browser (e.g. from the
+            // payment page) the ?resume= parameter must still be present
+            // so this handler re-fires and re-opens the modal at Step 2.
+            // Without preserving the param, Back lands on a blank booking
+            // page because the modal can't be reconstructed.
+            //
+            // If the booking is already paid, the summary endpoint
+            // returns {ok: false, already_paid: true} (handled below)
+            // which redirects to /booking/check/, so a stale refresh
+            // after payment doesn't re-prompt for payment.
           } else if (data.already_paid) {
             // Already paid — redirect to /booking/check/ with reference so the
             // customer sees the PAID status instead of being asked to pay again.

@@ -285,10 +285,6 @@ button.account-continue-btn:hover{
             💳 Continue Payment
           </button>
           {% endif %}
-          {# Extend button — only meaningful for PAID rental bookings.
-             Airport transfers (single-trip) and unpaid bookings can't be
-             extended. Safari extensions need re-quoting per destination so
-             we route safari customers to WhatsApp for now.                 #}
           {% if b.payment_status == 'paid' and b.hire_type != 'transfer' %}
             {% if b.hire_type == 'safari' %}
             <a class="account-extend-btn" href="https://wa.me/254727745907?text=I'd%20like%20to%20extend%20my%20safari%20booking%20{{ b.reference }}" target="_blank" rel="noopener">
@@ -524,7 +520,8 @@ button.account-continue-btn:hover{
 
     <div class="fg" style="margin-bottom:14px;text-align:left">
       <label for="extendDays" style="font-weight:700;font-size:.82rem;color:var(--ink);display:block;margin-bottom:6px">Extra days <span style="color:#DC2626">*</span></label>
-      <input type="number" id="extendDays" min="1" max="60" value="1" oninput="updateExtendCost()"
+      <input type="number" id="extendDays" min="1" max="60" value="1"
+             oninput="updateExtendCost()" onblur="_clampExtendDays()"
              style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;
                     font-family:'Poppins',sans-serif;font-size:1rem;font-weight:700"/>
       <div id="extendError" style="font-size:.78rem;color:#DC2626;margin-top:4px;min-height:1em"></div>
@@ -904,6 +901,14 @@ function openExtendModal(ref, vehicleName, dailyRate, currentReturnIso) {
   m.classList.add('open');
   m.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
+
+  // Focus + select the days input so any keystroke replaces "1" cleanly.
+  // setTimeout because the modal opens via CSS transition — the input
+  // isn't focusable for ~50ms.
+  setTimeout(function() {
+    var inp = document.getElementById('extendDays');
+    if (inp) { inp.focus(); inp.select(); }
+  }, 80);
 }
 
 function closeExtendModal() {
@@ -913,29 +918,52 @@ function closeExtendModal() {
   document.body.style.overflow = '';
 }
 
-// Live preview — recompute additional charge + new return date
+// Live preview — recompute additional charge + new return date.
+// IMPORTANT: don't clamp/overwrite the user's input during typing — that
+// makes "1" feel uneditable. We only normalise the *displayed cost*.
+// Real clamping happens on blur and on submit.
 function updateExtendCost() {
   var input = document.getElementById('extendDays');
-  var n = parseInt(input.value, 10);
-  if (isNaN(n) || n < 1) n = 1;
-  if (n > 60) n = 60;
-  // Clamp the input value too so user can't display 0 or > 60
-  if (parseInt(input.value, 10) !== n) input.value = n;
+  var raw = input.value.trim();
+  // Empty input → don't compute (user is mid-edit). Just zero the preview.
+  if (raw === '') {
+    document.getElementById('extendExtraCost').textContent = '$0';
+    document.getElementById('extendNewReturn').textContent = '—';
+    return;
+  }
+  var n = parseInt(raw, 10);
+  if (isNaN(n) || n < 1) {
+    document.getElementById('extendExtraCost').textContent = '$0';
+    document.getElementById('extendNewReturn').textContent = '—';
+    return;
+  }
+  // Don't allow > 60 in the cost preview either (visual cap)
+  var effective = Math.min(n, 60);
 
-  var cost = (_extendState.dailyRate * n);
+  var cost = (_extendState.dailyRate * effective);
   document.getElementById('extendExtraCost').textContent = '$' + cost.toFixed(2);
 
   // Compute new return date locally
   if (_extendState.currentReturn) {
     var parts = _extendState.currentReturn.split('-').map(Number);
     var d = new Date(parts[0], parts[1] - 1, parts[2]);
-    d.setDate(d.getDate() + n);
+    d.setDate(d.getDate() + effective);
     document.getElementById('extendNewReturn').textContent = _formatHumanDate(
       d.getFullYear() + '-' +
       String(d.getMonth() + 1).padStart(2, '0') + '-' +
       String(d.getDate()).padStart(2, '0')
     );
   }
+}
+
+// Clamp on blur — by then the user has finished typing
+function _clampExtendDays() {
+  var input = document.getElementById('extendDays');
+  var n = parseInt(input.value, 10);
+  if (isNaN(n) || n < 1) n = 1;
+  if (n > 60) n = 60;
+  input.value = n;
+  updateExtendCost();
 }
 
 function _formatHumanDate(iso) {
