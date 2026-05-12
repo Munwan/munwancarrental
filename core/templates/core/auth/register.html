@@ -1,14 +1,26 @@
 {% extends 'core/base.html' %}
-{% block title %}Create Account – DriveKenya{% endblock %}
+{% load static %}
+{% block title %}Create Account – Munwan Car Rental{% endblock %}
+{% block meta_description %}Create a Munwan Car Rental account to book faster, view your booking history, and manage rentals across Kenya.{% endblock %}
 {% block content %}
 <div class="auth-page">
   <div class="auth-card">
-    <a href="{% url 'home' %}" class="logo" style="display:block;margin-bottom:28px">Drive<span>Kenya</span></a>
+    <a href="{% url 'home' %}" class="logo logo-with-img auth-logo">
+      <img src="{% static 'images/logo.png' %}" alt="Munwan Car Rental" width="44" height="44"/>
+      <span class="logo-stack">
+        <span class="logo-top">Munwan</span>
+        <span class="logo-bot">Car Rental</span>
+      </span>
+    </a>
     <h1 class="auth-title">Create your account</h1>
     <p class="auth-sub">Save details for faster future bookings</p>
 
     <form method="post">
       {% csrf_token %}
+      <!-- Honeypot — bots fill it, humans don't -->
+      <input type="text" name="website" value="" tabindex="-1" autocomplete="off"
+             style="position:absolute;left:-9999px;height:0;width:0;opacity:0" aria-hidden="true"/>
+      <input type="hidden" name="form_started_at" id="register_form_started_at" value=""/>
       <div class="frow">
         <div class="fg">
           <label>First Name</label>
@@ -34,17 +46,22 @@
       <div class="frow" style="margin-bottom:20px">
         <div class="fg">
           <label>Password</label>
-          <input type="password" name="password1" placeholder="Min. 8 characters" required/>
+          <input type="password" name="password1" placeholder="Min. 8 characters" required autocomplete="new-password" minlength="8"/>
           {% if form.password1.errors %}<div class="ferr">{{ form.password1.errors.0 }}</div>{% endif %}
         </div>
         <div class="fg">
           <label>Confirm Password</label>
-          <input type="password" name="password2" placeholder="Repeat password" required/>
+          <input type="password" name="password2" placeholder="Repeat password" required autocomplete="new-password" minlength="8"/>
           {% if form.password2.errors %}<div class="ferr">{{ form.password2.errors.0 }}</div>{% endif %}
         </div>
       </div>
       <button type="submit" class="auth-btn">Create Account</button>
     </form>
+
+    <script>
+      // Stamp the form open time for the time-trap (humans take >2s)
+      document.getElementById('register_form_started_at').value = String(Date.now());
+    </script>
 
     <p class="auth-link">Already have an account? <a href="{% url 'login' %}">Sign in</a></p>
     <p class="auth-link"><a href="{% url 'home' %}">← Back to Home</a></p>

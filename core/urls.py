@@ -34,6 +34,7 @@ urlpatterns = [
     path('booking/submit/',     views.booking_submit,    name='booking_submit'),
     path('booking/summary/',    views.booking_summary,   name='booking_summary'),
     path('booking/resume/',     views.booking_resume,    name='booking_resume'),
+    path('booking/extend/',     views.booking_extend,    name='booking_extend'),
     path('booking/check/',      views.check_booking,     name='check_booking'),
 
     # ── Safari Package: destinations & live quote ─────────────

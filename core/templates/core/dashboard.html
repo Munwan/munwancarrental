@@ -285,6 +285,22 @@ button.account-continue-btn:hover{
             💳 Continue Payment
           </button>
           {% endif %}
+          {# Extend button — only meaningful for PAID rental bookings.
+             Airport transfers (single-trip) and unpaid bookings can't be
+             extended. Safari extensions need re-quoting per destination so
+             we route safari customers to WhatsApp for now.                 #}
+          {% if b.payment_status == 'paid' and b.hire_type != 'transfer' %}
+            {% if b.hire_type == 'safari' %}
+            <a class="account-extend-btn" href="https://wa.me/254727745907?text=I'd%20like%20to%20extend%20my%20safari%20booking%20{{ b.reference }}" target="_blank" rel="noopener">
+              🦁 Extend Safari (WhatsApp)
+            </a>
+            {% else %}
+            <button class="account-extend-btn"
+                    onclick="openExtendModal('{{ b.reference }}', '{{ b.vehicle.name|escapejs }}', {{ b.daily_rate_usd|default:0 }}, '{{ b.return_date|date:'Y-m-d' }}')">
+              📅 Extend Booking
+            </button>
+            {% endif %}
+          {% endif %}
         </div>
         {% if b.payment_status == 'unpaid' or b.status == 'pending' %}
         <div class="account-booking-warning">
@@ -439,7 +455,7 @@ button.account-continue-btn:hover{
         </div>
         <div class="account-danger-actions">
           <a href="{% url 'support' %}" class="account-help-btn">📞 Contact Support</a>
-          <a href="https://wa.me/{{ whatsapp_number|default:'254727745907' }}" target="_blank" class="account-help-btn account-help-btn-wa">💬 WhatsApp Us</a>
+          <a href="https://wa.me/{{ whatsapp_number|default:'254117262350' }}" target="_blank" class="account-help-btn account-help-btn-wa">💬 WhatsApp Us</a>
           <button class="account-danger-btn" onclick="confirmDeleteAccount()">🗑️ Delete My Account</button>
         </div>
       </div>
@@ -477,6 +493,57 @@ button.account-continue-btn:hover{
     <div class="confirm-modal-actions">
       <button class="confirm-modal-btn confirm-modal-btn-cancel" onclick="closeConfirmModal(false)">Cancel</button>
       <button class="confirm-modal-btn confirm-modal-btn-ok" id="confirmModalOk" onclick="closeConfirmModal(true)">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EXTEND BOOKING MODAL ═══
+     Customer picks N extra days. We compute the additional charge live
+     (extra_days × daily rate) and route to a fresh payment when confirmed. -->
+<div class="confirm-modal-overlay" id="extendModal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="confirm-modal" style="max-width:460px">
+    <div class="confirm-modal-icon">📅</div>
+    <h3 class="confirm-modal-title">Extend Your Booking</h3>
+    <p class="confirm-modal-body" id="extendModalSub">Add extra days to your rental. We'll charge only the extra amount.</p>
+    <div class="confirm-modal-ref" id="extendModalRef"></div>
+
+    <div style="text-align:left;background:#F8FAFC;border-radius:10px;padding:14px 16px;margin:14px 0;font-size:.86rem">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="color:var(--muted)">Vehicle</span>
+        <strong id="extendVehicleName">—</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="color:var(--muted)">Current return</span>
+        <strong id="extendCurrentReturn">—</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">Daily rate</span>
+        <strong id="extendDailyRate">—</strong>
+      </div>
+    </div>
+
+    <div class="fg" style="margin-bottom:14px;text-align:left">
+      <label for="extendDays" style="font-weight:700;font-size:.82rem;color:var(--ink);display:block;margin-bottom:6px">Extra days <span style="color:#DC2626">*</span></label>
+      <input type="number" id="extendDays" min="1" max="60" value="1" oninput="updateExtendCost()"
+             style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;
+                    font-family:'Poppins',sans-serif;font-size:1rem;font-weight:700"/>
+      <div id="extendError" style="font-size:.78rem;color:#DC2626;margin-top:4px;min-height:1em"></div>
+    </div>
+
+    <div style="text-align:left;background:rgba(21,101,255,.06);border:1px solid rgba(21,101,255,.18);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:.86rem">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span>New return date</span>
+        <strong id="extendNewReturn">—</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px dashed rgba(21,101,255,.25);font-size:1rem">
+        <span style="font-weight:700">Additional charge</span>
+        <strong id="extendExtraCost" style="color:var(--blue-dark);font-size:1.15rem">$0</strong>
+      </div>
+    </div>
+
+    <div class="confirm-modal-actions">
+      <button class="confirm-modal-btn confirm-modal-btn-cancel" onclick="closeExtendModal()">Cancel</button>
+      <button class="confirm-modal-btn confirm-modal-btn-ok" id="extendSubmitBtn" onclick="submitExtension()">Continue to Payment</button>
     </div>
   </div>
 </div>
@@ -805,6 +872,137 @@ function openPasswordPrompt() {
     }
   }
 })();
+
+// ═══════════════════════════════════════════════════════════════════
+//  EXTEND BOOKING
+// ═══════════════════════════════════════════════════════════════════
+// State shared across the modal — set when openExtendModal() is called.
+var _extendState = {
+  ref: null,
+  dailyRate: 0,        // USD/day used for cost preview
+  currentReturn: null, // ISO yyyy-mm-dd
+};
+
+function openExtendModal(ref, vehicleName, dailyRate, currentReturnIso) {
+  _extendState.ref = ref;
+  _extendState.dailyRate = parseFloat(dailyRate) || 0;
+  _extendState.currentReturn = currentReturnIso || '';
+
+  document.getElementById('extendModalRef').textContent = 'REF: ' + ref;
+  document.getElementById('extendVehicleName').textContent = vehicleName || '—';
+  document.getElementById('extendCurrentReturn').textContent =
+    currentReturnIso ? _formatHumanDate(currentReturnIso) : '—';
+  document.getElementById('extendDailyRate').textContent =
+    _extendState.dailyRate > 0 ? '$' + _extendState.dailyRate.toFixed(2) : '—';
+  document.getElementById('extendDays').value = 1;
+  document.getElementById('extendError').textContent = '';
+
+  // Initial cost preview
+  updateExtendCost();
+
+  var m = document.getElementById('extendModal');
+  m.classList.add('open');
+  m.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeExtendModal() {
+  var m = document.getElementById('extendModal');
+  m.classList.remove('open');
+  m.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+// Live preview — recompute additional charge + new return date
+function updateExtendCost() {
+  var input = document.getElementById('extendDays');
+  var n = parseInt(input.value, 10);
+  if (isNaN(n) || n < 1) n = 1;
+  if (n > 60) n = 60;
+  // Clamp the input value too so user can't display 0 or > 60
+  if (parseInt(input.value, 10) !== n) input.value = n;
+
+  var cost = (_extendState.dailyRate * n);
+  document.getElementById('extendExtraCost').textContent = '$' + cost.toFixed(2);
+
+  // Compute new return date locally
+  if (_extendState.currentReturn) {
+    var parts = _extendState.currentReturn.split('-').map(Number);
+    var d = new Date(parts[0], parts[1] - 1, parts[2]);
+    d.setDate(d.getDate() + n);
+    document.getElementById('extendNewReturn').textContent = _formatHumanDate(
+      d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0')
+    );
+  }
+}
+
+function _formatHumanDate(iso) {
+  if (!iso) return '—';
+  var parts = iso.split('-').map(Number);
+  var d = new Date(parts[0], parts[1] - 1, parts[2]);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+async function submitExtension() {
+  var days = parseInt(document.getElementById('extendDays').value, 10);
+  if (!days || days < 1) {
+    document.getElementById('extendError').textContent = 'Pick at least 1 extra day.';
+    return;
+  }
+  var btn = document.getElementById('extendSubmitBtn');
+  var orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Creating extension…';
+
+  try {
+    var tokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    var token = tokenEl ? tokenEl.value : '';
+    var body = new URLSearchParams({
+      reference: _extendState.ref,
+      extra_days: String(days),
+    });
+    var r = await fetch('/booking/extend/', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': token,
+      },
+      body: body,
+    });
+    var data = await r.json();
+    if (data.ok) {
+      // Server has created a new "extension booking" with its own ref.
+      // Redirect to home with the extension ref so the customer lands at
+      // the payment step. The original booking stays paid; the new one is
+      // unpaid until they complete the extra charge.
+      window.location.href = '/?resume=' + encodeURIComponent(data.extension_reference);
+    } else {
+      document.getElementById('extendError').textContent = data.error || 'Could not extend booking.';
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  } catch (err) {
+    document.getElementById('extendError').textContent = 'Network error. Please try again.';
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
+// Esc + backdrop close
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape') {
+    var m = document.getElementById('extendModal');
+    if (m && m.classList.contains('open')) closeExtendModal();
+  }
+});
+document.addEventListener('click', function(e){
+  var m = document.getElementById('extendModal');
+  if (m && e.target === m) closeExtendModal();
+});
 </script>
 
 {% endblock %}

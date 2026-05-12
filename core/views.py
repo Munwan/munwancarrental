@@ -997,6 +997,127 @@ def booking_resume(request):
         return _json_error('Could not resume booking.', 500)
 
 
+@require_POST
+def booking_extend(request):
+    """
+    Extend an existing PAID rental by N extra days.
+
+    We do this by creating a SIBLING booking record covering only the
+    extension window (original_return_date → original_return_date + N).
+    Reasons for sibling-not-mutation:
+      - The original booking stays paid and immutable, which keeps
+        accounting straightforward.
+      - Extension fails or is abandoned mid-payment → no half-broken state.
+      - Email + reminder logic treats extensions like any other unpaid
+        booking; we don't need a new "partial payment" status.
+
+    Extensions are NOT allowed for:
+      - Airport transfers (single-trip product)
+      - Safari packages (re-quoting per destination is complex → WhatsApp)
+      - Unpaid or cancelled original bookings
+      - Bookings whose return date is in the past (too late to extend)
+    """
+    from datetime import timedelta as _td
+    from decimal import Decimal
+
+    if not request.user.is_authenticated:
+        return _json_error('Please sign in to extend a booking.', 401)
+
+    ref = (request.POST.get('reference') or '').strip().upper()
+    try:
+        extra_days = int(request.POST.get('extra_days') or 0)
+    except (TypeError, ValueError):
+        return _json_error('Invalid number of days.', 400)
+
+    if extra_days < 1 or extra_days > 60:
+        return _json_error('Extension must be 1–60 extra days.', 400)
+    if not ref:
+        return _json_error('No booking reference provided.', 400)
+
+    try:
+        original = Booking.objects.get(reference=ref, user=request.user)
+    except Booking.DoesNotExist:
+        return _json_error('Booking not found or not owned by you.', 404)
+
+    # Eligibility checks
+    if original.payment_status != 'paid':
+        return _json_error('Only paid bookings can be extended.', 400)
+    if original.hire_type == 'transfer':
+        return _json_error('Airport transfers cannot be extended — book a new one.', 400)
+    if original.hire_type == 'safari':
+        return _json_error('Safari extensions require a custom quote — please WhatsApp us.', 400)
+    if not original.return_date:
+        return _json_error('Original booking has no return date — contact support.', 400)
+
+    from django.utils import timezone
+    today = timezone.localdate()
+    if original.return_date < today:
+        return _json_error('This booking ended already. Book a new one.', 400)
+
+    if not original.vehicle:
+        return _json_error('Original booking has no vehicle — contact support.', 400)
+
+    # ── Build the extension booking ──────────────────────────────
+    # Period: starts where the original ends, runs for `extra_days`.
+    new_pickup = original.return_date
+    new_return = new_pickup + _td(days=extra_days)
+
+    daily = Decimal(str(original.daily_rate_usd or 0))
+    if daily <= 0:
+        return _json_error('Could not determine daily rate. Contact support.', 500)
+
+    extra_usd = (daily * Decimal(extra_days)).quantize(Decimal('0.01'))
+    KES_PER_USD = Decimal('130')
+    EUR_PER_USD = Decimal('0.93')
+    extra_kes = (extra_usd * KES_PER_USD).quantize(Decimal('1'))
+    extra_eur = (extra_usd * EUR_PER_USD).quantize(Decimal('0.01'))
+
+    ext = Booking(
+        user             = request.user,
+        first_name       = original.first_name,
+        last_name        = original.last_name,
+        email            = original.email,
+        phone            = original.phone,
+        nationality      = original.nationality,
+        vehicle          = original.vehicle,
+        hire_type        = original.hire_type,
+        with_driver      = original.with_driver,
+        baby_seat        = False,                # extensions don't re-charge baby seat
+        pickup_location  = original.pickup_location,
+        pickup_date      = new_pickup,
+        pickup_time      = original.return_time or original.pickup_time,
+        return_date      = new_return,
+        return_time      = original.return_time or original.pickup_time,
+        days             = extra_days,
+        base_price_usd   = extra_usd,
+        driver_fee_usd   = Decimal('0.00'),      # already bundled into daily for safari; for rentals daily includes it via daily_rate_usd
+        total_usd        = extra_usd,
+        total_kes        = extra_kes,
+        total_eur        = extra_eur,
+        terms_accepted   = True,                  # inherited from original
+        ip_address       = get_client_ip(request),
+        user_agent       = request.META.get('HTTP_USER_AGENT', '')[:500],
+    )
+    ext.save()
+
+    # Tag the extension via existing JSON field if there's one suitable.
+    # For now we just attach to session for payment flow.
+    request.session['pending_booking_id'] = ext.id
+    request.session['extension_of_ref']   = original.reference
+
+    logger.info('Extension created: original=%s extension=%s extra_days=%d cost=$%s',
+                original.reference, ext.reference, extra_days, extra_usd)
+
+    return JsonResponse({
+        'ok':                   True,
+        'extension_reference':  ext.reference,
+        'original_reference':   original.reference,
+        'extra_days':           extra_days,
+        'extra_usd':            float(extra_usd),
+        'new_return_date':      new_return.strftime('%Y-%m-%d'),
+    })
+
+
 # ─────────────────────────────────────────────────────────────
 #  PAYMENT PROCESS  (Step 2)
 # ─────────────────────────────────────────────────────────────

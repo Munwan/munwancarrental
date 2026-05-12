@@ -342,6 +342,29 @@ class Booking(models.Model):
     def full_name(self):
         return f'{self.first_name} {self.last_name}'
 
+    @property
+    def daily_rate_usd(self):
+        """
+        Per-day rate for this booking (vehicle + driver if applicable).
+        Used by the extend-booking UI to compute extra-day charges.
+        Safari bookings have variable rates per destination so we return
+        the average; transfers have no daily concept.
+        """
+        if self.hire_type == 'transfer':
+            return 0
+        if self.hire_type == 'safari':
+            days = max(int(self.days or 1), 1)
+            try:
+                return float(self.total_usd or 0) / days
+            except Exception:
+                return 0
+        if not self.vehicle:
+            return 0
+        rate = float(self.vehicle.price_usd or 0)
+        if self.with_driver:
+            rate += float(getattr(self.vehicle, 'driver_fee_usd', 0) or 0)
+        return rate
+
     def calculate_totals(self):
         """
         Flat per-day pricing — all math done in Decimal for PostgreSQL safety.

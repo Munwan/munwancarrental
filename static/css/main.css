@@ -136,17 +136,27 @@ nav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:cen
 
    All 5 pills must fit on a single row on desktop without scroll.
    Mobile gets horizontal scroll fallback. */
-.modal-hire-tabs{display:flex;flex-wrap:nowrap;gap:6px;margin-bottom:18px;
-  padding-bottom:14px;border-bottom:1px solid var(--border);
-  overflow-x:auto;scrollbar-width:none}
-.modal-hire-tabs::-webkit-scrollbar{display:none}
-.hire-pill{flex:1 1 0;min-width:0;
-  padding:8px 6px;font-family:'Poppins',sans-serif;
-  font-size:.72rem;font-weight:700;cursor:pointer;
+/* Hire-type pills — 2-up grid (pairs of two).
+   4 pills × 2 columns = 2 clean rows on every screen size. Easier to scan
+   than a horizontal scroller and avoids the previous "last pill hidden
+   off-screen" problem entirely. */
+.modal-hire-tabs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-bottom:18px;
+  padding-bottom:14px;
+  border-bottom:1px solid var(--border);
+}
+.hire-pill{
+  padding:10px 12px;font-family:'Poppins',sans-serif;
+  font-size:.78rem;font-weight:700;cursor:pointer;
   background:var(--white);color:var(--ink);
   border:1.5px solid var(--border);border-radius:100px;
   transition:border-color .15s, background .15s, color .15s, box-shadow .15s;
-  white-space:nowrap;text-overflow:ellipsis;overflow:hidden;outline:none}
+  white-space:nowrap;text-overflow:ellipsis;overflow:hidden;outline:none;
+  text-align:center;width:100%
+}
 .hire-pill:hover:not(.active){border-color:var(--blue-light);color:var(--blue)}
 .hire-pill.active{
   border-color:var(--blue);
@@ -156,30 +166,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:cen
 }
 .hire-pill:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
-/* On mobile, all 5 hire-type pills must be visible without scrolling — many
-   first-time visitors don't realise a horizontal scroll exists, so the
-   Airport Transfer pill (which sits last) goes unnoticed. Solution: allow
-   wrap onto 2 rows. */
-@media (max-width: 600px){
-  .modal-hire-tabs{
-    flex-wrap:wrap;
-    gap:6px;
-    overflow-x:visible;     /* no horizontal scroll on mobile */
-    padding-bottom:10px;
-  }
-  .hire-pill{
-    flex:1 1 calc(33.333% - 6px);  /* 3-up first row, 2-up second */
-    padding:7px 4px;
-    font-size:.7rem;
-    min-width:0;
-    text-align:center;
-    white-space:normal;            /* allow text to wrap inside pill */
-    line-height:1.2;
-  }
-}
 @media (max-width: 380px){
-  /* Very narrow phones: 2-up grid (3 rows) so labels stay readable */
-  .hire-pill{flex:1 1 calc(50% - 6px); font-size:.72rem}
+  /* Very narrow phones — keep 2-up grid, just shrink font a touch */
+  .hire-pill{padding:9px 6px;font-size:.72rem}
 }
 
 
@@ -776,10 +765,43 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .whatsapp-fab span{white-space:nowrap}
 
 /* ── AUTH ─────────────────────────────────────────────── */
-.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(160deg,var(--navy) 0%,#0a1628 100%);padding:100px 20px 40px}
-.auth-card{background:var(--white);border-radius:var(--radius-lg);padding:40px 38px;
-  width:100%;max-width:480px;box-shadow:0 30px 80px rgba(0,0,0,.3)}
+/* Auth pages — navy gradient base with a subtle SVG dot-grid pattern
+   overlay (encoded inline to avoid an extra HTTP request). The pattern
+   is barely visible but adds depth and on-brand polish vs flat colour. */
+.auth-page{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:
+    radial-gradient(circle at 18% 14%, rgba(0,212,255,.18) 0%, transparent 40%),
+    radial-gradient(circle at 82% 88%, rgba(21,101,255,.25) 0%, transparent 45%),
+    linear-gradient(160deg, var(--navy) 0%, #0a1628 100%);
+  position:relative;
+  padding:100px 20px 40px;
+  overflow:hidden;
+}
+.auth-page::before{
+  /* Subtle SVG dot pattern overlay — 4% opacity so it reads as texture,
+     not noise. SVG inlined as data-URI: 1 circle per 32x32 tile. */
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23ffffff' fill-opacity='0.06'/%3E%3C/svg%3E");
+  background-repeat:repeat;
+  z-index:0;
+}
+.auth-card{
+  background:var(--white);border-radius:var(--radius-lg);
+  padding:40px 38px;
+  width:100%;max-width:480px;
+  box-shadow:0 30px 80px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.05);
+  position:relative;z-index:1;
+}
+/* Auth logo — visual lockup of brand image + text stack */
+.auth-logo{
+  display:flex;align-items:center;gap:10px;margin-bottom:24px;
+  text-decoration:none;color:inherit;
+}
+.auth-logo img{flex-shrink:0;border-radius:8px}
+.auth-logo .logo-stack{display:flex;flex-direction:column;line-height:1.1}
+.auth-logo .logo-top{font-weight:800;font-size:1.15rem;color:var(--blue-dark);letter-spacing:-.01em}
+.auth-logo .logo-bot{font-weight:600;font-size:.78rem;color:var(--muted);letter-spacing:.02em}
 .auth-title{font-size:1.65rem;font-weight:800;color:var(--ink);margin-bottom:6px}
 .auth-sub{color:var(--muted);font-size:.9rem;margin-bottom:26px}
 .auth-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));
@@ -793,9 +815,26 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .auth-btn-secondary:hover{background:rgba(21,101,255,.06)}
 .auth-error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);
   border-radius:8px;padding:11px 13px;font-size:.82rem;color:#DC2626;margin-bottom:15px}
+.auth-lockout{background:#FEE2E2;border:1px solid #FCA5A5;border-radius:10px;
+  padding:14px 18px;margin-bottom:18px;font-size:.86rem;color:#991B1B;line-height:1.55}
 .auth-link{font-size:.82rem;color:var(--muted);text-align:center;margin-top:15px}
 .auth-link a{color:var(--blue);font-weight:700;text-decoration:none}
 .auth-link a:hover{text-decoration:underline}
+
+/* Dashboard: "Extend Booking" button — secondary action style, sits next
+   to Continue Payment in the booking-card footer. */
+.account-extend-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:8px;
+  background:var(--white);color:var(--blue);
+  border:1.5px solid var(--blue);
+  font-family:'Poppins',sans-serif;font-weight:700;font-size:.82rem;
+  cursor:pointer;text-decoration:none;
+  transition:background .15s, color .15s, transform .15s;
+}
+.account-extend-btn:hover{
+  background:var(--blue);color:var(--white);transform:translateY(-1px);
+}
 
 /* ── DASHBOARD ───────────────────────────────────────── */
 .dash-page{padding:96px 52px 60px;min-height:100vh}
