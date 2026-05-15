@@ -784,32 +784,40 @@ def send_invoice_email(booking):
         invoice_url = f"{site_url}/invoice/{booking.reference}/"
         pay_url     = f"{site_url}/?resume={booking.reference}"
 
+        # Corporate-specific values. company_name (when set) is treated as
+        # the billed party; the first/last name fields are the company
+        # representative. Falls back gracefully if company_name is blank.
+        is_corp        = (booking.hire_type == 'corporate')
+        billed_party   = (booking.company_name or '').strip() or f'{booking.first_name} {booking.last_name}'
+        greeting_name  = booking.first_name or 'there'
+        bill_to_label  = 'Company' if is_corp and booking.company_name else 'Billed to'
+
         # Build the HTML body using the same shell helpers as other emails
         body_html = ''.join([
             _h1('Corporate Hire Invoice'),
             _p(
-                f'Hi {booking.first_name},'
+                f'Hi {greeting_name},'
                 '<br/><br/>'
-                'Thank you for choosing Munwan Car Rental for your corporate hire. '
-                f'Your invoice is attached as a PDF and is also available online below. '
-                f'Payment is due by <strong>{due_str}</strong> — one day before vehicle pickup.'
+                + (f'This invoice has been issued to <strong>{billed_party}</strong> '
+                   'for the corporate hire booked below. ' if is_corp and booking.company_name
+                   else 'Thank you for choosing Munwan Car Rental for your corporate hire. ')
+                + f'A PDF copy is attached and is also available online below. '
+                  f'Payment is due by <strong>{due_str}</strong> — one day before vehicle pickup.'
             ),
-            # Booking reference is the CANONICAL identifier — what customers
-            # use to check their booking status. Invoice number is a billing
-            # label only. The ref_pill highlights the booking ref to avoid
-            # the confusion of the user copying the invoice number when
-            # they need the booking ref for support/lookup.
             _ref_pill(booking.reference),
             _details([
-                ('Invoice number', invoice_no),
-                ('Service',        booking.get_hire_type_display()),
-                ('Vehicle',        booking.vehicle.name if booking.vehicle else 'TBD'),
-                ('Pickup',         pickup_str),
-                ('Return',         return_str),
-                ('Days',           str(booking.days or '—')),
-                ('Total (USD)',    f'${booking.total_usd}'),
-                ('Total (KES)',    f'KES {booking.total_kes}' if booking.total_kes else None),
-                ('Due date',       due_str),
+                ('Invoice number',  invoice_no),
+                (bill_to_label,     billed_party if is_corp and booking.company_name else None),
+                ('KRA PIN',         booking.company_kra_pin if is_corp and booking.company_kra_pin else None),
+                ('Representative',  f'{booking.first_name} {booking.last_name}' if is_corp and booking.company_name else None),
+                ('Service',         booking.get_hire_type_display()),
+                ('Vehicle',         booking.vehicle.name if booking.vehicle else 'TBD'),
+                ('Pickup',          pickup_str),
+                ('Return',          return_str),
+                ('Days',            str(booking.days or '—')),
+                ('Total (USD)',     f'${booking.total_usd}'),
+                ('Total (KES)',     f'KES {booking.total_kes}' if booking.total_kes else None),
+                ('Due date',        due_str),
             ]),
             _cta('💳 Pay Invoice Online', pay_url),
             _p(

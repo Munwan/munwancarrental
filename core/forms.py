@@ -35,16 +35,27 @@ class BookingStep1Form(forms.Form):
     email            = forms.EmailField(widget=forms.EmailInput(attrs={'placeholder': 'john@example.com'}))
     phone            = forms.CharField(max_length=30, widget=forms.TextInput(attrs={'placeholder': '+254 7XX XXX XXX'}))
     nationality      = forms.ChoiceField(choices=[
-        ('Kenya',           'Kenya (Resident)'),
-        ('United Kingdom',  'United Kingdom'),
-        ('United States',   'United States'),
-        ('Germany',         'Germany'),
-        ('France',          'France'),
-        ('Australia',       'Australia'),
-        ('Canada',          'Canada'),
-        ('Japan',           'Japan'),
-        ('Other',           'Other'),
+        ('Kenya',                'Kenya (Resident)'),
+        ('United Kingdom',       'United Kingdom'),
+        ('United States',        'United States'),
+        ('Germany',              'Germany'),
+        ('France',               'France'),
+        ('Australia',            'Australia'),
+        ('Canada',               'Canada'),
+        ('Japan',                'Japan'),
+        ('China',                'China'),
+        ('United Arab Emirates', 'United Arab Emirates'),
+        ('Saudi Arabia',         'Saudi Arabia'),
+        ('Other',                'Other'),
     ])
+    # Corporate-only fields. The form accepts them on every submission but
+    # only requires them (in clean()) when hire_type='corporate'.
+    company_name    = forms.CharField(max_length=120, required=False,
+                        widget=forms.TextInput(attrs={'placeholder': 'e.g. Safaricom PLC'}))
+    company_kra_pin = forms.CharField(max_length=20, required=False,
+                        widget=forms.TextInput(attrs={'placeholder': 'e.g. P051234567A'}))
+    company_address = forms.CharField(max_length=300, required=False,
+                        widget=forms.TextInput(attrs={'placeholder': 'Company billing address'}))
     vehicle          = forms.ModelChoiceField(
         queryset=Vehicle.objects.filter(is_available=True),
         empty_label='— Select Vehicle —',
@@ -169,6 +180,12 @@ class BookingStep1Form(forms.Form):
                     if day_diff < 5:
                         self.add_error('return_date',
                             'Corporate Hire requires a minimum of 5 days. Please choose a later return date.')
+
+        # Corporate-only required fields
+        if cleaned.get('hire_type') == 'corporate':
+            if not (cleaned.get('company_name') or '').strip():
+                self.add_error('company_name',
+                    'Company name is required for Corporate Hire.')
 
         # Account creation validation
         if cleaned.get('create_account'):
@@ -380,12 +397,17 @@ class SupportForm(forms.ModelForm):
 class CheckBookingForm(forms.Form):
     reference = forms.CharField(
         max_length=20,
-        widget=forms.TextInput(attrs={'placeholder': 'DK-2025-XXXXXX'}),
+        widget=forms.TextInput(attrs={'placeholder': 'DK-2026-XXXXXX or INV-2026-XXXXXX'}),
     )
 
     def clean_reference(self):
         ref = self.cleaned_data['reference'].strip().upper()
         import re
-        if not re.match(r'^DK-\d{4}-[A-Z0-9]{4,8}$', ref):
-            raise forms.ValidationError('Invalid reference format. Example: DK-2025-ABC123')
+        # Accept either a booking reference (DK-YYYY-XXXXXX) or an invoice
+        # number (INV-YYYY-XXXXXX). Both formats use the same length range
+        # of trailing characters. The view's lookup tries both fields.
+        if not re.match(r'^(DK|INV)-\d{4}-[A-Z0-9]{4,8}$', ref):
+            raise forms.ValidationError(
+                'Invalid reference format. Examples: DK-2026-ABC123 or INV-2026-ABC123'
+            )
         return ref

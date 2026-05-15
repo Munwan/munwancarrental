@@ -667,6 +667,30 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .pay-method-label{font-size:.66rem;font-weight:800;letter-spacing:.1em;
   text-transform:uppercase;color:var(--muted);margin:14px 0 10px}
 .pay-method-tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+
+/* ──────────────────────────────────────────────────────────────────
+   DESKTOP: tighten payment-step vertical spacing so the whole step
+   fits in the modal without scrolling. We compress:
+     - summary card padding (16→12)
+     - row gaps (8→4)
+     - method-label/tabs margins
+     - pay button padding
+   Mobile keeps the comfy default spacing.
+   ────────────────────────────────────────────────────────────────── */
+@media (min-width: 768px) {
+  #fs2 .pay-summary-card{padding:12px 16px;margin-bottom:12px}
+  #fs2 .pay-summary-title{margin-bottom:8px}
+  #fs2 .pay-summary-row{margin-bottom:4px}
+  #fs2 .pay-summary-total{padding-top:8px;margin-top:2px}
+  #fs2 .pay-method-label{margin:8px 0 6px}
+  #fs2 .pay-method-tabs{margin-bottom:10px;gap:8px}
+  #fs2 .pay-tab{padding:10px 12px}
+  #fs2 .pay-tab-top{margin-bottom:4px}
+  #fs2 .fw-pay-btn{padding:11px;margin-top:4px}
+  #fs2 .pay-fineprint{font-size:.72rem;margin-top:6px}
+  /* The modal body lets content scroll only if it exceeds 94vh. The
+     compression above puts a typical payment step well under that. */
+}
 .pay-tab{border:2px solid var(--border);border-radius:var(--radius-lg);
   padding:13px 14px;cursor:pointer;transition:all .2s;background:var(--white)}
 .pay-tab:hover{border-color:var(--blue-light)}
@@ -835,6 +859,18 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .account-extend-btn:hover{
   background:var(--blue);color:var(--white);transform:translateY(-1px);
 }
+/* Corporate-fields banner inside the booking modal — matches the
+   transfer/safari banners visually. */
+.corporate-banner{
+  background:linear-gradient(135deg, rgba(21,101,255,.08), rgba(0,212,255,.08));
+  border:1px solid rgba(21,101,255,.18);
+  border-radius:10px;
+  padding:12px 14px;
+  font-size:.84rem;line-height:1.5;color:var(--ink);
+  margin-bottom:14px;
+}
+.corporate-banner strong{color:var(--blue-dark)}
+
 /* "✓ Extended" pill — replaces the Extend button when a booking has
    already been extended once. Conveys "this action is no longer
    available" without looking broken. Hover tooltip explains why. */
@@ -854,6 +890,32 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
    Desktop (≥700px): two columns side-by-side → halves vertical height
    ────────────────────────────────────────────────────────────────── */
 .extend-modal-card{max-width:460px}
+/* Style the title + intro paragraph + ref pill that come from the
+   shared confirm-modal markup (no dedicated CSS existed before, so
+   the text was inheriting browser defaults). */
+.extend-modal-card .confirm-modal-icon{
+  font-size:2.4rem;margin-bottom:8px;text-align:center;line-height:1;
+}
+.extend-modal-card .confirm-modal-title{
+  font-family:'Poppins',sans-serif;font-weight:800;font-size:1.4rem;
+  color:var(--ink);text-align:center;margin:0 0 6px;letter-spacing:-.01em;
+}
+.extend-modal-card .confirm-modal-body{
+  color:var(--muted);font-size:.92rem;line-height:1.5;
+  text-align:center;margin:0 0 14px;
+}
+.extend-modal-card .confirm-modal-ref{
+  display:inline-block;margin:0 auto 16px;
+  padding:6px 14px;border-radius:100px;
+  background:rgba(21,101,255,.08);color:var(--blue-dark);
+  font-family:'Poppins',sans-serif;font-weight:700;font-size:.78rem;
+  letter-spacing:.08em;text-transform:uppercase;
+  /* Centre the inline-block — wrap in a flex-justify-center via parent */
+}
+/* Wrapper to centre the ref pill (the markup doesn't have one — use a
+   trick: the confirm-modal is text-aligned-center via the icon/title
+   block, so we just inherit). */
+.extend-modal-card .confirm-modal-ref:empty{display:none}
 .extend-grid{display:flex;flex-direction:column;gap:14px;text-align:left}
 .extend-col{display:flex;flex-direction:column;gap:14px}
 .extend-info-card{

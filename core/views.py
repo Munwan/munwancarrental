@@ -799,6 +799,10 @@ def booking_submit(request):
         booking.total_kes        = 0
         booking.total_eur        = 0
         booking.terms_accepted   = bool(cd.get('terms_accepted'))
+        # Corporate-only fields (blank for other hire types)
+        booking.company_name     = cd.get('company_name', '') or ''
+        booking.company_kra_pin  = cd.get('company_kra_pin', '') or ''
+        booking.company_address  = cd.get('company_address', '') or ''
 
         if request.user.is_authenticated:
             booking.user = request.user

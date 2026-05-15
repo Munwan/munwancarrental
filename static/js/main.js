@@ -226,10 +226,19 @@ async function postJSON(url, data) {
       },
       body: body,
     });
-  } catch (e) { throw new Error('Network error. Please check your connection.'); }
+  } catch (e) {
+    // fetch throws for genuine network failures only — DNS, refused, offline.
+    // Make this distinguishable from HTTP errors so the UI can show different
+    // wording (humanisePaymentError keys on the word "network").
+    throw new Error('Network error — please check your connection and try again.');
+  }
   let json;
   try { json = await response.json(); }
-  catch (_) { throw new Error('Server error (' + response.status + '). Please try again.'); }
+  catch (_) {
+    // Server returned non-JSON. status is meaningful here; pass it on so
+    // humanisePaymentError can translate.
+    throw new Error('Server error (' + response.status + ') — please try again.');
+  }
   return json;
 }
 
@@ -383,6 +392,8 @@ function openBookingModal() {
   if (s2) s2.style.display = '';
   const prevInvoiceActions = document.getElementById('invoiceActions');
   if (prevInvoiceActions) prevInvoiceActions.remove();
+  const prevInvoiceMeta = document.getElementById('invoiceMeta');
+  if (prevInvoiceMeta) prevInvoiceMeta.remove();
   // Defeat browser autofill on password fields (Chrome ignores autocomplete=off,
   // but actively clearing fields after modal opens always works)
   ['b_password','b_password2'].forEach(id => { const el=$id(id); if(el) el.value=''; });
@@ -549,6 +560,11 @@ function setHireType(type) {
   if (transfer) transfer.style.display = isTransfer ? '' : 'none';
   if (safari)   safari.style.display   = isSafari   ? '' : 'none';
 
+  // Show/hide corporate-specific fields block. Live INSIDE rentalFields,
+  // visible only when corporate is the active hire type.
+  const corporate = $id('corporateFields');
+  if (corporate) corporate.style.display = (type === 'corporate') ? '' : 'none';
+
   // Toggle required attribute per visible section
   // Rental fields
   ['b_vehicle','b_pickup_location','b_pickup_date','b_pickup_time',
@@ -581,9 +597,76 @@ function setHireType(type) {
     loadSafariDestinations();   // lazy-load destination list on first show
   }
 
+  // Corporate hire requires a 5-day minimum rental period. We expose this
+  // as a hint near the return-date field. The actual `min` attr on the
+  // return-date input gets updated whenever the pickup date changes
+  // (see _enforceCorporateMinDays below). Server also rejects <5 days.
+  _enforceCorporateMinDays();
+
   // Run downstream filters (rental vehicle filter etc.)
   if (typeof onHireTypeChange === 'function') onHireTypeChange();
   else updatePricingPreview();
+}
+
+// Corporate Hire requires a minimum rental period of 5 days. We enforce
+// this in 3 places:
+//  (1) The return-date input's `min` attribute becomes pickup + 5 days
+//  (2) A hint appears below the return-date field
+//  (3) The server rejects sub-5-day corporate bookings (forms.py)
+// Called from setHireType and from any onChange of pickup_date.
+function _enforceCorporateMinDays() {
+  const hire = val('b_hire_type');
+  const isCorporate = (hire === 'corporate');
+  const pickupEl = $id('b_pickup_date');
+  const returnEl = $id('b_return_date');
+  let hintEl = $id('corporateMinHint');
+
+  if (!returnEl) return;
+
+  // Tomorrow ISO (always at least tomorrow for return-date min)
+  const dayAfter = new Date();
+  dayAfter.setDate(dayAfter.getDate() + 2);
+  const dayAfterISO = dayAfter.getFullYear() + '-' +
+    String(dayAfter.getMonth() + 1).padStart(2, '0') + '-' +
+    String(dayAfter.getDate()).padStart(2, '0');
+
+  if (!isCorporate) {
+    returnEl.min = dayAfterISO;
+    if (hintEl) hintEl.style.display = 'none';
+    return;
+  }
+
+  // Compute: pickup + 5 days. If pickup not set yet, use tomorrow + 5.
+  let baseDate;
+  if (pickupEl && pickupEl.value) {
+    baseDate = new Date(pickupEl.value + 'T00:00:00');
+  } else {
+    baseDate = new Date();
+    baseDate.setDate(baseDate.getDate() + 1);
+  }
+  baseDate.setDate(baseDate.getDate() + 5);
+  const minISO = baseDate.getFullYear() + '-' +
+    String(baseDate.getMonth() + 1).padStart(2, '0') + '-' +
+    String(baseDate.getDate()).padStart(2, '0');
+  returnEl.min = minISO;
+
+  // If the existing return value is below the new minimum, bump it.
+  if (returnEl.value && returnEl.value < minISO) {
+    returnEl.value = minISO;
+    if (typeof updatePricingPreview === 'function') updatePricingPreview();
+  }
+
+  // Inject/show hint
+  if (!hintEl) {
+    hintEl = document.createElement('div');
+    hintEl.id = 'corporateMinHint';
+    hintEl.style.cssText = 'font-size:.74rem;color:var(--blue);margin-top:4px;line-height:1.4';
+    hintEl.innerHTML = 'ℹ️ Corporate Hire requires a minimum of <strong>5 days</strong>.';
+    // Place right after the return-date input
+    const parent = returnEl.parentNode;
+    if (parent) parent.appendChild(hintEl);
+  }
+  hintEl.style.display = '';
 }
 
 // ── Hire type changed — apply Safari Package vehicle filter ───────
@@ -952,6 +1035,10 @@ function toggleAccSection() {
 
 // ── Live pricing preview — includes driver fee ────────────
 function updatePricingPreview() {
+  // Whenever pickup/return changes, ensure corporate's 5-day rule is fresh
+  // (return-date min depends on pickup date). No-op for non-corporate.
+  if (typeof _enforceCorporateMinDays === 'function') _enforceCorporateMinDays();
+
   const vehicleId = parseInt(val('b_vehicle'));
   const pDate = val('b_pickup_date');
   const rDate = val('b_return_date');
@@ -1074,10 +1161,20 @@ async function submitStep1() {
     pickup_time:     val('b_pickup_time'),
     return_date:     val('b_return_date'),
     return_time:     val('b_return_time'),
+    // Corporate fields — sent on every submit; server only requires them
+    // when hire_type='corporate'.
+    company_name:    val('b_company_name'),
+    company_kra_pin: val('b_company_kra_pin'),
+    company_address: val('b_company_address'),
     create_account:  accOpen ? 'on' : '',
     password:        val('b_password'),
     password_confirm:val('b_password2'),
     terms_accepted:  val('b_terms_accepted') ? 'on' : '',
+    // If a booking has already been created in this session (user clicked
+    // Continue, reached payment, then Back to edit), pass its reference so
+    // the server UPDATES that booking instead of creating a duplicate.
+    // pendingBooking is set in the data.ok branch below — see step 2 onward.
+    edit_ref:        (pendingBooking && pendingBooking.reference) || '',
     // Bot traps
     website:         val('b_website') || '',
     form_started_at: val('b_form_started_at') || '',
@@ -1515,6 +1612,7 @@ async function submitStep1Transfer() {
     password:                 val('b_password'),
     password_confirm:         val('b_password2'),
     terms_accepted:           val('b_terms_accepted') ? 'on' : '',
+    edit_ref:                 (pendingBooking && pendingBooking.reference) || '',
     website:                  val('b_website') || '',
     form_started_at:          val('b_form_started_at') || '',
   };
@@ -1632,6 +1730,7 @@ async function submitStep1Safari() {
     password:                 val('b_password'),
     password_confirm:         val('b_password2'),
     terms_accepted:           val('b_terms_accepted') ? 'on' : '',
+    edit_ref:                 (pendingBooking && pendingBooking.reference) || '',
     website:                  val('b_website') || '',
     form_started_at:          val('b_form_started_at') || '',
   };
@@ -1772,15 +1871,27 @@ function showInvoiceConfirmation(data) {
   setText('confirmIcon', '📄');
   setText('confirmTitle', 'Invoice Sent!');
   setText('confirmSub',
-    `An invoice for ${data.invoice_number || data.reference} has been emailed to you. ` +
-    `Payment is due by ${data.invoice_due || 'pickup date'}.`);
-  setText('confirmRef', 'Invoice: ' + (data.invoice_number || data.reference));
-  // Replace the default footer text under the ref pill with action buttons.
+    `An invoice has been emailed to you. Pay by ${data.invoice_due || 'pickup date'}.`);
+  // The customer's PRIMARY identifier is the booking reference (DK-...).
+  // Invoice number is a billing label only. Show both so they don't get
+  // confused — the ref pill highlights the booking ref, and the smaller
+  // line below shows the invoice number.
+  setText('confirmRef', 'Booking: ' + (data.reference || '—'));
   const confirmWrap = document.querySelector('#fs3 .confirm-wrap');
   if (confirmWrap) {
-    // Remove any previously-injected invoice actions block (idempotent)
+    // Remove any previously-injected invoice metadata block (idempotent)
     const prev = document.getElementById('invoiceActions');
     if (prev) prev.remove();
+    const prevMeta = document.getElementById('invoiceMeta');
+    if (prevMeta) prevMeta.remove();
+
+    // Smaller line showing the invoice number, for clarity
+    const meta = document.createElement('div');
+    meta.id = 'invoiceMeta';
+    meta.style.cssText = 'font-size:.8rem;color:var(--muted);margin:-6px 0 14px;letter-spacing:.04em';
+    meta.textContent = 'Invoice number: ' + (data.invoice_number || data.reference);
+    confirmWrap.appendChild(meta);
+
     const actions = document.createElement('div');
     actions.id = 'invoiceActions';
     actions.style.cssText = 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:18px 0 8px';
@@ -1799,6 +1910,67 @@ function showInvoiceConfirmation(data) {
   if (s2) s2.style.display = 'none';
 }
 
+// ── Payment error message translator ──────────────────────
+// Backend can sometimes surface raw gateway error strings — these are
+// useful in logs but bewildering to customers. This function takes whatever
+// the server returned and produces a clear, actionable message.
+// Falls back to a generic-but-friendly default if nothing matches.
+function humanisePaymentError(raw, method) {
+  // No message at all → very common for network drops + buggy gateway responses
+  if (!raw || typeof raw !== 'string') {
+    return 'Payment couldn\'t be completed. No response from the payment service — please check your internet connection and try again.';
+  }
+  const msg = String(raw).trim();
+  const lower = msg.toLowerCase();
+
+  // The "(status: none)" pattern that prompted this fix: gateway returned
+  // an unexpected payload missing the status field. Most often this is a
+  // dropped/timeout transaction — not actually a card decline.
+  if (lower.includes('status: none') || lower.includes('status:none') ||
+      lower === 'none' || lower === '(status: none)') {
+    return 'We couldn\'t confirm the payment with the bank. This usually means the transaction timed out — please try again, or use a different card or M-Pesa.';
+  }
+
+  // Common Paystack error patterns
+  if (lower.includes('declined') || lower.includes('insufficient'))
+    return 'Your card was declined. This is usually due to insufficient funds, an expired card, or a block from your bank. Try a different card or M-Pesa.';
+  if (lower.includes('invalid card') || lower.includes('invalid_card'))
+    return 'The card details look invalid. Please double-check the card number, expiry, and CVV.';
+  if (lower.includes('3d') || lower.includes('authentication failed'))
+    return 'Card authentication failed. Your bank rejected the verification step — please try again or use a different card.';
+  if (lower.includes('timeout') || lower.includes('timed out'))
+    return 'The payment service timed out. Your card was not charged — please try again.';
+  if (lower.includes('not found') || lower.includes('invalid reference'))
+    return 'We couldn\'t match your payment to the booking. Please try again, or WhatsApp us if the issue continues.';
+  if (lower.includes('cancelled') || lower.includes('canceled') || lower.includes('abandoned'))
+    return 'The payment was cancelled before it completed. You can try again whenever you\'re ready.';
+  if (lower.includes('amount') && lower.includes('mismatch'))
+    return 'There was an amount mismatch with the gateway. Please refresh and try again, or contact support.';
+
+  // M-Pesa specific
+  if (method === 'mpesa') {
+    if (lower.includes('request') && lower.includes('timeout'))
+      return 'M-Pesa didn\'t respond in time. Check your phone — you might still get the prompt — or try again in a moment.';
+    if (lower.includes('subscriber'))
+      return 'M-Pesa says this number isn\'t reachable right now. Make sure your phone is on and the number is correct.';
+    if (lower.includes('insufficient'))
+      return 'Your M-Pesa balance is too low for this payment. Top up and try again.';
+  }
+
+  // Network errors (these come from postJSON when fetch itself fails)
+  if (lower.includes('network') || lower.includes('failed to fetch'))
+    return 'Network issue — your payment may or may not have gone through. Wait a minute, then check your booking under "Check Booking" before retrying.';
+  if (lower.includes('server error'))
+    return 'Our payment server hit an error. Your card was not charged. Please try again, or WhatsApp us at +254 727 745 907 if it keeps failing.';
+
+  // Last resort: return the raw message if it's already human-readable.
+  // We strip anything that looks like a developer string (codes, lower-case-only).
+  if (msg.length > 80 || /^[a-z_]+$/.test(msg)) {
+    return 'Payment couldn\'t be completed. Please try again, or use a different payment method. If the problem continues, WhatsApp us at +254 727 745 907.';
+  }
+  return msg;
+}
+
 // ── Finalise payment (common) ─────────────────────────────
 async function finalisePayment(method, extra) {
   try {
@@ -1815,10 +1987,16 @@ async function finalisePayment(method, extra) {
       }
       currentStep=3; updateStepUI();
     } else {
-      const err=res.error||'Payment failed. Please try again.';
+      // Translate gateway/server error into a customer-readable message.
+      // res.error can be a string, null, or an obscure technical message.
+      const err = humanisePaymentError(res.error, method);
       if (method==='mpesa') setText('err_mpesa', err); else toast(err, 'error');
     }
-  } catch (err) { toast(err.message || 'Payment error. Please try again.', 'error'); }
+  } catch (err) {
+    // err.message is what postJSON throws (network/timeouts)
+    const friendly = humanisePaymentError(err.message, method);
+    toast(friendly, 'error');
+  }
 }
 
 // ── Check Booking ─────────────────────────────────────────

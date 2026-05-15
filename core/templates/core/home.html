@@ -329,8 +329,34 @@
             </select>
           </div>
         </div>
-        <!-- ═══ RENTAL fields (Normal/Long/Corporate/Safari) ═══ -->
+        <!-- ═══ RENTAL fields (Normal/Corporate/Safari) ═══ -->
         <div id="rentalFields">
+
+          <!-- ═══ CORPORATE company fields ═══
+               Only shown when hire_type='corporate'. The customer fields
+               above represent the company representative; these fields
+               identify the company being billed. -->
+          <div id="corporateFields" style="display:none">
+            <div class="corporate-banner">
+              🏢 <strong>Corporate Hire</strong> — provide company details for invoicing.
+              The personal fields above are the representative making the booking.
+            </div>
+            <div class="frow full">
+              <div class="fg"><label for="b_company_name">Company Name <span class="req">*</span></label>
+                <input type="text" id="b_company_name" placeholder="e.g. Safaricom PLC"/>
+                <div class="ferr" id="err_company_name"></div>
+              </div>
+            </div>
+            <div class="frow">
+              <div class="fg"><label for="b_company_kra_pin">KRA PIN (optional)</label>
+                <input type="text" id="b_company_kra_pin" placeholder="e.g. P051234567A"/>
+              </div>
+              <div class="fg"><label for="b_company_address">Company Address (optional)</label>
+                <input type="text" id="b_company_address" placeholder="Billing address"/>
+              </div>
+            </div>
+          </div>
+
           <div class="frow full">
             <div class="fg"><label for="b_vehicle">Vehicle <span class="req">*</span></label>
               <select id="b_vehicle" onchange="updatePricingPreview()">

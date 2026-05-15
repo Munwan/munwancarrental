@@ -58,11 +58,26 @@
     <div class="inv-info">
       <div class="inv-info-block">
         <div class="inv-info-label">BILL TO</div>
-        <div class="inv-info-name">{{ booking.first_name }} {{ booking.last_name }}</div>
-        <div class="inv-info-line">{{ booking.email }}</div>
-        <div class="inv-info-line">{{ booking.phone }}</div>
-        {% if booking.nationality %}
-        <div class="inv-info-line">{{ booking.nationality }}</div>
+        {% if booking.hire_type == 'corporate' and booking.company_name %}
+          <div class="inv-info-name">{{ booking.company_name }}</div>
+          {% if booking.company_kra_pin %}
+          <div class="inv-info-line">KRA PIN: {{ booking.company_kra_pin }}</div>
+          {% endif %}
+          {% if booking.company_address %}
+          <div class="inv-info-line">{{ booking.company_address }}</div>
+          {% endif %}
+          <div class="inv-info-line" style="margin-top:8px;color:var(--muted);font-size:.8rem">
+            Representative: {{ booking.first_name }} {{ booking.last_name }}
+          </div>
+          <div class="inv-info-line">{{ booking.email }}</div>
+          <div class="inv-info-line">{{ booking.phone }}</div>
+        {% else %}
+          <div class="inv-info-name">{{ booking.first_name }} {{ booking.last_name }}</div>
+          <div class="inv-info-line">{{ booking.email }}</div>
+          <div class="inv-info-line">{{ booking.phone }}</div>
+          {% if booking.nationality %}
+          <div class="inv-info-line">{{ booking.nationality }}</div>
+          {% endif %}
         {% endif %}
       </div>
       <div class="inv-info-block">

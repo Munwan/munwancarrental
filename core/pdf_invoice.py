@@ -97,16 +97,34 @@ def render_invoice_pdf(booking) -> bytes:
     story.append(rule)
     story.append(Spacer(1, 12))
 
+    # Corporate-specific values for the BILL TO block.
+    is_corp        = (booking.hire_type == 'corporate')
+    has_company    = is_corp and bool((booking.company_name or '').strip())
+    billed_party   = (booking.company_name or '').strip() if has_company else f'{booking.first_name} {booking.last_name}'
+
     # ── BILL TO ────────────────────────────────────────────────────
     bill_to_left = [
         Paragraph('BILL TO', addrlbl),
         Spacer(1, 4),
-        Paragraph(f'<b>{booking.first_name} {booking.last_name}</b>', body),
-        Paragraph(booking.email or '', body),
-        Paragraph(booking.phone or '', body),
+        Paragraph(f'<b>{billed_party}</b>', body),
     ]
-    if booking.nationality:
-        bill_to_left.append(Paragraph(booking.nationality, body))
+    if has_company:
+        # Add KRA PIN + address + representative when corporate
+        if booking.company_kra_pin:
+            bill_to_left.append(Paragraph(f'KRA PIN: {booking.company_kra_pin}', body))
+        if booking.company_address:
+            bill_to_left.append(Paragraph(booking.company_address, body))
+        bill_to_left.append(Spacer(1, 4))
+        bill_to_left.append(Paragraph(
+            f'<font color="#6B7280" size="8.5">Representative:</font> '
+            f'{booking.first_name} {booking.last_name}', body))
+        bill_to_left.append(Paragraph(booking.email or '', body))
+        bill_to_left.append(Paragraph(booking.phone or '', body))
+    else:
+        bill_to_left.append(Paragraph(booking.email or '', body))
+        bill_to_left.append(Paragraph(booking.phone or '', body))
+        if booking.nationality:
+            bill_to_left.append(Paragraph(booking.nationality, body))
 
     bill_to_right = [
         Paragraph('BOOKING REFERENCE', addrlbl),
