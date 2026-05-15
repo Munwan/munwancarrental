@@ -1229,7 +1229,9 @@ def invoice_pdf(request, reference):
     """
     Returns the invoice as a PDF download.
     Uses ReportLab — already in requirements.txt for the rest of the app.
-    Falls back to HTML download if PDF generation fails for any reason.
+    If PDF rendering fails, returns a clear error response (not the HTML
+    page) so the customer can retry or contact support, rather than
+    being silently redirected to the same invoice page they came from.
     """
     try:
         booking = Booking.objects.get(reference=reference, hire_type='corporate')
@@ -1239,18 +1241,34 @@ def invoice_pdf(request, reference):
     try:
         from .pdf_invoice import render_invoice_pdf
         pdf_bytes = render_invoice_pdf(booking)
+    except ImportError as exc:
+        # ReportLab not installed — give the user actionable advice
+        logger.exception('PDF render failed (ImportError) for invoice %s: %s', reference, exc)
+        return HttpResponse(
+            'PDF generation is currently unavailable. '
+            'Please view your invoice online at '
+            f'{request.build_absolute_uri("/invoice/" + booking.reference + "/")} '
+            'or WhatsApp us at +254 727 745 907.',
+            status=503,
+            content_type='text/plain',
+        )
     except Exception as exc:
         logger.exception('PDF render failed for invoice %s: %s', reference, exc)
-        # Fall back to HTML — better than a 500.
-        return render(request, 'core/invoice.html', {
-            'booking': booking,
-            'pdf_url': '',
-            'pay_url': request.build_absolute_uri(f'/?resume={booking.reference}'),
-        })
+        return HttpResponse(
+            'We hit an error generating your PDF invoice. '
+            f'Please view it online at '
+            f'{request.build_absolute_uri("/invoice/" + booking.reference + "/")} '
+            'or WhatsApp us at +254 727 745 907 for help.',
+            status=500,
+            content_type='text/plain',
+        )
 
     fname = f'invoice-{booking.invoice_number or booking.reference}.pdf'
     resp = HttpResponse(pdf_bytes, content_type='application/pdf')
-    resp['Content-Disposition'] = f'attachment; filename="{fname}"'
+    # Use inline disposition so the PDF previews in a new tab. Customers
+    # can then download from the preview if they want. attachment forces a
+    # download which feels disruptive (browser tab switches, file dumped).
+    resp['Content-Disposition'] = f'inline; filename="{fname}"'
     return resp
 
 

@@ -1924,10 +1924,10 @@ function showInvoiceConfirmation(data) {
     actions.style.cssText = 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:18px 0 8px';
     actions.innerHTML =
       (data.invoice_pdf_url
-        ? `<a href="${data.invoice_pdf_url}" class="inv-btn inv-btn-secondary" download>⬇ Download PDF</a>`
+        ? `<a href="${data.invoice_pdf_url}" class="inv-btn inv-btn-secondary" target="_blank" rel="noopener">⬇ Download PDF</a>`
         : '') +
       (data.invoice_url
-        ? `<a href="${data.invoice_url}" class="inv-btn inv-btn-secondary">📄 View Online</a>`
+        ? `<a href="${data.invoice_url}" class="inv-btn inv-btn-secondary" target="_blank" rel="noopener">📄 View Online</a>`
         : '') +
       `<a href="/?resume=${encodeURIComponent(data.reference)}" class="inv-btn inv-btn-primary">💳 Pay Invoice</a>`;
     confirmWrap.appendChild(actions);
