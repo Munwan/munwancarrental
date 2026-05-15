@@ -279,10 +279,24 @@ button.account-continue-btn:hover{
         <div class="account-booking-row"><span>Total</span><strong>${{ b.total_usd }}</strong></div>
 
         <div class="account-booking-footer">
-          <span class="account-booking-status {{ b.status|default:'confirmed' }}">{{ b.get_status_display|default:"Confirmed" }}</span>
+          <span class="account-booking-status {{ b.payment_status|default:b.status|default:'confirmed' }}">
+            {% if b.payment_status == 'invoiced' %}
+              📄 Invoiced — Due {{ b.invoice_due_date|date:"d M Y"|default:"soon" }}
+            {% else %}
+              {{ b.get_status_display|default:"Confirmed" }}
+            {% endif %}
+          </span>
           {% if b.payment_status == 'unpaid' or b.status == 'pending' %}
           <button class="account-continue-btn" onclick="continueBooking({{ b.id }}, '{{ b.reference }}')">
             💳 Continue Payment
+          </button>
+          {% endif %}
+          {% if b.payment_status == 'invoiced' %}
+          <a class="account-continue-btn" href="{% url 'invoice_view' reference=b.reference %}">
+            📄 View Invoice
+          </a>
+          <button class="account-continue-btn" onclick="continueBooking({{ b.id }}, '{{ b.reference }}')">
+            💳 Pay Invoice
           </button>
           {% endif %}
           {% if b.payment_status == 'paid' and b.hire_type != 'transfer' %}
@@ -342,11 +356,20 @@ button.account-continue-btn:hover{
         <div class="account-booking-row"><span>Payment</span><strong>{{ b.get_payment_status_display|default:"Pending" }}</strong></div>
 
         <div class="account-booking-footer">
-          <span class="account-booking-status {{ b.status|default:'pending' }}">{{ b.get_status_display|default:"Pending" }}</span>
+          <span class="account-booking-status {{ b.payment_status|default:b.status|default:'pending' }}">
+            {% if b.payment_status == 'invoiced' %}
+              📄 Invoiced
+            {% else %}
+              {{ b.get_status_display|default:"Pending" }}
+            {% endif %}
+          </span>
           {% if b.payment_status == 'unpaid' or b.status == 'pending' %}
           <button class="account-continue-btn" onclick="continueBooking({{ b.id }}, '{{ b.reference }}')">
             💳 Continue Payment
           </button>
+          {% endif %}
+          {% if b.payment_status == 'invoiced' %}
+          <a class="account-continue-btn" href="{% url 'invoice_view' reference=b.reference %}">📄 View Invoice</a>
           {% endif %}
         </div>
       </div>
@@ -501,53 +524,59 @@ button.account-continue-btn:hover{
      Customer picks N extra days. We compute the additional charge live
      (extra_days × daily rate) and route to a fresh payment when confirmed. -->
 <div class="confirm-modal-overlay" id="extendModal" role="dialog" aria-modal="true" aria-hidden="true">
-  <div class="confirm-modal" style="max-width:460px">
+  <div class="confirm-modal extend-modal-card">
     <div class="confirm-modal-icon">📅</div>
     <h3 class="confirm-modal-title">Extend Your Booking</h3>
     <p class="confirm-modal-body" id="extendModalSub">Add extra days to your rental. We'll charge only the extra amount.</p>
     <div class="confirm-modal-ref" id="extendModalRef"></div>
 
-    <div style="text-align:left;background:#F8FAFC;border-radius:10px;padding:14px 16px;margin:14px 0;font-size:.86rem">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="color:var(--muted)">Vehicle</span>
-        <strong id="extendVehicleName">—</strong>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="color:var(--muted)">Current return</span>
-        <strong id="extendCurrentReturn">—</strong>
-      </div>
-      <div style="display:flex;justify-content:space-between">
-        <span style="color:var(--muted)">Daily rate</span>
-        <strong id="extendDailyRate">—</strong>
-      </div>
-    </div>
-
-    <div class="fg" style="margin-bottom:14px;text-align:left">
-      <label for="extendDays" style="font-weight:700;font-size:.82rem;color:var(--ink);display:block;margin-bottom:6px">Extra days <span style="color:#DC2626">*</span></label>
-      <input type="number" id="extendDays" min="1" max="60" value="1"
-             oninput="updateExtendCost()" onblur="_clampExtendDays()"
-             style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;
-                    font-family:'Poppins',sans-serif;font-size:1rem;font-weight:700"/>
-      <div id="extendError" style="font-size:.78rem;color:#DC2626;margin-top:4px;min-height:1em"></div>
-    </div>
-
-    <div style="text-align:left;background:rgba(21,101,255,.06);border:1px solid rgba(21,101,255,.18);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:.86rem">
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-        <span>New return date</span>
-        <strong id="extendNewReturn">—</strong>
-      </div>
-      <div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(21,101,255,.25)">
-        <div style="display:flex;justify-content:space-between;font-size:1rem;margin-bottom:8px">
-          <span style="font-weight:700">Additional charge</span>
-          <strong id="extendExtraCost" style="color:var(--blue-dark);font-size:1.15rem">$0</strong>
+    <div class="extend-grid">
+      <!-- LEFT column on desktop: current booking details -->
+      <div class="extend-col extend-col-left">
+        <div class="extend-info-card">
+          <div class="extend-info-row">
+            <span>Vehicle</span>
+            <strong id="extendVehicleName">—</strong>
+          </div>
+          <div class="extend-info-row">
+            <span>Current return</span>
+            <strong id="extendCurrentReturn">—</strong>
+          </div>
+          <div class="extend-info-row">
+            <span>Daily rate</span>
+            <strong id="extendDailyRate">—</strong>
+          </div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted)">
-          <span>In KES</span>
-          <strong id="extendExtraCostKes" style="color:var(--ink);font-weight:600">—</strong>
+
+        <div class="fg extend-days-field">
+          <label for="extendDays">Extra days <span style="color:#DC2626">*</span></label>
+          <input type="number" id="extendDays" min="1" max="60" value="1"
+                 oninput="updateExtendCost()" onblur="_clampExtendDays()"/>
+          <div id="extendError" class="extend-err"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-top:3px">
-          <span>In EUR</span>
-          <strong id="extendExtraCostEur" style="color:var(--ink);font-weight:600">—</strong>
+      </div>
+
+      <!-- RIGHT column on desktop: new return + charge -->
+      <div class="extend-col extend-col-right">
+        <div class="extend-charge-card">
+          <div class="extend-info-row">
+            <span>New return date</span>
+            <strong id="extendNewReturn">—</strong>
+          </div>
+          <div class="extend-charge-totals">
+            <div class="extend-charge-main">
+              <span>Additional charge</span>
+              <strong id="extendExtraCost">$0</strong>
+            </div>
+            <div class="extend-charge-sub">
+              <span>In KES</span>
+              <strong id="extendExtraCostKes">—</strong>
+            </div>
+            <div class="extend-charge-sub">
+              <span>In EUR</span>
+              <strong id="extendExtraCostEur">—</strong>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1033,11 +1062,9 @@ async function submitExtension() {
     });
     var data = await r.json();
     if (data.ok) {
-      // Remember the extension in sessionStorage. If the customer hits
-      // Back from the payment page, they land on the dashboard and we
-      // see this flag → re-open the extend modal pre-filled. Without this
-      // they'd land on the dashboard with no modal, looking like nothing
-      // happened (which feels like a blank page).
+      // Remember the extension. The home payment page reads this on load
+      // to install a back-button trap (extensions shouldn't let users
+      // bail to a stale dashboard mid-payment).
       try {
         sessionStorage.setItem('munwan_pending_extension', JSON.stringify({
           ref: _extendState.ref,
@@ -1045,13 +1072,15 @@ async function submitExtension() {
           dailyRate: _extendState.dailyRate,
           currentReturn: _extendState.currentReturn,
           extraDays: days,
+          extensionRef: data.extension_reference,  // new booking we just created
         }));
       } catch (e) {}
-      // Server has created a new "extension booking" with its own ref.
-      // Redirect to home with the extension ref so the customer lands at
-      // the payment step. The original booking stays paid; the new one is
-      // unpaid until they complete the extra charge.
-      window.location.href = '/?resume=' + encodeURIComponent(data.extension_reference);
+      // location.replace (vs location.href) REPLACES the dashboard URL in
+      // history with the payment URL. The customer's previous history is
+      // preserved but the dashboard is no longer in the stack — pressing
+      // Back from payment skips to whatever they were on before the
+      // dashboard, not back to the half-formed extension modal.
+      window.location.replace('/?resume=' + encodeURIComponent(data.extension_reference));
     } else {
       document.getElementById('extendError').textContent = data.error || 'Could not extend booking.';
       btn.disabled = false;
@@ -1063,60 +1092,6 @@ async function submitExtension() {
     btn.textContent = orig;
   }
 }
-
-// On dashboard page load, if sessionStorage has a pending extension,
-// reopen the modal pre-filled. This handles the case where the customer
-// clicked Back on the payment page — they land on the dashboard and
-// would otherwise have no indication of what just happened.
-//
-// We fire on DOMContentLoaded (booking cards have rendered by then) and
-// clear the flag immediately so refresh/reload doesn't loop.
-function _reopenExtendIfPending() {
-  var stored;
-  try { stored = sessionStorage.getItem('munwan_pending_extension'); }
-  catch (e) { return; }
-  if (!stored) return;
-  var data;
-  try { data = JSON.parse(stored); } catch (e) {
-    try { sessionStorage.removeItem('munwan_pending_extension'); } catch (_) {}
-    return;
-  }
-  // Clear FIRST so any error below doesn't cause a reopen loop on refresh.
-  try { sessionStorage.removeItem('munwan_pending_extension'); } catch (e) {}
-
-  if (typeof openExtendModal !== 'function') return;
-  // Tiny delay so the booking card render finishes; the modal needs to
-  // sit on top of a fully-laid-out page.
-  setTimeout(function() {
-    openExtendModal(
-      data.ref || '',
-      data.vehicle || '',
-      data.dailyRate || 0,
-      data.currentReturn || ''
-    );
-    // Restore the days the customer had entered
-    if (data.extraDays && data.extraDays >= 1) {
-      var inp = document.getElementById('extendDays');
-      if (inp) { inp.value = data.extraDays; updateExtendCost(); }
-    }
-  }, 200);
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', _reopenExtendIfPending);
-} else {
-  // Document already parsed (script came after body) — fire immediately
-  _reopenExtendIfPending();
-}
-
-// bfcache (back-forward cache) handling: when the browser restores this
-// page from cache (instant Back), DOMContentLoaded does NOT fire — only
-// pageshow. We re-check the sessionStorage flag here so back-from-payment
-// still triggers the modal reopen.
-window.addEventListener('pageshow', function(ev) {
-  // Only re-fire when actually restored from bfcache, not on first load.
-  if (ev.persisted) _reopenExtendIfPending();
-});
 
 // Esc + backdrop close
 document.addEventListener('keydown', function(e){
