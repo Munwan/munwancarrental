@@ -288,16 +288,30 @@ def send_booking_received(booking):
                 ('Night fare', 'Yes (+$8 surcharge)' if booking.is_night_surcharge else None),
             ])
         else:
-            details = _details([
-                ('Vehicle',   booking.vehicle.name),
-                ('Hire type', booking.get_hire_type_display()),
-                ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
-                ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
-                ('Return',    _return_str(booking)),
-                ('Pickup at', booking.get_pickup_location_display()),
-                ('Hotel',     booking.hotel_address if booking.hotel_address else None),
-                ('Baby seat', 'Included (+$10)' if booking.baby_seat else None),
-            ])
+            is_extension = bool(getattr(booking, 'parent_booking_id', None))
+            if is_extension:
+                # Extension: customer is already with the car. Pickup
+                # location and time don't apply — they're continuing from
+                # their original return date. Show extension-specific info.
+                parent_ref = booking.parent_booking.reference if booking.parent_booking else '—'
+                details = _details([
+                    ('Vehicle',         booking.vehicle.name),
+                    ('Hire type',       'Extension of ' + parent_ref),
+                    ('Driver',          'With driver' if booking.with_driver else 'Self drive'),
+                    ('Extends through', _return_str(booking)),
+                    ('Additional days', str(booking.days or '—')),
+                ])
+            else:
+                details = _details([
+                    ('Vehicle',   booking.vehicle.name),
+                    ('Hire type', booking.get_hire_type_display()),
+                    ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
+                    ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
+                    ('Return',    _return_str(booking)),
+                    ('Pickup at', booking.get_pickup_location_display()),
+                    ('Hotel',     booking.hotel_address if booking.hotel_address else None),
+                    ('Baby seat', 'Included (+$10)' if booking.baby_seat else None),
+                ])
 
         pricing = _pricing(
             base=booking.base_price_usd, days=booking.days,
@@ -311,6 +325,14 @@ def send_booking_received(booking):
                 f'Your <strong>airport transfer</strong> is reserved. '
                 f'To confirm, please complete payment of <strong>${booking.total_usd}</strong> '
                 f'using the button below.'
+            )
+        elif (not is_transfer) and getattr(booking, 'parent_booking_id', None):
+            # Extension reminder — the original booking IS already paid,
+            # this email is about the additional days only.
+            lead = (
+                f'Your rental extension is reserved. '
+                f'Please complete payment of <strong>${booking.total_usd}</strong> '
+                f'for the additional days so we can confirm.'
             )
         else:
             lead = (
@@ -393,20 +415,39 @@ def send_booking_confirmation(booking):
                          'We\'ll WhatsApp you with the driver\'s details before pickup.')
             preheader = f'Your airport transfer is locked in for {booking.pickup_date}.'
         else:
-            details = _details([
-                ('Vehicle',   booking.vehicle.name),
-                ('Hire type', booking.get_hire_type_display()),
-                ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
-                ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
-                ('Return',    _return_str(booking)),
-                ('Pickup at', booking.get_pickup_location_display()),
-                ('Hotel',     booking.hotel_address if booking.hotel_address else None),
-                ('Baby seat', 'Included' if booking.baby_seat else None),
-            ])
-            lead_h1   = f'Booking confirmed, {booking.first_name}.'
-            lead_p    = (f'Your <strong>{booking.vehicle.name}</strong> is locked in. '
-                         f'We\'ll WhatsApp you 24 hours before pickup with final details.')
-            preheader = f'Your {booking.vehicle.name} is locked in for {booking.pickup_date}.'
+            is_extension = bool(getattr(booking, 'parent_booking_id', None))
+            if is_extension:
+                # Extension: customer is already with the car. Pickup
+                # location and time don't apply — they're continuing from
+                # their original return date. Show extension-specific info.
+                parent_ref = booking.parent_booking.reference if booking.parent_booking else '—'
+                details = _details([
+                    ('Vehicle',         booking.vehicle.name),
+                    ('Hire type',       'Extension of ' + parent_ref),
+                    ('Driver',          'With driver' if booking.with_driver else 'Self drive'),
+                    ('Extends through', _return_str(booking)),
+                    ('Additional days', str(booking.days or '—')),
+                ])
+                lead_h1   = f'Extension confirmed, {booking.first_name}.'
+                lead_p    = (f'Your <strong>{booking.vehicle.name}</strong> rental '
+                             f'has been extended to <strong>{_return_str(booking)}</strong>. '
+                             f'Enjoy your additional days!')
+                preheader = f'Your rental is extended to {_return_str(booking)}.'
+            else:
+                details = _details([
+                    ('Vehicle',   booking.vehicle.name),
+                    ('Hire type', booking.get_hire_type_display()),
+                    ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
+                    ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
+                    ('Return',    _return_str(booking)),
+                    ('Pickup at', booking.get_pickup_location_display()),
+                    ('Hotel',     booking.hotel_address if booking.hotel_address else None),
+                    ('Baby seat', 'Included' if booking.baby_seat else None),
+                ])
+                lead_h1   = f'Booking confirmed, {booking.first_name}.'
+                lead_p    = (f'Your <strong>{booking.vehicle.name}</strong> is locked in. '
+                             f'We\'ll WhatsApp you 24 hours before pickup with final details.')
+                preheader = f'Your {booking.vehicle.name} is locked in for {booking.pickup_date}.'
 
         body = (
             _h1(lead_h1)
@@ -745,7 +786,7 @@ def send_invoice_email(booking):
 
         # Build the HTML body using the same shell helpers as other emails
         body_html = ''.join([
-            _h1(f'Invoice {invoice_no}'),
+            _h1('Corporate Hire Invoice'),
             _p(
                 f'Hi {booking.first_name},'
                 '<br/><br/>'
@@ -753,17 +794,22 @@ def send_invoice_email(booking):
                 f'Your invoice is attached as a PDF and is also available online below. '
                 f'Payment is due by <strong>{due_str}</strong> — one day before vehicle pickup.'
             ),
-            _ref_pill(invoice_no),
+            # Booking reference is the CANONICAL identifier — what customers
+            # use to check their booking status. Invoice number is a billing
+            # label only. The ref_pill highlights the booking ref to avoid
+            # the confusion of the user copying the invoice number when
+            # they need the booking ref for support/lookup.
+            _ref_pill(booking.reference),
             _details([
-                ('Booking ref',  booking.reference),
-                ('Service',      booking.get_hire_type_display()),
-                ('Vehicle',      booking.vehicle.name if booking.vehicle else 'TBD'),
-                ('Pickup',       pickup_str),
-                ('Return',       return_str),
-                ('Days',         str(booking.days or '—')),
-                ('Total (USD)',  f'${booking.total_usd}'),
-                ('Total (KES)',  f'KES {booking.total_kes}' if booking.total_kes else None),
-                ('Due date',     due_str),
+                ('Invoice number', invoice_no),
+                ('Service',        booking.get_hire_type_display()),
+                ('Vehicle',        booking.vehicle.name if booking.vehicle else 'TBD'),
+                ('Pickup',         pickup_str),
+                ('Return',         return_str),
+                ('Days',           str(booking.days or '—')),
+                ('Total (USD)',    f'${booking.total_usd}'),
+                ('Total (KES)',    f'KES {booking.total_kes}' if booking.total_kes else None),
+                ('Due date',       due_str),
             ]),
             _cta('💳 Pay Invoice Online', pay_url),
             _p(
@@ -776,7 +822,8 @@ def send_invoice_email(booking):
                 '<strong>Bank transfer:</strong> WhatsApp us at '
                 f'<a href="{_whatsapp_link()}" style="color:#1565FF;font-weight:700">'
                 f'{_whatsapp_display()}</a> for account details. '
-                f'Quote invoice number <strong>{invoice_no}</strong> as the reference.',
+                f'Quote booking reference <strong>{booking.reference}</strong> '
+                f'or invoice number <strong>{invoice_no}</strong>.',
                 color='#374151'
             ),
         ])

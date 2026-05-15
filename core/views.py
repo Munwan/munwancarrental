@@ -470,13 +470,14 @@ def _booking_submit_safari(request):
             except Exception:
                 logger.exception('Safari-flow account creation failed')
 
-    # Fire customer + admin emails in background
+    # Fire admin email immediately so we're aware of the new booking.
+    # CUSTOMER reminder ("complete payment") is delayed — fires from the
+    # send_payment_reminders cron 10 minutes later, ONLY if still unpaid.
     try:
-        from .emails import send_new_booking_admin_alert, send_booking_received
+        from .emails import send_new_booking_admin_alert
         _fire_email(send_new_booking_admin_alert, booking)
-        _fire_email(send_booking_received, booking)
     except Exception:
-        logger.exception('Safari booking email threads failed')
+        logger.exception('Safari admin alert thread failed')
 
     return JsonResponse({
         'ok':             True,
@@ -684,13 +685,13 @@ def _booking_submit_transfer(request):
             except Exception as exc:
                 logger.exception('Transfer-flow account creation failed')
 
-    # Admin alert + customer "booking received" email
+    # Admin alert immediately. CUSTOMER reminder is delayed — fires from
+    # send_payment_reminders cron 10 min later, ONLY if still unpaid.
     try:
-        from .emails import send_new_booking_admin_alert, send_booking_received
+        from .emails import send_new_booking_admin_alert
         _fire_email(send_new_booking_admin_alert, booking)
-        _fire_email(send_booking_received, booking)
     except Exception as e:
-        logger.exception('Transfer booking email threads failed')
+        logger.exception('Transfer admin alert thread failed')
 
     return JsonResponse({
         'ok':                True,
@@ -818,19 +819,20 @@ def booking_submit(request):
         if is_meaningful_edit:
             Booking.objects.filter(pk=booking.pk).update(created_at=timezone.now())
 
-        # Email admin about new booking immediately. The CUSTOMER reminder
-        # ("Complete Payment") is delayed: it fires from the
-        # management command `send_payment_reminders` after 1 hour, ONLY if
-        # the booking is still unpaid. If they pay within the hour, no email.
-        # Fire admin email + customer "we got your booking" email in a
-        # background thread so the HTTP response returns immediately —
-        # SMTP can take 1-3 seconds and would block the user.
+        # Email admin about new booking immediately so we're aware of it.
+        # CUSTOMER email is INTENTIONALLY delayed — fires from the
+        # management command `send_payment_reminders` 10 minutes after
+        # creation, but ONLY if the booking is still unpaid. If the
+        # customer pays within the 10-minute window, the email never
+        # sends (avoids spamming customers who pay promptly).
+        # Corporate-hire bookings are handled differently — they already
+        # received the invoice email from booking_submit's corporate
+        # branch below, and shouldn't get the reminder.
         try:
-            from .emails import send_new_booking_admin_alert, send_booking_received
+            from .emails import send_new_booking_admin_alert
             _fire_email(send_new_booking_admin_alert, booking)
-            _fire_email(send_booking_received, booking)
         except Exception as e:
-            logger.exception('Booking-creation email threads failed')
+            logger.exception('Admin alert thread failed')
 
         # Optional account creation
         account_created     = False
@@ -896,9 +898,13 @@ def booking_submit(request):
             booking.invoice_issued_at = timezone.now()
             # Due 1 day before pickup so we have time to confirm the vehicle.
             booking.invoice_due_date = booking.pickup_date - _td(days=1)
+            # Mark the reminder as sent — corporate gets the INVOICE email
+            # instead of the "please pay" reminder, and we don't want both.
+            booking.payment_reminder_sent = True
             booking.save(update_fields=[
                 'payment_status', 'invoice_number',
                 'invoice_issued_at', 'invoice_due_date',
+                'payment_reminder_sent',
             ])
             # Email the invoice in a background thread (same as other emails)
             try:
@@ -1510,8 +1516,15 @@ def check_booking(request):
         ref = request.GET.get('reference', '').strip().upper()
         if not ref:
             return _json_error('No reference provided.')
+        # Accept EITHER booking reference (DK-2026-XXXXXX) OR invoice number
+        # (INV-2026-XXXXXX). Customers sometimes paste the invoice number
+        # from their corporate hire confirmation, expecting it to work as
+        # a lookup key. Same record either way.
+        b = (Booking.objects.filter(reference=ref).first()
+             or Booking.objects.filter(invoice_number=ref).first())
+        if b is None:
+            return _json_error('Booking not found. Please check the reference and try again.')
         try:
-            b = Booking.objects.get(reference=ref)
             is_transfer = (b.hire_type == 'transfer')
 
             # For airport transfers, the customer chose a CAR CLASS (Economy /
@@ -1547,17 +1560,17 @@ def check_booking(request):
                 'transfer_car_type':    b.get_transfer_car_type_display() if is_transfer else '',
                 'transfer_destination': b.transfer_destination if is_transfer else '',
             })
-        except Booking.DoesNotExist:
-            return _json_error('No booking found for that reference.', 404)
         except Exception as exc:
             return _json_error(str(exc), 500)
 
     form   = CheckBookingForm(request.GET or None)
     result = None
     if form.is_valid():
-        try:
-            result = Booking.objects.get(reference=form.cleaned_data['reference'])
-        except Booking.DoesNotExist:
+        ref = form.cleaned_data['reference'].strip().upper()
+        # Same lookup logic as the AJAX path — reference OR invoice number.
+        result = (Booking.objects.filter(reference=ref).first()
+                  or Booking.objects.filter(invoice_number=ref).first())
+        if result is None:
             messages.error(request, 'No booking found for that reference.')
     return render(request, 'core/check_booking.html', {'form': form, 'booking': result})
 

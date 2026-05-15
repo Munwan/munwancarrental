@@ -1084,6 +1084,10 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .account-booking-status.pending{background:rgba(245,158,11,.15);color:#92400E}
 .account-booking-status.completed{background:rgba(107,114,128,.15);color:#374151}
 .account-booking-status.cancelled{background:rgba(239,68,68,.15);color:#991B1B}
+/* Invoiced (corporate hire awaiting payment) — distinct blue */
+.account-booking-status.invoiced{background:rgba(21,101,255,.12);color:#1E40AF}
+.account-booking-status.paid{background:rgba(16,185,129,.15);color:#065F46}
+.account-booking-status.unpaid{background:rgba(245,158,11,.15);color:#92400E}
 
 .account-empty{text-align:center;padding:48px 20px;color:var(--muted)}
 .account-empty-icon{font-size:3rem;margin-bottom:14px}

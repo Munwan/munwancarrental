@@ -1,105 +1,75 @@
 """
-Send "Complete Payment" reminder emails to customers whose bookings are still
-unpaid 10+ minutes after creation/edit, AND who haven't started a checkout
-attempt within the last 30 minutes.
+Sends the "please complete your payment" email to customers whose
+bookings have been unpaid for 10 minutes or more.
 
-Run via cron every 60 seconds (see docker-compose.yml cron service).
+Called by the cron container every 60 seconds (see docker-compose.yml).
+
+Logic:
+  - Loop bookings created >=10 min ago
+  - that are payment_status='unpaid' (not 'paid', 'invoiced', 'refunded', 'failed')
+  - and payment_reminder_sent=False
+  - and the customer hasn't initiated a payment in the last 10 min
+  - Send the email exactly once and stamp payment_reminder_sent=True
+
+Corporate bookings (payment_status='invoiced') are skipped — they received
+the invoice email already, and the cron filter excludes them naturally.
+
+Empty-handed run (no bookings to remind) returns silently — keeps the
+cron log free of noise.
 """
 from datetime import timedelta
-
 from django.core.management.base import BaseCommand
-from django.db.models import Q
 from django.utils import timezone
 
 from core.models import Booking
 from core.emails import send_booking_received
 
 
+REMINDER_DELAY_MINUTES = 10
+
+
 class Command(BaseCommand):
-    help = "Email 'Complete Payment' reminders to customers with unpaid bookings older than 10 minutes (skipping those with active checkout attempts)."
+    help = "Send the 'complete your payment' email for bookings unpaid 10+ min."
 
-    def add_arguments(self, parser):
-        parser.add_argument(
-            '--age-minutes',
-            type=int,
-            default=10,
-            help='Minimum age (minutes) before sending the reminder (default 10).',
-        )
-        parser.add_argument(
-            '--max-age-hours',
-            type=int,
-            default=24,
-            help='Skip bookings older than this — assume the customer has moved on.',
-        )
-        parser.add_argument(
-            '--checkout-grace-minutes',
-            type=int,
-            default=30,
-            help='If the customer initiated payment within this many minutes, skip the reminder.',
-        )
-        parser.add_argument(
-            '--dry-run',
-            action='store_true',
-            help='Print what would be sent without actually sending.',
-        )
+    def handle(self, *args, **options):
+        cutoff = timezone.now() - timedelta(minutes=REMINDER_DELAY_MINUTES)
 
-    def handle(self, *args, **opts):
-        age_minutes      = opts['age_minutes']
-        max_age_hours    = opts['max_age_hours']
-        checkout_grace   = opts['checkout_grace_minutes']
-        dry_run          = opts['dry_run']
-        now = timezone.now()
-
-        # Window: created between (now - max_age_hours) and (now - age_minutes)
-        cutoff_old        = now - timedelta(minutes=age_minutes)
-        cutoff_max        = now - timedelta(hours=max_age_hours)
-        checkout_cutoff   = now - timedelta(minutes=checkout_grace)
-
-        # A booking is reminder-eligible when:
-        #   - Still unpaid
-        #   - Not already reminded
-        #   - Created/edited between max-age and min-age ago
-        #   - EITHER never attempted payment, OR last attempt was >30 min ago
-        candidates = Booking.objects.filter(
+        # Bookings eligible for the reminder:
+        # - created at least 10 min ago
+        # - still unpaid (paid/invoiced/refunded/failed are excluded by status filter)
+        # - reminder not yet sent
+        # - customer hasn't started a checkout in the last 10 min
+        #   (payment_attempt_at is stamped when they click Pay; if it's recent,
+        #    they're in the middle of paying — don't interrupt with an email)
+        qs = Booking.objects.filter(
+            created_at__lte=cutoff,
             payment_status='unpaid',
             payment_reminder_sent=False,
-            created_at__lte=cutoff_old,
-            created_at__gte=cutoff_max,
-        ).filter(
-            Q(payment_attempt_at__isnull=True) | Q(payment_attempt_at__lte=checkout_cutoff)
-        ).order_by('created_at')
-
-        total = candidates.count()
-        if total == 0:
-            self.stdout.write(self.style.SUCCESS('No reminders to send.'))
-            return
-
-        sent = 0
-        failed = 0
-
-        for booking in candidates:
-            if dry_run:
-                self.stdout.write(
-                    f'[dry-run] would email {booking.email} for {booking.reference} '
-                    f'(created {booking.created_at}, attempt={booking.payment_attempt_at})'
-                )
-                continue
-
-            ok = send_booking_received(booking)
-            if ok:
-                Booking.objects.filter(pk=booking.pk).update(payment_reminder_sent=True)
-                sent += 1
-                self.stdout.write(
-                    self.style.SUCCESS(f'  ✓ Reminder sent to {booking.email} for {booking.reference}')
-                )
-            else:
-                failed += 1
-                self.stdout.write(
-                    self.style.ERROR(f'  ✗ Email failed for {booking.reference}')
-                )
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f'Done. Total candidates: {total}, sent: {sent}, failed: {failed}'
-            )
+        ).exclude(
+            payment_attempt_at__gte=cutoff,
         )
+
+        sent_count = 0
+        for booking in qs:
+            try:
+                ok = send_booking_received(booking)
+                # Mark sent regardless of email success — we don't want to
+                # retry forever and spam. The admin email alert at creation
+                # time already gives us visibility.
+                Booking.objects.filter(pk=booking.pk).update(
+                    payment_reminder_sent=True
+                )
+                if ok:
+                    sent_count += 1
+                    self.stdout.write(
+                        f'  Sent reminder for {booking.reference} ({booking.email})'
+                    )
+            except Exception as exc:
+                self.stderr.write(
+                    f'  Failed for {booking.reference}: {exc}'
+                )
+
+        if sent_count:
+            self.stdout.write(self.style.SUCCESS(
+                f'Sent {sent_count} payment reminder(s).'
+            ))
