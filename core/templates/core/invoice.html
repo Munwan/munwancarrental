@@ -1,0 +1,181 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Invoice {{ booking.invoice_number }} – Munwan Car Rental{% endblock %}
+{% block meta_description %}Invoice for corporate hire booking {{ booking.reference }} – Munwan Car Rental.{% endblock %}
+
+{% block content %}
+<div class="invoice-page">
+  <div class="invoice-card">
+
+    <!-- HEADER -->
+    <div class="inv-header">
+      <div class="inv-brand">
+        <div class="logo logo-with-img">
+          <img src="{% static 'images/logo.png' %}" alt="Munwan Car Rental" width="40" height="40"/>
+          <span class="logo-stack">
+            <span class="logo-top">Munwan</span>
+            <span class="logo-bot">Car Rental</span>
+          </span>
+        </div>
+        <div class="inv-brand-sub">Premium Car Rental · Nairobi, Kenya</div>
+      </div>
+      <div class="inv-meta">
+        <div class="inv-meta-label">INVOICE</div>
+        <div class="inv-meta-number">{{ booking.invoice_number|default:booking.reference }}</div>
+        <div class="inv-meta-row">
+          <span>Issued</span>
+          <strong>{{ booking.invoice_issued_at|date:"d M Y"|default:"—" }}</strong>
+        </div>
+        <div class="inv-meta-row inv-meta-due">
+          <span>Due</span>
+          <strong>{{ booking.invoice_due_date|date:"d M Y"|default:"—" }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS / ACTIONS -->
+    <div class="inv-status-bar">
+      {% if booking.payment_status == 'paid' %}
+        <div class="inv-status inv-status-paid">✓ PAID</div>
+      {% else %}
+        <div class="inv-status inv-status-due">PAYMENT DUE</div>
+      {% endif %}
+      <div class="inv-actions">
+        {% if pdf_url %}
+        <a href="{{ pdf_url }}" class="inv-btn inv-btn-secondary" download>
+          ⬇ Download PDF
+        </a>
+        {% endif %}
+        {% if booking.payment_status != 'paid' %}
+        <a href="{{ pay_url }}" class="inv-btn inv-btn-primary">
+          💳 Pay Invoice
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- BILL TO / SERVICE -->
+    <div class="inv-info">
+      <div class="inv-info-block">
+        <div class="inv-info-label">BILL TO</div>
+        <div class="inv-info-name">{{ booking.first_name }} {{ booking.last_name }}</div>
+        <div class="inv-info-line">{{ booking.email }}</div>
+        <div class="inv-info-line">{{ booking.phone }}</div>
+        {% if booking.nationality %}
+        <div class="inv-info-line">{{ booking.nationality }}</div>
+        {% endif %}
+      </div>
+      <div class="inv-info-block">
+        <div class="inv-info-label">BOOKING REFERENCE</div>
+        <div class="inv-info-name">{{ booking.reference }}</div>
+        <div class="inv-info-label" style="margin-top:14px">SERVICE</div>
+        <div class="inv-info-line">{{ booking.get_hire_type_display }}</div>
+      </div>
+    </div>
+
+    <!-- LINE ITEMS -->
+    <table class="inv-items">
+      <thead>
+        <tr><th>Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <strong>{{ booking.vehicle.name|default:"Vehicle TBD" }}</strong>
+            <div class="inv-item-sub">
+              Pickup: {{ booking.pickup_date|date:"d M Y" }} ·
+              Return: {{ booking.return_date|date:"d M Y" }}
+            </div>
+          </td>
+          <td class="num">{{ booking.days }}</td>
+          <td class="num">
+            {% if booking.days and booking.days > 0 %}
+              ${% widthratio booking.base_price_usd booking.days 1 %}
+            {% else %}
+              ${{ booking.base_price_usd }}
+            {% endif %}
+          </td>
+          <td class="num">${{ booking.base_price_usd }}</td>
+        </tr>
+        {% if booking.with_driver and booking.driver_fee_usd %}
+        <tr>
+          <td>
+            <strong>Professional Driver</strong>
+            <div class="inv-item-sub">Daily driver fee — fuel and allowance included</div>
+          </td>
+          <td class="num">{{ booking.days }}</td>
+          <td class="num">
+            {% if booking.days and booking.days > 0 %}
+              ${% widthratio booking.driver_fee_usd booking.days 1 %}
+            {% else %}
+              ${{ booking.driver_fee_usd }}
+            {% endif %}
+          </td>
+          <td class="num">${{ booking.driver_fee_usd }}</td>
+        </tr>
+        {% endif %}
+        {% if booking.baby_seat %}
+        <tr>
+          <td>
+            <strong>Baby Seat</strong>
+            <div class="inv-item-sub">One-time fee — fitted at pickup</div>
+          </td>
+          <td class="num">1</td>
+          <td class="num">$10.00</td>
+          <td class="num">$10.00</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    <!-- TOTALS -->
+    <div class="inv-totals">
+      <div class="inv-totals-row"><span>Subtotal (USD)</span><strong>${{ booking.total_usd }}</strong></div>
+      {% if booking.total_kes %}
+      <div class="inv-totals-row"><span>≈ KES</span><strong>KES {{ booking.total_kes }}</strong></div>
+      {% endif %}
+      {% if booking.total_eur %}
+      <div class="inv-totals-row"><span>≈ EUR</span><strong>€{{ booking.total_eur }}</strong></div>
+      {% endif %}
+      <div class="inv-totals-row inv-totals-total">
+        <span>TOTAL DUE</span><strong>${{ booking.total_usd }}</strong>
+      </div>
+    </div>
+
+    <!-- PAYMENT INSTRUCTIONS -->
+    <div class="inv-instructions">
+      <h3>Payment Instructions</h3>
+      <p>
+        <strong>Pay online:</strong> Click the <strong>Pay Invoice</strong>
+        button above to settle by Visa, Mastercard, M-Pesa, or PayPal. Payment
+        is due by <strong>{{ booking.invoice_due_date|date:"d M Y" }}</strong>
+        — one day before vehicle pickup.
+      </p>
+      <p>
+        <strong>Bank transfer:</strong>
+        <a href="https://wa.me/254727745907?text=Hello,%20I'd%20like%20bank%20transfer%20details%20for%20invoice%20{{ booking.invoice_number|default:booking.reference }}" target="_blank" rel="noopener">
+          WhatsApp us
+        </a> for bank account details. Quote invoice number
+        <strong>{{ booking.invoice_number|default:booking.reference }}</strong>
+        as the reference.
+      </p>
+
+      <h3>Terms</h3>
+      <p class="inv-terms">
+        Vehicle reservation is confirmed only after full payment is received.
+        Late payment may result in the vehicle being released to another
+        customer. Cancellations 48+ hours before pickup are refundable in
+        full; cancellations within 24 hours forfeit 20% of the invoice value.
+      </p>
+    </div>
+
+    <div class="inv-footer">
+      <p>Thank you for choosing Munwan Car Rental.</p>
+      <p class="inv-footer-contact">
+        +254 727 745 907 · info@munwancarrental.com · munwancarrental.com
+      </p>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

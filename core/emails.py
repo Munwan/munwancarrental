@@ -719,3 +719,129 @@ def send_otp_email(*, to_email: str, code: str, first_name: str = '') -> bool:
     except Exception as exc:
         logger.exception('send_otp_email failed for %s', to_email)
         return False
+
+
+# ═════════════════════════════════════════════════════════════
+#  INVOICE EMAIL (corporate hire)
+# ═════════════════════════════════════════════════════════════
+def send_invoice_email(booking):
+    """
+    Sends the corporate invoice email with PDF attached. Fires from
+    booking_submit when hire_type=='corporate'. PDF is generated inline;
+    if it fails we still send the email with a download link instead.
+    """
+    try:
+        from .pdf_invoice import render_invoice_pdf
+        from django.core.mail import EmailMessage
+        from django.conf import settings
+
+        invoice_no = booking.invoice_number or booking.reference
+        due_str    = booking.invoice_due_date.strftime('%d %b %Y') if booking.invoice_due_date else '—'
+        pickup_str = booking.pickup_date.strftime('%d %b %Y') if booking.pickup_date else '—'
+        return_str = booking.return_date.strftime('%d %b %Y') if booking.return_date else '—'
+        site_url   = _site_url()
+        invoice_url = f"{site_url}/invoice/{booking.reference}/"
+        pay_url     = f"{site_url}/?resume={booking.reference}"
+
+        # Build the HTML body using the same shell helpers as other emails
+        body_html = ''.join([
+            _h1(f'Invoice {invoice_no}'),
+            _p(
+                f'Hi {booking.first_name},'
+                '<br/><br/>'
+                'Thank you for choosing Munwan Car Rental for your corporate hire. '
+                f'Your invoice is attached as a PDF and is also available online below. '
+                f'Payment is due by <strong>{due_str}</strong> — one day before vehicle pickup.'
+            ),
+            _ref_pill(invoice_no),
+            _details([
+                ('Booking ref',  booking.reference),
+                ('Service',      booking.get_hire_type_display()),
+                ('Vehicle',      booking.vehicle.name if booking.vehicle else 'TBD'),
+                ('Pickup',       pickup_str),
+                ('Return',       return_str),
+                ('Days',         str(booking.days or '—')),
+                ('Total (USD)',  f'${booking.total_usd}'),
+                ('Total (KES)',  f'KES {booking.total_kes}' if booking.total_kes else None),
+                ('Due date',     due_str),
+            ]),
+            _cta('💳 Pay Invoice Online', pay_url),
+            _p(
+                f'You can also <a href="{invoice_url}" '
+                f'style="color:#1565FF;font-weight:700">view your invoice online</a> '
+                'at any time, or download the PDF copy attached.',
+                color='#6B7280'
+            ),
+            _p(
+                '<strong>Bank transfer:</strong> WhatsApp us at '
+                f'<a href="{_whatsapp_link()}" style="color:#1565FF;font-weight:700">'
+                f'{_whatsapp_display()}</a> for account details. '
+                f'Quote invoice number <strong>{invoice_no}</strong> as the reference.',
+                color='#374151'
+            ),
+        ])
+
+        html = _render_shell(
+            title=f'Invoice {invoice_no} – Munwan Car Rental',
+            preheader=f'Your corporate invoice {invoice_no} – pay by {due_str}.',
+            body_html=body_html,
+        )
+
+        # Plain-text fallback
+        text_body = (
+            f'INVOICE {invoice_no}\n'
+            f'Munwan Car Rental\n\n'
+            f'Hi {booking.first_name},\n\n'
+            f'Thank you for choosing Munwan Car Rental for your corporate hire.\n'
+            f'Your invoice is attached as a PDF.\n\n'
+            f'Booking ref: {booking.reference}\n'
+            f'Vehicle: {booking.vehicle.name if booking.vehicle else "TBD"}\n'
+            f'Pickup: {pickup_str}\n'
+            f'Return: {return_str}\n'
+            f'Days: {booking.days or "—"}\n'
+            f'Total: ${booking.total_usd}\n'
+            f'Due by: {due_str}\n\n'
+            f'Pay online: {pay_url}\n'
+            f'View invoice: {invoice_url}\n\n'
+            f'For bank transfer, WhatsApp us at {_whatsapp_display()}.\n'
+            f'Quote {invoice_no} as the reference.\n\n'
+            f'Thank you,\nMunwan Car Rental Team\n'
+        )
+
+        # Build the email message manually so we can attach the PDF.
+        # _send_html() doesn't take attachments, so we use EmailMessage directly.
+        msg = EmailMessage(
+            subject=f'Invoice {invoice_no} – Munwan Car Rental',
+            body=text_body,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None) or _info_email(),
+            to=[booking.email],
+            reply_to=[_info_email()],
+        )
+        # Attach an HTML alternative
+        msg.content_subtype = 'plain'   # primary is plain; html added below
+        msg.attach_alternative = None    # disable accidental usage
+        # Use EmailMultiAlternatives pattern: switch class for HTML support
+        from django.core.mail import EmailMultiAlternatives
+        msg = EmailMultiAlternatives(
+            subject=f'Invoice {invoice_no} – Munwan Car Rental',
+            body=text_body,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None) or _info_email(),
+            to=[booking.email],
+            reply_to=[_info_email()],
+        )
+        msg.attach_alternative(html, 'text/html')
+
+        # Attach the PDF. If rendering fails, log it but still send the email.
+        try:
+            pdf_bytes = render_invoice_pdf(booking)
+            msg.attach(f'invoice-{invoice_no}.pdf', pdf_bytes, 'application/pdf')
+        except Exception:
+            logger.exception('Invoice PDF attach failed for %s — sending email without attachment', invoice_no)
+
+        msg.send(fail_silently=False)
+        logger.info('Invoice email sent for %s to %s', invoice_no, booking.email)
+        return True
+
+    except Exception:
+        logger.exception('send_invoice_email failed for booking %s', getattr(booking, 'reference', '?'))
+        return False

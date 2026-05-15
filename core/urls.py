@@ -36,6 +36,9 @@ urlpatterns = [
     path('booking/resume/',     views.booking_resume,    name='booking_resume'),
     path('booking/extend/',     views.booking_extend,    name='booking_extend'),
     path('booking/check/',      views.check_booking,     name='check_booking'),
+    # Public invoice routes (capability URLs — anyone with the reference can view).
+    path('invoice/<str:reference>/',     views.invoice_view, name='invoice_view'),
+    path('invoice/<str:reference>/pdf/', views.invoice_pdf,  name='invoice_pdf'),
 
     # ── Safari Package: destinations & live quote ─────────────
     path('safari/destinations/', views.safari_destinations, name='safari_destinations'),

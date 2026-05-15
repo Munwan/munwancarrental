@@ -667,49 +667,6 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .pay-method-label{font-size:.66rem;font-weight:800;letter-spacing:.1em;
   text-transform:uppercase;color:var(--muted);margin:14px 0 10px}
 .pay-method-tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-
-/* ──────────────────────────────────────────────────────────────────
-   DESKTOP-ONLY: payment step (#fs2) is shorter when its summary card
-   and payment-method panel sit side-by-side. The previous all-stacked
-   layout left a tall vertical wall of content even when the modal had
-   horizontal room. Switching #fs2 to a 2-column grid at ≥820px halves
-   the height without changing markup.
-   The modal itself widens to accommodate the side-by-side layout.
-   On tablet/mobile (<820px) we keep the original stacked layout — there
-   isn't enough horizontal space to gain anything.
-   ────────────────────────────────────────────────────────────────── */
-@media (min-width: 820px) {
-  /* When the modal is showing Step 2, give it room to breathe. The
-     :has() selector matches the modal whose body contains an active fs2.
-     We target the parent .modal rather than .modal-overlay so the modal
-     itself widens, not the dim overlay. */
-  .modal:has(#fs2.active){max-width:880px}
-
-  #fs2.active{
-    display:grid;
-    grid-template-columns:1.05fr .95fr;   /* summary slightly wider than methods */
-    gap:24px;
-    align-items:start;
-  }
-  /* Summary occupies the LEFT column — slightly tighter spacing */
-  #fs2.active .pay-summary-card{margin-bottom:0;padding:18px 20px}
-  /* Method label has no top margin since it's no longer following content */
-  #fs2.active .pay-method-label{margin-top:0}
-  /* Method tabs side-by-side already; stays 2-col */
-  #fs2.active .pay-panel{margin-top:6px}
-  /* The method-label + tabs + panel all sit in the RIGHT column.
-     We wrap them in an implicit group via grid-row spans. */
-  #fs2.active .pay-summary-card{grid-row:1; grid-column:1}
-  #fs2.active .pay-method-label{grid-row:1; grid-column:2; align-self:start}
-  #fs2.active .pay-method-tabs{grid-row:2; grid-column:2}
-  #fs2.active .pay-panel{grid-row:3; grid-column:2}
-  #fs2.active input[type="hidden"]{grid-row:4; grid-column:1 / -1}
-}
-
-/* Fallback for browsers without :has() (very old Safari/Firefox).
-   Without the wider modal the 2-col grid still works inside the
-   default 580px width — it's just a bit squeezed. Browsers that
-   support :has() get the polish. */
 .pay-tab{border:2px solid var(--border);border-radius:var(--radius-lg);
   padding:13px 14px;cursor:pointer;transition:all .2s;background:var(--white)}
 .pay-tab:hover{border-color:var(--blue-light)}
@@ -889,6 +846,152 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   border:1.5px solid rgba(16,185,129,.3);
   font-family:'Poppins',sans-serif;font-weight:700;font-size:.82rem;
   cursor:help;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   EXTEND BOOKING MODAL — responsive 2-column on desktop
+   Mobile (<700px): single column, summary above charge box
+   Desktop (≥700px): two columns side-by-side → halves vertical height
+   ────────────────────────────────────────────────────────────────── */
+.extend-modal-card{max-width:460px}
+.extend-grid{display:flex;flex-direction:column;gap:14px;text-align:left}
+.extend-col{display:flex;flex-direction:column;gap:14px}
+.extend-info-card{
+  background:#F8FAFC;border-radius:10px;padding:14px 16px;font-size:.86rem;
+}
+.extend-info-row{display:flex;justify-content:space-between;margin-bottom:6px}
+.extend-info-row:last-child{margin-bottom:0}
+.extend-info-row span{color:var(--muted)}
+.extend-info-row strong{color:var(--ink);text-align:right}
+.extend-days-field label{font-weight:700;font-size:.82rem;color:var(--ink);display:block;margin-bottom:6px}
+.extend-days-field input{
+  width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;
+  font-family:'Poppins',sans-serif;font-size:1rem;font-weight:700;
+}
+.extend-err{font-size:.78rem;color:#DC2626;margin-top:4px;min-height:1em}
+.extend-charge-card{
+  background:rgba(21,101,255,.06);border:1px solid rgba(21,101,255,.18);
+  border-radius:10px;padding:14px 16px;font-size:.86rem;
+}
+.extend-charge-totals{
+  margin-top:10px;padding-top:10px;border-top:1px dashed rgba(21,101,255,.25);
+}
+.extend-charge-main{
+  display:flex;justify-content:space-between;font-size:1rem;margin-bottom:8px;
+}
+.extend-charge-main span{font-weight:700;color:var(--ink)}
+.extend-charge-main strong{color:var(--blue-dark);font-size:1.15rem}
+.extend-charge-sub{
+  display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-top:3px;
+}
+.extend-charge-sub strong{color:var(--ink);font-weight:600}
+
+@media (min-width: 700px){
+  /* Wider card to make the 2-col layout breathe */
+  .extend-modal-card{max-width:720px}
+  /* Two columns side-by-side: details/days input on left, charge on right */
+  .extend-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:18px;
+    align-items:start;
+  }
+  /* Each col flows vertically with consistent gap */
+  .extend-col{gap:14px}
+}
+
+/* ── INVOICE PAGE ──────────────────────────────────────────────── */
+.invoice-page{
+  min-height:100vh;padding:100px 20px 60px;
+  background:linear-gradient(160deg, #F8FAFC 0%, #EEF2F7 100%);
+}
+.invoice-card{
+  max-width:840px;margin:0 auto;
+  background:var(--white);border-radius:var(--radius-lg);
+  padding:36px 40px;
+  box-shadow:0 20px 60px rgba(13,26,58,.08);
+  position:relative;
+}
+.invoice-card::before{
+  /* Brand strip along the top */
+  content:'';position:absolute;top:0;left:0;right:0;height:4px;
+  background:linear-gradient(90deg, var(--blue) 0%, var(--cyan) 100%);
+  border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+}
+.inv-header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid var(--border)}
+.inv-brand .logo{margin-bottom:8px}
+.inv-brand-sub{font-size:.78rem;color:var(--muted);line-height:1.5}
+.inv-meta{text-align:right;min-width:200px}
+.inv-meta-label{font-size:.7rem;font-weight:800;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.inv-meta-number{font-size:1.35rem;font-weight:800;color:var(--ink);margin:2px 0 12px}
+.inv-meta-row{display:flex;justify-content:flex-end;gap:14px;font-size:.82rem;margin-top:4px}
+.inv-meta-row span{color:var(--muted);font-weight:600}
+.inv-meta-row strong{color:var(--ink)}
+.inv-meta-due strong{color:#DC2626}
+
+.inv-status-bar{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:14px 18px;border-radius:10px;margin-bottom:24px;
+  background:var(--light);border:1px solid var(--border);flex-wrap:wrap
+}
+.inv-status{font-size:.78rem;font-weight:800;letter-spacing:.1em;padding:6px 12px;border-radius:6px}
+.inv-status-paid{background:rgba(16,185,129,.12);color:#059669}
+.inv-status-due{background:rgba(220,38,38,.1);color:#DC2626}
+.inv-actions{display:flex;gap:10px;flex-wrap:wrap}
+.inv-btn{
+  display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;
+  font-family:'Poppins',sans-serif;font-weight:700;font-size:.85rem;
+  cursor:pointer;text-decoration:none;border:1.5px solid transparent;
+  transition:transform .15s, background .15s, color .15s
+}
+.inv-btn-primary{background:var(--blue);color:var(--white);box-shadow:0 4px 12px rgba(21,101,255,.3)}
+.inv-btn-primary:hover{background:var(--blue-dark);transform:translateY(-1px)}
+.inv-btn-secondary{background:var(--white);color:var(--blue);border-color:var(--blue)}
+.inv-btn-secondary:hover{background:var(--blue);color:var(--white);transform:translateY(-1px)}
+
+.inv-info{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+.inv-info-label{font-size:.7rem;font-weight:800;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.inv-info-name{font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:2px}
+.inv-info-line{font-size:.86rem;color:var(--ink);margin-top:2px}
+
+.inv-items{width:100%;border-collapse:collapse;margin-bottom:8px}
+.inv-items thead th{
+  background:var(--navy);color:var(--white);
+  text-align:left;font-size:.74rem;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;padding:10px 14px
+}
+.inv-items thead th.num{text-align:right}
+.inv-items tbody td{padding:14px;border-bottom:1px solid var(--border);font-size:.92rem;color:var(--ink);vertical-align:top}
+.inv-items tbody td.num{text-align:right;font-variant-numeric:tabular-nums}
+.inv-item-sub{font-size:.78rem;color:var(--muted);margin-top:4px;line-height:1.4}
+
+.inv-totals{display:flex;flex-direction:column;align-items:flex-end;margin-bottom:28px;margin-top:6px}
+.inv-totals-row{display:flex;justify-content:space-between;gap:60px;font-size:.88rem;padding:5px 0;min-width:260px}
+.inv-totals-row span{color:var(--muted)}
+.inv-totals-row strong{color:var(--ink);font-variant-numeric:tabular-nums}
+.inv-totals-total{margin-top:8px;padding:12px 16px;background:var(--light);border-radius:8px;font-size:1.05rem}
+.inv-totals-total span{font-weight:800;color:var(--navy)}
+.inv-totals-total strong{color:var(--blue);font-size:1.25rem;font-weight:800}
+
+.inv-instructions{background:var(--light);border-radius:10px;padding:20px 24px;margin-bottom:20px}
+.inv-instructions h3{font-size:.78rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin:0 0 8px}
+.inv-instructions h3:not(:first-child){margin-top:16px}
+.inv-instructions p{font-size:.88rem;line-height:1.6;color:var(--ink);margin:0 0 8px}
+.inv-instructions a{color:var(--blue);font-weight:700}
+.inv-terms{font-size:.8rem !important;color:var(--muted) !important}
+
+.inv-footer{text-align:center;padding-top:14px;border-top:1px solid var(--border);font-size:.84rem}
+.inv-footer p{margin:4px 0;color:var(--ink)}
+.inv-footer-contact{color:var(--muted) !important;font-size:.78rem !important}
+
+@media (max-width: 720px){
+  .invoice-card{padding:24px 20px}
+  .inv-header{flex-direction:column;gap:14px;align-items:flex-start}
+  .inv-meta{text-align:left;width:100%}
+  .inv-meta-row{justify-content:space-between}
+  .inv-info{grid-template-columns:1fr;gap:14px}
+  .inv-items{font-size:.86rem}
+  .inv-items thead th{padding:8px 10px}
+  .inv-items tbody td{padding:10px}
+  .inv-totals-row{min-width:0;width:100%;gap:0;justify-content:space-between}
 }
 
 /* ── DASHBOARD ───────────────────────────────────────── */

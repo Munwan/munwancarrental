@@ -96,6 +96,22 @@ document.addEventListener('DOMContentLoaded', function () {
     const params = new URLSearchParams(window.location.search);
     const resumeRef = params.get('resume');
     if (resumeRef) {
+      // Check if this resume was from an extension flow. If so, we trap
+      // Back navigation — extensions create a pending booking the moment
+      // the customer clicks Continue, so going Back leaves an orphan
+      // unpaid record in the database AND a stale modal state. Easier
+      // to keep them on the payment page until they pay or cancel.
+      let isExtensionFlow = false;
+      try {
+        const ext = sessionStorage.getItem('munwan_pending_extension');
+        if (ext) {
+          const parsed = JSON.parse(ext);
+          if (parsed && parsed.extensionRef === resumeRef) {
+            isExtensionFlow = true;
+          }
+        }
+      } catch (_) {}
+
       fetch('/booking/summary/?reference=' + encodeURIComponent(resumeRef),
             { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(r => r.json())
@@ -117,20 +133,44 @@ document.addEventListener('DOMContentLoaded', function () {
             openBookingModal();
             currentStep = 2;
             updateStepUI();
-            // NOTE: we DO NOT clean ?resume= from the URL here.
-            // If the customer clicks Back in their browser (e.g. from the
-            // payment page) the ?resume= parameter must still be present
-            // so this handler re-fires and re-opens the modal at Step 2.
-            // Without preserving the param, Back lands on a blank booking
-            // page because the modal can't be reconstructed.
-            //
-            // If the booking is already paid, the summary endpoint
-            // returns {ok: false, already_paid: true} (handled below)
-            // which redirects to /booking/check/, so a stale refresh
-            // after payment doesn't re-prompt for payment.
+
+            // ── BACK-BUTTON TRAP for extension flow ────────────────
+            // Push a sentinel state. If the user clicks Back, popstate
+            // fires immediately (because we pushed). We re-push so they
+            // stay on the page. This is the standard "trap" pattern.
+            // The "X Close" button in the modal still works — it doesn't
+            // use history navigation.
+            if (isExtensionFlow) {
+              try {
+                history.pushState({ extTrap: true }, '', window.location.href);
+                window.addEventListener('popstate', function _extPop(ev) {
+                  // Re-push so back navigation stays here. We also show a
+                  // brief inline message so the user understands what's
+                  // happening rather than feeling like back is broken.
+                  history.pushState({ extTrap: true }, '', window.location.href);
+                  // Show a polite notice (idempotent — only adds one)
+                  if (!document.getElementById('extTrapNotice')) {
+                    const note = document.createElement('div');
+                    note.id = 'extTrapNotice';
+                    note.textContent = 'Please complete the extension payment or close this window.';
+                    note.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);' +
+                      'background:#1F2937;color:#fff;padding:10px 18px;border-radius:8px;' +
+                      'font-family:Poppins,sans-serif;font-size:.85rem;font-weight:600;' +
+                      'box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:9999;transition:opacity .3s';
+                    document.body.appendChild(note);
+                    setTimeout(function(){
+                      note.style.opacity = '0';
+                      setTimeout(function(){ if (note.parentNode) note.parentNode.removeChild(note); }, 400);
+                    }, 2400);
+                  }
+                });
+              } catch (_) {}
+            }
           } else if (data.already_paid) {
             // Already paid — redirect to /booking/check/ with reference so the
             // customer sees the PAID status instead of being asked to pay again.
+            // Also clean up the extension flag so a future Back works normally.
+            try { sessionStorage.removeItem('munwan_pending_extension'); } catch (_) {}
             window.location.replace('/booking/check/?reference=' + encodeURIComponent(data.reference));
           }
         })
@@ -335,6 +375,14 @@ function openBookingModal() {
   currentStep = 1; clearErrors(); updateStepUI();
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
+  // Reset any invoice-flow customisations from a previous corporate booking
+  // (the Step-2 dot is hidden + invoice action buttons appended). Without
+  // this, a customer who books corporate first then normal would see a
+  // broken step bar.
+  const s2 = document.getElementById('s2');
+  if (s2) s2.style.display = '';
+  const prevInvoiceActions = document.getElementById('invoiceActions');
+  if (prevInvoiceActions) prevInvoiceActions.remove();
   // Defeat browser autofill on password fields (Chrome ignores autocomplete=off,
   // but actively clearing fields after modal opens always works)
   ['b_password','b_password2'].forEach(id => { const el=$id(id); if(el) el.value=''; });
@@ -1143,8 +1191,18 @@ async function submitStep1() {
       // Stamp signature so a re-submit with same fields is a no-op
       data._sig = `${fields.vehicle}|${fields.pickup_date}|${fields.return_date}|${fields.email}|${fields.with_driver}|${fields.baby_seat}`;
       pendingBooking = data;
-      populateOrderSummary(data);
-      currentStep = 2; updateStepUI();
+      // ── Corporate hire: skip payment step, show invoice confirmation ──
+      // The server has already generated an invoice number, sent the email,
+      // and returned invoice_number/url/pdf_url. We swap Step 3's content
+      // to show the invoice success state instead of the normal "booking
+      // confirmed" message, then advance to Step 3.
+      if (data.is_invoiced) {
+        showInvoiceConfirmation(data);
+        currentStep = 3; updateStepUI();
+      } else {
+        populateOrderSummary(data);
+        currentStep = 2; updateStepUI();
+      }
       if (data.account_created) {
         applyLoggedInNav();
         toast('Account created! You\'re now signed in.', 'success');
@@ -1704,6 +1762,41 @@ async function submitPayment() {
     return;
   }
   // PayPal handled by its own button — nothing to do here
+}
+
+// ── Corporate hire: invoice confirmation (skips payment step) ─────
+// Swaps the standard "Booking Confirmed" Step-3 content for an
+// invoice-specific message + download/view buttons. The server has
+// already generated the invoice, sent the email, and stored the PDF URL.
+function showInvoiceConfirmation(data) {
+  setText('confirmIcon', '📄');
+  setText('confirmTitle', 'Invoice Sent!');
+  setText('confirmSub',
+    `An invoice for ${data.invoice_number || data.reference} has been emailed to you. ` +
+    `Payment is due by ${data.invoice_due || 'pickup date'}.`);
+  setText('confirmRef', 'Invoice: ' + (data.invoice_number || data.reference));
+  // Replace the default footer text under the ref pill with action buttons.
+  const confirmWrap = document.querySelector('#fs3 .confirm-wrap');
+  if (confirmWrap) {
+    // Remove any previously-injected invoice actions block (idempotent)
+    const prev = document.getElementById('invoiceActions');
+    if (prev) prev.remove();
+    const actions = document.createElement('div');
+    actions.id = 'invoiceActions';
+    actions.style.cssText = 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:18px 0 8px';
+    actions.innerHTML =
+      (data.invoice_pdf_url
+        ? `<a href="${data.invoice_pdf_url}" class="inv-btn inv-btn-secondary" download>⬇ Download PDF</a>`
+        : '') +
+      (data.invoice_url
+        ? `<a href="${data.invoice_url}" class="inv-btn inv-btn-secondary">📄 View Online</a>`
+        : '') +
+      `<a href="/?resume=${encodeURIComponent(data.reference)}" class="inv-btn inv-btn-primary">💳 Pay Invoice</a>`;
+    confirmWrap.appendChild(actions);
+  }
+  // Hide step bar's "Payment" middle dot — it doesn't apply here
+  const s2 = document.getElementById('s2');
+  if (s2) s2.style.display = 'none';
 }
 
 // ── Finalise payment (common) ─────────────────────────────

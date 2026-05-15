@@ -25,8 +25,12 @@ from .forms import (
 )
 from .middleware import get_client_ip
 from .models import (Booking, EmailOTP, PaymentLog, Review, SafariDestination,
-                     SafariPricing, SupportTicket, Vehicle)
+                     SafariPricing, SupportTicket, Vehicle, make_invoice_number)
 from .payments import PaystackBackend, MpesaBackend, PayPalBackend
+
+# Module-level alias so booking_submit can call it with underscore prefix
+# (keeping the public name in models.py clean while marking internal use here).
+_make_invoice_number = make_invoice_number
 
 logger = logging.getLogger('drivekenya.views')
 
@@ -877,6 +881,32 @@ def booking_submit(request):
 
         request.session['pending_booking_id'] = booking.id
 
+        # ── Corporate Hire: invoice instead of immediate payment ────────
+        # Corporate clients expect to receive an invoice they can process
+        # through their finance department, not a one-click checkout.
+        # We mark the booking as 'invoiced', generate an invoice number,
+        # set the due date (pickup minus 1 day), email the invoice, and
+        # signal the frontend to skip Step 2 (payment) and show the
+        # "invoice sent" confirmation directly.
+        is_corporate = (booking.hire_type == 'corporate')
+        if is_corporate:
+            from datetime import timedelta as _td
+            booking.payment_status   = 'invoiced'
+            booking.invoice_number   = _make_invoice_number()
+            booking.invoice_issued_at = timezone.now()
+            # Due 1 day before pickup so we have time to confirm the vehicle.
+            booking.invoice_due_date = booking.pickup_date - _td(days=1)
+            booking.save(update_fields=[
+                'payment_status', 'invoice_number',
+                'invoice_issued_at', 'invoice_due_date',
+            ])
+            # Email the invoice in a background thread (same as other emails)
+            try:
+                from .emails import send_invoice_email
+                _fire_email(send_invoice_email, booking)
+            except Exception:
+                logger.exception('Invoice email thread failed')
+
         return JsonResponse({
             'ok':              True,
             'reference':       booking.reference,
@@ -892,6 +922,18 @@ def booking_submit(request):
             'baby_seat':       booking.baby_seat,
             'baby_seat_fee':   '10.00' if booking.baby_seat else '0.00',
             'account_created': account_created,
+            # Corporate-specific fields — frontend uses these to switch to
+            # the invoice confirmation flow instead of the payment step.
+            'is_invoiced':     is_corporate,
+            'invoice_number':  booking.invoice_number if is_corporate else '',
+            'invoice_url':     (request.build_absolute_uri(
+                                    f'/invoice/{booking.reference}/'
+                                ) if is_corporate else ''),
+            'invoice_pdf_url': (request.build_absolute_uri(
+                                    f'/invoice/{booking.reference}/pdf/'
+                                ) if is_corporate else ''),
+            'invoice_due':     (booking.invoice_due_date.strftime('%Y-%m-%d')
+                                if is_corporate and booking.invoice_due_date else ''),
         })
 
     except Exception as exc:
@@ -1133,6 +1175,63 @@ def booking_extend(request):
         'extra_usd':            float(extra_usd),
         'new_return_date':      new_return.strftime('%Y-%m-%d'),
     })
+
+
+# ─────────────────────────────────────────────────────────────
+#  INVOICE (corporate hire)
+# ─────────────────────────────────────────────────────────────
+@require_GET
+def invoice_view(request, reference):
+    """
+    Public invoice page. Shown after a corporate-hire booking is submitted.
+    The email sent to the customer links here. Anyone with the booking
+    reference can view it — references are 6-char random hex, so this is
+    a capability URL (similar to a Dropbox link). For higher security we
+    could require email match, but for usability we just gate by reference.
+    """
+    try:
+        booking = Booking.objects.get(reference=reference, hire_type='corporate')
+    except Booking.DoesNotExist:
+        return render(request, 'core/invoice_not_found.html', status=404)
+
+    return render(request, 'core/invoice.html', {
+        'booking': booking,
+        # Pre-rendered absolute URLs for buttons
+        'pdf_url': request.build_absolute_uri(
+            f'/invoice/{booking.reference}/pdf/'),
+        'pay_url': request.build_absolute_uri(
+            f'/?resume={booking.reference}'),
+    })
+
+
+@require_GET
+def invoice_pdf(request, reference):
+    """
+    Returns the invoice as a PDF download.
+    Uses ReportLab — already in requirements.txt for the rest of the app.
+    Falls back to HTML download if PDF generation fails for any reason.
+    """
+    try:
+        booking = Booking.objects.get(reference=reference, hire_type='corporate')
+    except Booking.DoesNotExist:
+        return HttpResponse('Invoice not found', status=404)
+
+    try:
+        from .pdf_invoice import render_invoice_pdf
+        pdf_bytes = render_invoice_pdf(booking)
+    except Exception as exc:
+        logger.exception('PDF render failed for invoice %s: %s', reference, exc)
+        # Fall back to HTML — better than a 500.
+        return render(request, 'core/invoice.html', {
+            'booking': booking,
+            'pdf_url': '',
+            'pay_url': request.build_absolute_uri(f'/?resume={booking.reference}'),
+        })
+
+    fname = f'invoice-{booking.invoice_number or booking.reference}.pdf'
+    resp = HttpResponse(pdf_bytes, content_type='application/pdf')
+    resp['Content-Disposition'] = f'attachment; filename="{fname}"'
+    return resp
 
 
 # ─────────────────────────────────────────────────────────────

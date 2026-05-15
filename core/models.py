@@ -203,6 +203,14 @@ def make_reference():
     return f'DK-{year}-{uid}'
 
 
+def make_invoice_number():
+    """Invoice numbers follow INV-YYYY-XXXXXX (6 random hex chars)."""
+    from django.utils import timezone
+    year = timezone.now().year
+    uid  = str(uuid.uuid4()).replace('-', '').upper()[:6]
+    return f'INV-{year}-{uid}'
+
+
 class Booking(models.Model):
     HIRE_TYPE_CHOICES = [
         ('normal',    'Normal Hire'),
@@ -252,10 +260,11 @@ class Booking(models.Model):
         ('cancelled', 'Cancelled'),
     ]
     PAYMENT_STATUS_CHOICES = [
-        ('unpaid',   'Unpaid'),
-        ('paid',     'Paid'),
-        ('refunded', 'Refunded'),
-        ('failed',   'Failed'),
+        ('unpaid',    'Unpaid'),
+        ('invoiced',  'Invoiced'),
+        ('paid',      'Paid'),
+        ('refunded',  'Refunded'),
+        ('failed',    'Failed'),
     ]
 
     # Reference
@@ -319,6 +328,15 @@ class Booking(models.Model):
     payment_attempt_at = models.DateTimeField(null=True, blank=True,
                         help_text='Set when the customer initiates a payment (Paystack/PayPal/M-Pesa). Used to suppress reminders for in-progress checkouts.')
     payment_ref     = models.CharField(max_length=200, blank=True)  # Stripe/PayPal/M-Pesa txn id
+
+    # Invoice (corporate hire). Created when payment_status='invoiced'.
+    # Format: INV-2026-XXXXXX. Unique. Used in the public invoice URL.
+    invoice_number  = models.CharField(max_length=20, blank=True, db_index=True,
+                        help_text='Invoice number — set automatically for corporate bookings.')
+    invoice_issued_at = models.DateTimeField(null=True, blank=True,
+                        help_text='When the invoice was generated and emailed.')
+    invoice_due_date  = models.DateField(null=True, blank=True,
+                        help_text='Payment due by this date — defaults to pickup_date minus 1 day.')
 
     # Status
     status          = models.CharField(max_length=12, choices=STATUS_CHOICES, default='pending')
