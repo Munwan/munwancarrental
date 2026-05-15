@@ -1265,10 +1265,14 @@ def invoice_pdf(request, reference):
 
     fname = f'invoice-{booking.invoice_number or booking.reference}.pdf'
     resp = HttpResponse(pdf_bytes, content_type='application/pdf')
-    # Use inline disposition so the PDF previews in a new tab. Customers
-    # can then download from the preview if they want. attachment forces a
-    # download which feels disruptive (browser tab switches, file dumped).
-    resp['Content-Disposition'] = f'inline; filename="{fname}"'
+    # attachment forces the browser to download the PDF as a file instead
+    # of opening it in a new tab. The browser tab quirk where inline PDFs
+    # appear "Not Secure" (blob: URLs don't show the parent HTTPS lock) is
+    # avoided this way — the file just lands in the user's Downloads.
+    resp['Content-Disposition'] = f'attachment; filename="{fname}"'
+    # Hint the browser to keep the file out of bfcache — fresh download
+    # each click.
+    resp['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     return resp
 
 

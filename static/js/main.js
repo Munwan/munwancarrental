@@ -177,6 +177,68 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(() => {});
     }
 
+    // ── Back from payment: restore booking + form fields ─────────
+    // After submitStep1 succeeds we persist the inputs + booking response
+    // in sessionStorage. If the user clicks browser Back from the payment
+    // page (and there's no ?resume= since the home URL was clean), we
+    // detect that sessionStorage flag and:
+    //  1. Reopen the modal at Step 1
+    //  2. Pre-fill every form field from the persisted inputs
+    //  3. Set pendingBooking → next submit goes through edit_ref so the
+    //     server UPDATES the existing booking (no duplicate row created)
+    // We DON'T fire this if ?resume= is present (above), if ?book=1 is
+    // present (below), or if the stored data is older than 30 minutes
+    // (stale — probably from a previous session).
+    if (!resumeRef && params.get('book') !== '1') {
+      try {
+        const persisted = sessionStorage.getItem('munwan_pending_booking');
+        if (persisted) {
+          const parsed = JSON.parse(persisted);
+          const age = Date.now() - (parsed.ts || 0);
+          // 30-minute freshness window; older entries are stale
+          if (parsed && parsed.fields && parsed.booking && age < 30 * 60 * 1000) {
+            setTimeout(() => {
+              if (typeof openBookingModal !== 'function') return;
+              openBookingModal();
+              // Pre-fill every field we stored. The keys map 1:1 to the
+              // input IDs (prefixed b_) in home.html, with a couple of
+              // checkbox-style fields that need special handling.
+              const f = parsed.fields;
+              for (const [key, value] of Object.entries(f)) {
+                const el = document.getElementById('b_' + key);
+                if (!el || !value) continue;
+                if (el.type === 'checkbox') {
+                  el.checked = (value === 'on' || value === true);
+                } else {
+                  el.value = value;
+                }
+              }
+              // Hire-type pills aren't real inputs — call setHireType so
+              // pill visual state + per-mode field visibility re-applies.
+              if (f.hire_type && typeof setHireType === 'function') {
+                setHireType(f.hire_type);
+              }
+              // Restore pendingBooking — submitStep1 reads its .reference
+              // and sends it as edit_ref so the server UPDATES not creates.
+              pendingBooking = parsed.booking;
+              // Recompute pricing preview now that vehicle/dates are set
+              if (typeof updatePricingPreview === 'function') updatePricingPreview();
+              // Show a subtle hint that this is an edit, not a fresh form
+              if (typeof toast === 'function') {
+                toast('Editing your existing booking. Changes will update — not create a new one.', 'info');
+              }
+            }, 300);
+          } else if (age >= 30 * 60 * 1000) {
+            // Stale → clean up
+            sessionStorage.removeItem('munwan_pending_booking');
+          }
+        }
+      } catch (_) {
+        // Corrupted JSON or storage unavailable — discard silently
+        try { sessionStorage.removeItem('munwan_pending_booking'); } catch (__) {}
+      }
+    }
+
     // ── ?book=1 from external pages (e.g. blog Book Now button) ──
     if (params.get('book') === '1') {
       // Defer slightly so the page has finished rendering & scrolled
@@ -1305,6 +1367,19 @@ async function submitStep1() {
       // Stamp signature so a re-submit with same fields is a no-op
       data._sig = `${fields.vehicle}|${fields.pickup_date}|${fields.return_date}|${fields.email}|${fields.with_driver}|${fields.baby_seat}`;
       pendingBooking = data;
+      // Persist the inputs + the resulting booking so a browser Back from
+      // the payment page can restore the modal at Step 1 with the form
+      // pre-filled AND pendingBooking set — meaning the next submit goes
+      // through edit_ref and updates the booking rather than creating a
+      // duplicate. Stored under a hire-type-aware key so each flow has
+      // its own state.
+      try {
+        sessionStorage.setItem('munwan_pending_booking', JSON.stringify({
+          fields: fields,       // user inputs (for repopulating Step 1)
+          booking: data,        // server response (for resuming Step 2 / edit_ref)
+          ts: Date.now(),
+        }));
+      } catch (_) {}
       // ── Corporate hire: skip payment step, show invoice confirmation ──
       // The server has already generated an invoice number, sent the email,
       // and returned invoice_number/url/pdf_url. We swap Step 3's content
@@ -1704,6 +1779,14 @@ async function submitStep1Transfer() {
     pendingBooking = result;
     pendingBooking.is_transfer = true;
     pendingBooking._sig = sigNow;
+    // Persist for back-nav (same logic as rental flow — see submitStep1)
+    try {
+      sessionStorage.setItem('munwan_pending_booking', JSON.stringify({
+        fields: fields,
+        booking: pendingBooking,
+        ts: Date.now(),
+      }));
+    } catch (_) {}
     // Map transfer response into the shape populateOrderSummary expects.
     // This populates the standard "Your Booking" card on Step 2 so the
     // payment total isn't $0. We deliberately do NOT add a second
@@ -1825,6 +1908,14 @@ async function submitStep1Safari() {
     pendingBooking = result;
     pendingBooking.is_safari = true;
     pendingBooking._sig = sigNow;
+    // Persist for back-nav (same logic as rental flow)
+    try {
+      sessionStorage.setItem('munwan_pending_booking', JSON.stringify({
+        fields: fields,
+        booking: pendingBooking,
+        ts: Date.now(),
+      }));
+    } catch (_) {}
     populateOrderSummary({
       vehicle:    result.vehicle_name,
       days:       result.total_days,
@@ -1924,7 +2015,7 @@ function showInvoiceConfirmation(data) {
     actions.style.cssText = 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:18px 0 8px';
     actions.innerHTML =
       (data.invoice_pdf_url
-        ? `<a href="${data.invoice_pdf_url}" class="inv-btn inv-btn-secondary" target="_blank" rel="noopener">⬇ Download PDF</a>`
+        ? `<a href="${data.invoice_pdf_url}" class="inv-btn inv-btn-secondary" download>⬇ Download PDF</a>`
         : '') +
       (data.invoice_url
         ? `<a href="${data.invoice_url}" class="inv-btn inv-btn-secondary" target="_blank" rel="noopener">📄 View Online</a>`
@@ -2012,6 +2103,9 @@ async function finalisePayment(method, extra) {
         setText('confirmIcon','🎉'); setText('confirmTitle','Booking Confirmed!');
         setText('confirmSub','Your vehicle is reserved. A confirmation email has been sent.');
       }
+      // Payment succeeded — remove the pending-booking flag so a future
+      // back-nav doesn't restore a paid booking's data into the form.
+      try { sessionStorage.removeItem('munwan_pending_booking'); } catch (_) {}
       currentStep=3; updateStepUI();
     } else {
       // Translate gateway/server error into a customer-readable message.
