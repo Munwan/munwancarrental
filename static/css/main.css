@@ -871,6 +871,13 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 }
 .corporate-banner strong{color:var(--blue-dark)}
 
+/* Mobile: KRA PIN + Address on their own rows so labels + inputs fit
+   comfortably. The default .frow is 2-col which squeezes inputs to ~140px
+   on phones — hard to type long addresses into. */
+@media (max-width: 600px) {
+  #corporateFields .frow{grid-template-columns:1fr}
+}
+
 /* "✓ Extended" pill — replaces the Extend button when a booking has
    already been extended once. Conveys "this action is no longer
    available" without looking broken. Hover tooltip explains why. */
@@ -885,79 +892,121 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   EXTEND BOOKING MODAL — responsive 2-column on desktop
-   Mobile (<700px): single column, summary above charge box
-   Desktop (≥700px): two columns side-by-side → halves vertical height
+   EXTEND BOOKING MODAL — clean, simple, mobile-first.
+   Compact card (max 440px), single column always. Hierarchy:
+   1. Header (icon + title)
+   2. Summary (vehicle, current return) — small, low-contrast
+   3. Big number input ("How many extra days?")
+   4. Result panel (new return, total charge) — highlighted
+   5. Actions (Cancel, Continue)
    ────────────────────────────────────────────────────────────────── */
-.extend-modal-card{max-width:460px}
-/* Style the title + intro paragraph + ref pill that come from the
-   shared confirm-modal markup (no dedicated CSS existed before, so
-   the text was inheriting browser defaults). */
-.extend-modal-card .confirm-modal-icon{
-  font-size:2.4rem;margin-bottom:8px;text-align:center;line-height:1;
+.extend-modal-card{
+  max-width:440px;
+  /* Override default confirm-modal padding for tighter layout */
+  padding:24px 26px !important;
 }
-.extend-modal-card .confirm-modal-title{
-  font-family:'Poppins',sans-serif;font-weight:800;font-size:1.4rem;
-  color:var(--ink);text-align:center;margin:0 0 6px;letter-spacing:-.01em;
-}
-.extend-modal-card .confirm-modal-body{
-  color:var(--muted);font-size:.92rem;line-height:1.5;
-  text-align:center;margin:0 0 14px;
-}
-.extend-modal-card .confirm-modal-ref{
-  display:inline-block;margin:0 auto 16px;
-  padding:6px 14px;border-radius:100px;
-  background:rgba(21,101,255,.08);color:var(--blue-dark);
-  font-family:'Poppins',sans-serif;font-weight:700;font-size:.78rem;
-  letter-spacing:.08em;text-transform:uppercase;
-  /* Centre the inline-block — wrap in a flex-justify-center via parent */
-}
-/* Wrapper to centre the ref pill (the markup doesn't have one — use a
-   trick: the confirm-modal is text-aligned-center via the icon/title
-   block, so we just inherit). */
-.extend-modal-card .confirm-modal-ref:empty{display:none}
-.extend-grid{display:flex;flex-direction:column;gap:14px;text-align:left}
-.extend-col{display:flex;flex-direction:column;gap:14px}
-.extend-info-card{
-  background:#F8FAFC;border-radius:10px;padding:14px 16px;font-size:.86rem;
-}
-.extend-info-row{display:flex;justify-content:space-between;margin-bottom:6px}
-.extend-info-row:last-child{margin-bottom:0}
-.extend-info-row span{color:var(--muted)}
-.extend-info-row strong{color:var(--ink);text-align:right}
-.extend-days-field label{font-weight:700;font-size:.82rem;color:var(--ink);display:block;margin-bottom:6px}
-.extend-days-field input{
-  width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;
-  font-family:'Poppins',sans-serif;font-size:1rem;font-weight:700;
-}
-.extend-err{font-size:.78rem;color:#DC2626;margin-top:4px;min-height:1em}
-.extend-charge-card{
-  background:rgba(21,101,255,.06);border:1px solid rgba(21,101,255,.18);
-  border-radius:10px;padding:14px 16px;font-size:.86rem;
-}
-.extend-charge-totals{
-  margin-top:10px;padding-top:10px;border-top:1px dashed rgba(21,101,255,.25);
-}
-.extend-charge-main{
-  display:flex;justify-content:space-between;font-size:1rem;margin-bottom:8px;
-}
-.extend-charge-main span{font-weight:700;color:var(--ink)}
-.extend-charge-main strong{color:var(--blue-dark);font-size:1.15rem}
-.extend-charge-sub{
-  display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-top:3px;
-}
-.extend-charge-sub strong{color:var(--ink);font-weight:600}
 
-@media (min-width: 700px){
-  /* Wider card to make the 2-col layout breathe */
-  .extend-modal-card{max-width:720px}
-  /* Two columns side-by-side: details/days input on left, charge on right */
-  .extend-grid{
-    display:grid;grid-template-columns:1fr 1fr;gap:18px;
-    align-items:start;
+/* Header: icon + title side-by-side */
+.extend-head{
+  display:flex;align-items:center;gap:14px;
+  margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #EEF1F6;
+}
+.extend-head-icon{
+  font-size:1.8rem;width:44px;height:44px;flex-shrink:0;
+  background:linear-gradient(135deg, rgba(21,101,255,.12), rgba(0,212,255,.12));
+  border-radius:12px;display:flex;align-items:center;justify-content:center;
+}
+.extend-head-title{
+  font-family:'Poppins',sans-serif;font-weight:800;font-size:1.15rem;
+  color:var(--ink);margin:0;letter-spacing:-.01em;
+}
+.extend-head-sub{
+  font-size:.82rem;color:var(--muted);margin:2px 0 0;line-height:1.3;
+}
+
+/* Summary: vehicle + dates, low-key */
+.extend-summary{margin-bottom:18px}
+.extend-summary-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-size:.86rem;padding:5px 0;
+}
+.extend-summary-label{color:var(--muted)}
+.extend-summary-val{color:var(--ink);font-weight:600;text-align:right}
+
+/* Big input: where the customer's attention goes */
+.extend-input-block{margin-bottom:18px}
+.extend-input-label{
+  display:block;font-size:.78rem;font-weight:700;color:var(--ink);
+  margin-bottom:8px;letter-spacing:.01em;
+}
+.extend-input{
+  width:100%;padding:14px 18px;
+  border:2px solid var(--border);border-radius:10px;
+  font-family:'Poppins',sans-serif;font-size:1.5rem;font-weight:800;
+  color:var(--ink);text-align:center;
+  transition:border-color .15s;
+}
+.extend-input:focus{border-color:var(--blue);outline:none}
+.extend-err{font-size:.78rem;color:#DC2626;margin-top:6px;min-height:1em;text-align:center}
+
+/* Result: highlighted total + new return */
+.extend-result{
+  background:linear-gradient(135deg, rgba(21,101,255,.06), rgba(0,212,255,.06));
+  border:1px solid rgba(21,101,255,.15);
+  border-radius:12px;padding:14px 16px;margin-bottom:18px;
+}
+.extend-result-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-size:.86rem;color:var(--ink);margin-bottom:10px;
+}
+.extend-result-row strong{font-weight:700}
+.extend-result-total{
+  display:flex;justify-content:space-between;align-items:center;
+  padding-top:10px;border-top:1px dashed rgba(21,101,255,.25);
+}
+.extend-result-total span{font-size:.86rem;font-weight:600;color:var(--ink)}
+.extend-result-total strong{
+  font-size:1.4rem;font-weight:800;color:var(--blue-dark);
+  letter-spacing:-.02em;
+}
+.extend-result-sub{
+  display:flex;justify-content:flex-end;gap:6px;
+  font-size:.74rem;color:var(--muted);margin-top:4px;
+}
+
+/* Actions: Cancel / Continue */
+.extend-actions{display:flex;gap:10px}
+.extend-btn{
+  flex:1;padding:13px 18px;border-radius:10px;border:none;cursor:pointer;
+  font-family:'Poppins',sans-serif;font-weight:700;font-size:.92rem;
+  transition:transform .15s, background .15s;
+}
+.extend-btn:active{transform:translateY(1px)}
+.extend-btn-cancel{
+  background:var(--light);color:var(--muted);
+  border:1.5px solid var(--border);
+}
+.extend-btn-cancel:hover{background:#EEF1F6}
+.extend-btn-ok{
+  background:var(--blue);color:#fff;
+  box-shadow:0 4px 12px rgba(21,101,255,.3);
+}
+.extend-btn-ok:hover{background:var(--blue-dark)}
+.extend-btn-ok:disabled{
+  background:var(--muted);box-shadow:none;cursor:not-allowed;opacity:.6;
+}
+
+/* Mobile: tighten padding, full-width on small screens */
+@media (max-width: 480px) {
+  .extend-modal-card{
+    padding:20px 18px !important;
+    margin:0 8px;
   }
-  /* Each col flows vertically with consistent gap */
-  .extend-col{gap:14px}
+  .extend-head-icon{width:38px;height:38px;font-size:1.5rem}
+  .extend-head-title{font-size:1.05rem}
+  .extend-input{font-size:1.3rem;padding:12px 16px}
+  .extend-result-total strong{font-size:1.2rem}
+  .extend-actions{flex-direction:column-reverse}
 }
 
 /* ── INVOICE PAGE ──────────────────────────────────────────────── */

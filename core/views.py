@@ -434,6 +434,12 @@ def _booking_submit_safari(request):
     booking.total_eur        = total_eur
     booking.terms_accepted   = bool(P.get('terms_accepted'))
     booking.safari_breakdown = breakdown
+    # Safari is never corporate — keep company fields explicitly empty so
+    # the NOT NULL DB constraint (added by migration 0015) is satisfied
+    # even if the Booking() constructor doesn't apply field defaults.
+    booking.company_name     = ''
+    booking.company_kra_pin  = ''
+    booking.company_address  = ''
 
     if request.user.is_authenticated:
         booking.user = request.user
@@ -642,6 +648,10 @@ def _booking_submit_transfer(request):
     booking.total_kes       = Decimal(str(q['kes_total']))
     booking.total_eur       = Decimal(str(q['eur_total']))
     booking.terms_accepted  = bool(P.get('terms_accepted'))
+    # Transfer is never corporate — empty strings prevent NOT NULL violation
+    booking.company_name     = ''
+    booking.company_kra_pin  = ''
+    booking.company_address  = ''
 
     if request.user.is_authenticated:
         booking.user = request.user

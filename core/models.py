@@ -277,6 +277,16 @@ class Booking(models.Model):
     email           = models.EmailField()
     phone           = models.CharField(max_length=30)
     nationality     = models.CharField(max_length=60, default='Kenya')
+    # Corporate hire: company information. The "Customer" fields above
+    # represent the company REPRESENTATIVE making the booking. The fields
+    # below identify the COMPANY being billed. Both invoices and emails
+    # address the company by name when these are set.
+    company_name     = models.CharField(max_length=120, blank=True, default='',
+                          help_text='Company name (corporate hire only).')
+    company_kra_pin  = models.CharField(max_length=20, blank=True, default='',
+                          help_text='KRA PIN — required on invoice for tax purposes.')
+    company_address  = models.CharField(max_length=300, blank=True, default='',
+                          help_text='Company billing address.')
 
     # Vehicle & hire details
     vehicle         = models.ForeignKey(Vehicle, on_delete=models.PROTECT, related_name='bookings')
