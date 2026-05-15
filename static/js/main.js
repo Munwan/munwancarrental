@@ -561,9 +561,26 @@ function setHireType(type) {
   if (safari)   safari.style.display   = isSafari   ? '' : 'none';
 
   // Show/hide corporate-specific fields block. Live INSIDE rentalFields,
-  // visible only when corporate is the active hire type.
+  // visible only when corporate is the active hire type. On mobile the
+  // user may be scrolled past the new fields when they appear — scroll
+  // them into view so they're visible and obvious.
   const corporate = $id('corporateFields');
-  if (corporate) corporate.style.display = (type === 'corporate') ? '' : 'none';
+  if (corporate) {
+    const wasHidden = corporate.style.display === 'none';
+    corporate.style.display = (type === 'corporate') ? '' : 'none';
+    if (type === 'corporate' && wasHidden) {
+      // Defer so the layout settles (display:'' transitions take effect)
+      setTimeout(() => {
+        const companyNameInput = $id('b_company_name');
+        if (companyNameInput) {
+          companyNameInput.scrollIntoView({behavior: 'smooth', block: 'center'});
+          // Focus the input so mobile keyboard pops up — makes it
+          // immediately clear this is where the user should type
+          companyNameInput.focus({preventScroll: true});
+        }
+      }, 60);
+    }
+  }
 
   // Toggle required attribute per visible section
   // Rental fields
@@ -1313,6 +1330,16 @@ async function submitStep1() {
           toast('An account with this email already exists. Please sign in first, or untick "Create an account".', 'error');
           const emailEl = $id('b_email');
           if (emailEl) emailEl.scrollIntoView({behavior:'smooth', block:'center'});
+        } else {
+          // Generic field error — scroll the FIRST errored field into view
+          // and show a toast so mobile users (who may have scrolled past
+          // the error) understand what went wrong.
+          const firstKey = Object.keys(data.errors)[0];
+          const firstEl = $id('b_' + firstKey);
+          if (firstEl) firstEl.scrollIntoView({behavior:'smooth', block:'center'});
+          const firstMsg = data.errors[firstKey];
+          const msg = Array.isArray(firstMsg) ? firstMsg[0] : String(firstMsg);
+          toast(msg || 'Please fix the highlighted field.', 'error');
         }
       } else {
         toast(data.error || 'Booking failed. Please check all fields.', 'error');
