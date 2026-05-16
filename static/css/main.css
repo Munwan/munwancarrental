@@ -681,6 +681,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .plogo{padding:2px 7px;border-radius:4px;font-size:.72rem;font-weight:800;border:1px solid var(--border);background:var(--white)}
 .plogo-visa{color:#1a1f71}.plogo-mc{color:#eb001b}.plogo-mpesa{color:#00a550;border-color:#00a550}
 .plogo-apple{color:#000;border-color:#000;display:inline-flex;align-items:center}
+.plogo-apple svg{display:block;margin-top:-1px}
 .pay-panel{animation:fadeUp .22s ease}
 .fw-pay-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));
   color:var(--white);border:none;border-radius:var(--radius);
@@ -695,6 +696,13 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   text-transform:uppercase;color:var(--muted)}
 .pay-accepted-logos{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
 .pay-accepted-logos .plogo{padding:4px 9px;font-size:.74rem}
+
+/* Mobile: hide the "We accept" caption — the logos speak for themselves
+   and the label adds vertical clutter on a small payment screen. */
+@media (max-width: 600px) {
+  .pay-accepted-label{display:none}
+  .pay-accepted{margin-top:12px}
+}
 
 /* Cleaner caption under the pay button — replaces the bulky info boxes */
 .pay-fineprint{margin-top:10px;text-align:center;font-size:.78rem;

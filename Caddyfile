@@ -28,8 +28,21 @@ munwancarrental.com, www.munwancarrental.com {
   header {
     Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
     X-Content-Type-Options    "nosniff"
-    X-Frame-Options           "DENY"
+    X-Frame-Options           "SAMEORIGIN"
     Referrer-Policy           "strict-origin-when-cross-origin"
+
+    # ── Content Security Policy ──
+    # script-src/style-src include 'unsafe-inline' because the site uses
+    # onclick= handlers, inline <style> blocks, and JSON-LD. Paystack
+    # domains allowed for the payment popup. Cloudflare insights allowed
+    # since the site is CF-proxied.
+    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.paystack.co https://*.paystack.co https://*.paystack.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://*.paystack.co https://*.paystack.com; frame-src 'self' https://*.paystack.co https://*.paystack.com https://checkout.paystack.com; form-action 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'"
+
+    # ── Permissions Policy ──
+    # Disables APIs the site doesn't use. payment=(self) lets the
+    # Paystack same-origin payment bridge work.
+    Permissions-Policy "geolocation=(self), camera=(), microphone=(), payment=(self), usb=(), magnetometer=(), accelerometer=(), gyroscope=(), interest-cohort=()"
+
     -Server
   }
 
