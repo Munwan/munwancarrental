@@ -185,59 +185,14 @@ document.addEventListener('DOMContentLoaded', function () {
     //  1. Reopen the modal at Step 1
     //  2. Pre-fill every form field from the persisted inputs
     //  3. Set pendingBooking → next submit goes through edit_ref so the
-    //     server UPDATES the existing booking (no duplicate row created)
-    // We DON'T fire this if ?resume= is present (above), if ?book=1 is
-    // present (below), or if the stored data is older than 30 minutes
-    // (stale — probably from a previous session).
-    if (!resumeRef && params.get('book') !== '1') {
-      try {
-        const persisted = sessionStorage.getItem('munwan_pending_booking');
-        if (persisted) {
-          const parsed = JSON.parse(persisted);
-          const age = Date.now() - (parsed.ts || 0);
-          // 30-minute freshness window; older entries are stale
-          if (parsed && parsed.fields && parsed.booking && age < 30 * 60 * 1000) {
-            setTimeout(() => {
-              if (typeof openBookingModal !== 'function') return;
-              openBookingModal();
-              // Pre-fill every field we stored. The keys map 1:1 to the
-              // input IDs (prefixed b_) in home.html, with a couple of
-              // checkbox-style fields that need special handling.
-              const f = parsed.fields;
-              for (const [key, value] of Object.entries(f)) {
-                const el = document.getElementById('b_' + key);
-                if (!el || !value) continue;
-                if (el.type === 'checkbox') {
-                  el.checked = (value === 'on' || value === true);
-                } else {
-                  el.value = value;
-                }
-              }
-              // Hire-type pills aren't real inputs — call setHireType so
-              // pill visual state + per-mode field visibility re-applies.
-              if (f.hire_type && typeof setHireType === 'function') {
-                setHireType(f.hire_type);
-              }
-              // Restore pendingBooking — submitStep1 reads its .reference
-              // and sends it as edit_ref so the server UPDATES not creates.
-              pendingBooking = parsed.booking;
-              // Recompute pricing preview now that vehicle/dates are set
-              if (typeof updatePricingPreview === 'function') updatePricingPreview();
-              // Show a subtle hint that this is an edit, not a fresh form
-              if (typeof toast === 'function') {
-                toast('Editing your existing booking. Changes will update — not create a new one.', 'info');
-              }
-            }, 300);
-          } else if (age >= 30 * 60 * 1000) {
-            // Stale → clean up
-            sessionStorage.removeItem('munwan_pending_booking');
-          }
-        }
-      } catch (_) {
-        // Corrupted JSON or storage unavailable — discard silently
-        try { sessionStorage.removeItem('munwan_pending_booking'); } catch (__) {}
-      }
-    }
+    // NOTE: We used to restore a booking from sessionStorage here on
+    // page load (for browser-Back from the payment page). That was
+    // unreliable — it depended on the customer landing back on "/" with
+    // a clean reload, which doesn't always happen. It's been replaced by
+    // an in-page back-button trap installed when the payment step opens
+    // (see _installPaymentBackTrap in updateStepUI). The trap keeps the
+    // customer on the payment step instead of letting Back navigate away
+    // to a state we then have to reconstruct.
 
     // ── ?book=1 from external pages (e.g. blog Book Now button) ──
     if (params.get('book') === '1') {
@@ -561,6 +516,9 @@ function openBookingModalWithType(type) {
 function closeBookingModal() {
   const overlay = $id('bookingOverlay'); if (overlay) overlay.classList.remove('open');
   document.body.style.overflow = '';
+  // Remove the payment-step Back trap if it was installed — otherwise a
+  // popstate handler would linger after the modal is gone.
+  if (typeof _removePaymentBackTrap === 'function') _removePaymentBackTrap();
 }
 
 // ── Field toggles ─────────────────────────────────────────
@@ -1198,12 +1156,113 @@ function updateStepUI() {
   const titles=['Your Booking Details','Secure Payment','Booking Confirmed'];
   setText('modalTitle', titles[currentStep-1]);
 
+  // Install / remove the browser-Back trap depending on the step.
+  // Step 2 (payment) gets a trap; any other step removes it.
+  if (currentStep === 2) {
+    _installPaymentBackTrap();
+  } else {
+    _removePaymentBackTrap();
+  }
+
   // Scroll modal body to top when changing step — so user sees the start
   // of the new step (payment summary, not the buttons at the bottom)
   setTimeout(() => {
     const body = document.querySelector('.modal-body');
     if (body) body.scrollTop = 0;
   }, 0);
+}
+
+// ── Browser-Back trap for the payment step ────────────────────────
+// Problem: once a customer is on the payment step, browser Back behaved
+// unpredictably — sometimes restoring the form, sometimes landing on a
+// blank page, sometimes letting them create a duplicate booking.
+//
+// Solution: a deterministic trap.
+//  • We push a history sentinel when Step 2 opens.
+//  • When the customer presses Back, popstate fires:
+//     – If the booking is < 10 min old → we treat Back as "edit my
+//       booking": close to Step 1 with the form intact. The next submit
+//       carries edit_ref so the SAME booking is updated, no duplicate.
+//     – If the booking is ≥ 10 min old → we re-push the sentinel so the
+//       customer stays on the payment page, and show a short notice.
+//       (After 10 min the booking is "settled" — same window as the
+//        reminder email — and silently editing it is more confusing
+//        than helpful.)
+//  • Leaving Step 2 (paying, or going back to Step 1 via the in-modal
+//    Back button) removes the trap.
+let _payBackTrapInstalled = false;
+let _payBackTrapHandler = null;
+
+function _bookingAgeMs() {
+  // pendingBooking carries no timestamp itself; we read the sessionStorage
+  // snapshot's ts. Falls back to "fresh" (0) if not found.
+  try {
+    const persisted = sessionStorage.getItem('munwan_pending_booking');
+    if (persisted) {
+      const parsed = JSON.parse(persisted);
+      if (parsed && parsed.ts) return Date.now() - parsed.ts;
+    }
+  } catch (_) {}
+  return 0;
+}
+
+function _installPaymentBackTrap() {
+  if (_payBackTrapInstalled) return;
+  _payBackTrapInstalled = true;
+
+  // Push a sentinel entry so the FIRST Back press lands here, not on the
+  // previous page. Without this, one Back press would leave the site.
+  try { history.pushState({ payTrap: true }, '', window.location.href); }
+  catch (_) {}
+
+  _payBackTrapHandler = function(ev) {
+    // Only act while we're actually on the payment step.
+    if (currentStep !== 2) return;
+
+    const ageMs = _bookingAgeMs();
+    const TEN_MIN = 10 * 60 * 1000;
+
+    if (ageMs < TEN_MIN) {
+      // Fresh booking → Back means "let me edit". Drop to Step 1 with the
+      // form still populated. pendingBooking stays set, so the re-submit
+      // updates the existing booking (edit_ref) instead of creating one.
+      currentStep = 1;
+      updateStepUI();   // this also removes the trap (currentStep !== 2)
+      if (typeof toast === 'function') {
+        toast('You can edit your booking. Changes update it — no new booking is created.', 'info');
+      }
+    } else {
+      // Settled booking (≥10 min) → trap on the payment page. Re-push the
+      // sentinel so this Back press is absorbed, and tell the customer.
+      try { history.pushState({ payTrap: true }, '', window.location.href); }
+      catch (_) {}
+      if (!document.getElementById('payTrapNotice')) {
+        const note = document.createElement('div');
+        note.id = 'payTrapNotice';
+        note.textContent = 'Please complete payment, or close this window to start a new booking.';
+        note.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);' +
+          'background:#1F2937;color:#fff;padding:11px 18px;border-radius:8px;' +
+          'font-family:Poppins,sans-serif;font-size:.85rem;font-weight:600;' +
+          'box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:99999;max-width:90vw;text-align:center';
+        document.body.appendChild(note);
+        setTimeout(function(){
+          note.style.transition = 'opacity .4s';
+          note.style.opacity = '0';
+          setTimeout(function(){ if (note.parentNode) note.parentNode.removeChild(note); }, 450);
+        }, 2800);
+      }
+    }
+  };
+  window.addEventListener('popstate', _payBackTrapHandler);
+}
+
+function _removePaymentBackTrap() {
+  if (!_payBackTrapInstalled) return;
+  _payBackTrapInstalled = false;
+  if (_payBackTrapHandler) {
+    window.removeEventListener('popstate', _payBackTrapHandler);
+    _payBackTrapHandler = null;
+  }
 }
 
 function nextStep() { if (currentStep===1) submitStep1(); }

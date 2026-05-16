@@ -690,17 +690,12 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .fw-pay-btn:hover{opacity:.9;transform:translateY(-1px)}
 .fw-pay-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
 
-/* "We accept" logo strip below the single Pay button */
+/* Accepted-payment logo strip below the single Pay button */
 .pay-accepted{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:16px}
-.pay-accepted-label{font-size:.7rem;font-weight:800;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--muted)}
 .pay-accepted-logos{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
 .pay-accepted-logos .plogo{padding:4px 9px;font-size:.74rem}
 
-/* Mobile: hide the "We accept" caption — the logos speak for themselves
-   and the label adds vertical clutter on a small payment screen. */
 @media (max-width: 600px) {
-  .pay-accepted-label{display:none}
   .pay-accepted{margin-top:12px}
 }
 
