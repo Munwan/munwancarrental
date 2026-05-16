@@ -58,4 +58,4 @@ static/images_original/
 # ─────────────────────────────────────────────────────
 build/
 dist/
-*.zip
+*.zipbackups/
