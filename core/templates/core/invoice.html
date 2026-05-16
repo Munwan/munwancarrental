@@ -42,7 +42,7 @@
       {% endif %}
       <div class="inv-actions">
         {% if pdf_url %}
-        <a href="{{ pdf_url }}" class="inv-btn inv-btn-secondary" download>
+        <a href="{{ pdf_url }}" class="inv-btn inv-btn-secondary" target="_blank" rel="noopener">
           ⬇ Download PDF
         </a>
         {% endif %}
@@ -162,7 +162,7 @@
       <h3>Payment Instructions</h3>
       <p>
         <strong>Pay online:</strong> Click the <strong>Pay Invoice</strong>
-        button above to settle by Visa, Mastercard, M-Pesa, or PayPal. Payment
+        button above to settle by Visa, Mastercard, M-Pesa, or Apple Pay. Payment
         is due by <strong>{{ booking.invoice_due_date|date:"d M Y" }}</strong>
         — one day before vehicle pickup.
       </p>

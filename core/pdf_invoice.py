@@ -244,7 +244,7 @@ def render_invoice_pdf(booking) -> bytes:
         Paragraph(
             '<b>Pay online:</b> Visit '
             f'<font color="#1565FF">munwancarrental.com/?resume={booking.reference}</font> '
-            'to settle this invoice by Visa, Mastercard, M-Pesa, or PayPal. '
+            'to settle this invoice by Visa, Mastercard, M-Pesa, or Apple Pay. '
             f'Payment is due by <b>{booking.invoice_due_date.strftime("%d %b %Y") if booking.invoice_due_date else "pickup date"}</b> '
             f'— one day before vehicle pickup.',
             body),

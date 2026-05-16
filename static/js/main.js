@@ -1467,26 +1467,20 @@ function populateOrderSummary(data) {
 }
 
 // ── Payment tab selection ─────────────────────────────────
+// Only one payment method now (Paystack — handles Card/M-Pesa/Apple Pay
+// inside its popup). This function is kept as a near-no-op so any cached
+// HTML or call site doesn't break; it just ensures the Paystack panel is
+// visible and the Continue button hidden (Paystack has its own button).
 function selectPayTab(tab) {
-  currentPayTab = tab;
-  ['paystack','paypal'].forEach(t => {
-    const pt=$id('ptab_'+t), pp=$id('panel_'+t);
-    if (pt) pt.classList.toggle('active', t===tab);
-    if (pp) pp.style.display = t===tab ? '' : 'none';
-  });
-  // Keep the hidden current_pay_method input in sync so submitPayment()
-  // routes correctly. paystack_card is the value for card-or-mpesa via
-  // Paystack inline. paypal disables the Pay button (PayPal renders own).
+  currentPayTab = 'paystack';
+  const pp = $id('panel_paystack');
+  if (pp) pp.style.display = '';
   const meth = $id('current_pay_method');
-  if (meth) meth.value = tab === 'paypal' ? 'paypal' : 'paystack_card';
-
-  // BOTH payment options have their OWN inline pay button (Paystack's
-  // "🔒 Pay with Card or M-Pesa" and PayPal's rendered button). The
-  // modal's Continue button is redundant on Step 2 — hide it always.
+  if (meth) meth.value = 'paystack_card';
+  // Paystack has its own inline "Pay Securely" button — the modal's
+  // Continue button is redundant on Step 2.
   const payBtn = $id('btnNext');
   if (payBtn) payBtn.style.display = 'none';
-
-  if (tab==='paypal') initPayPal();
 }
 
 // ── Paystack sub-tabs (legacy, no longer in DOM) ──────────
@@ -1593,106 +1587,10 @@ function triggerPaystackCard() {
 // ── M-Pesa STK push ───────────────────────────────────────
 // REMOVED — Daraja direct integration retired in favour of Paystack's
 // unified payment popup, which handles M-Pesa, card, bank transfer,
-// and USSD inside a single "Pay with Card or M-Pesa" button.
+// and USSD inside a single "Pay Securely" button.
 // The historical /payments/mpesa/callback/ URL is still wired up so
 // any old in-flight callbacks get logged, but new bookings flow
 // through Paystack only.
-
-
-// ── PayPal SDK & button management ─────────────────────────
-// Bug we're solving: the PayPal button container could end up rendered
-// twice (e.g. user toggles tab, SDK loads, render fires, then a second
-// click while SDK already loaded re-renders without clearing). The result
-// was a blank popup behind the live button — clicks bounced into the
-// stale instance. Fix: a single render guard + always clear the container
-// before re-rendering.
-let paypalInited = false;
-let paypalRendered = false;
-
-function initPayPal() {
-  const clientId = ($id('paypalClientId')||{}).value || '';
-  const c = $id('paypal-button-container');
-  if (!c) return;
-  if (!clientId || clientId.includes('REPLACE_ME')) {
-    c.innerHTML = '<p style="color:var(--muted);font-size:.82rem;padding:10px 0">PayPal not configured yet. Add PAYPAL_CLIENT_ID to .env</p>';
-    return;
-  }
-
-  // Log client ID format for diagnostics. Live IDs start with "A" and are ~80
-  // chars. Sandbox IDs start with "AS" or similar. If you see a mismatch
-  // between PAYPAL_MODE and the prefix, that's why popups go blank.
-  console.log('[PayPal] Initialising with client ID prefix:', clientId.slice(0, 4));
-
-  if (window.paypal) {
-    // SDK already loaded — render (or re-render) the button
-    renderPayPalButton();
-    return;
-  }
-
-  // SDK not yet loaded
-  if (paypalInited) {
-    // We've already started loading; another load tag would create
-    // duplicate window.paypal globals. Just wait — onload will fire.
-    return;
-  }
-  paypalInited = true;
-
-  const s = document.createElement('script');
-  s.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture`;
-  s.async = true;
-  s.onload = () => {
-    console.log('[PayPal] SDK loaded successfully');
-    renderPayPalButton();
-  };
-  s.onerror = () => {
-    console.error('[PayPal] SDK failed to load — check client ID, network, ad-blockers');
-    paypalInited = false;
-    if (c) {
-      c.innerHTML = '<p style="color:#DC2626;font-size:.82rem;padding:10px 0">PayPal could not load. Please pay with Card / M-Pesa, or disable any ad-blockers.</p>';
-    }
-  };
-  document.head.appendChild(s);
-}
-
-function renderPayPalButton() {
-  const c = $id('paypal-button-container');
-  if (!c || !window.paypal) return;
-  // Always wipe the container before rendering — prevents the
-  // "blank popup behind a live button" bug from duplicate renders.
-  c.innerHTML = '';
-  paypalRendered = false;
-
-  try {
-    paypal.Buttons({
-      style: { layout: 'vertical', height: 45 },
-      createOrder: async () => {
-        markPaymentAttempt();
-        const r = await postJSON('/payments/paypal/create/', {});
-        if (r && r.ok) return r.orderID;
-        throw new Error((r && r.error) || 'PayPal order creation failed');
-      },
-      onApprove: async (data) => {
-        await finalisePayment('paypal', {
-          paypal_order_id: data.orderID,
-          payment_method: 'paypal',
-        });
-      },
-      onError: err => {
-        console.error('PayPal error:', err);
-        toast('PayPal error: ' + (err && err.message ? err.message : 'try again'), 'error');
-      },
-      onCancel: () => {
-        // User closed the popup — silently allow them to try again
-      },
-    }).render('#paypal-button-container').then(() => {
-      paypalRendered = true;
-    }).catch(err => {
-      console.error('PayPal render failed:', err);
-    });
-  } catch (err) {
-    console.error('PayPal init failed:', err);
-  }
-}
 
 // ── Step 1 — AIRPORT TRANSFER variant ──────────────────────
 async function submitStep1Transfer() {
@@ -1973,12 +1871,8 @@ function renderTransferSummary(r) {
 // All Paystack-handled methods (card, M-Pesa, bank, USSD) go through
 // triggerPaystackCard() — the popup itself lets the customer choose.
 async function submitPayment() {
-  const method = ($id('current_pay_method')||{}).value || 'paystack_card';
-  if (method === 'paystack_card' || method === 'paystack_mpesa') {
-    triggerPaystackCard();
-    return;
-  }
-  // PayPal handled by its own button — nothing to do here
+  // Only Paystack remains — its popup handles Card / M-Pesa / Apple Pay.
+  triggerPaystackCard();
 }
 
 // ── Corporate hire: invoice confirmation (skips payment step) ─────
@@ -2015,7 +1909,7 @@ function showInvoiceConfirmation(data) {
     actions.style.cssText = 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:18px 0 8px';
     actions.innerHTML =
       (data.invoice_pdf_url
-        ? `<a href="${data.invoice_pdf_url}" class="inv-btn inv-btn-secondary" download>⬇ Download PDF</a>`
+        ? `<a href="${data.invoice_pdf_url}" class="inv-btn inv-btn-secondary" target="_blank" rel="noopener">⬇ Download PDF</a>`
         : '') +
       (data.invoice_url
         ? `<a href="${data.invoice_url}" class="inv-btn inv-btn-secondary" target="_blank" rel="noopener">📄 View Online</a>`

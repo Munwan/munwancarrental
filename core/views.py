@@ -26,7 +26,7 @@ from .forms import (
 from .middleware import get_client_ip
 from .models import (Booking, EmailOTP, PaymentLog, Review, SafariDestination,
                      SafariPricing, SupportTicket, Vehicle, make_invoice_number)
-from .payments import PaystackBackend, MpesaBackend, PayPalBackend
+from .payments import PaystackBackend, MpesaBackend
 
 # Module-level alias so booking_submit can call it with underscore prefix
 # (keeping the public name in models.py clean while marking internal use here).
@@ -113,7 +113,6 @@ def home(request):
         'vehicles':           vehicles,
         'reviews':            reviews,
         'paystack_pk':        getattr(settings, 'PAYSTACK_PUBLIC_KEY', ''),
-        'paypal_client_id':   getattr(settings, 'PAYPAL_CLIENT_ID', ''),
         'whatsapp_number':    getattr(settings, 'WHATSAPP_NUMBER', '254727745907'),
         'pickup_choices':     Booking.PICKUP_LOCATION_CHOICES,
         'transfer_constants_json': transfer_constants_json,
@@ -1265,14 +1264,12 @@ def invoice_pdf(request, reference):
 
     fname = f'invoice-{booking.invoice_number or booking.reference}.pdf'
     resp = HttpResponse(pdf_bytes, content_type='application/pdf')
-    # attachment forces the browser to download the PDF as a file instead
-    # of opening it in a new tab. The browser tab quirk where inline PDFs
-    # appear "Not Secure" (blob: URLs don't show the parent HTTPS lock) is
-    # avoided this way — the file just lands in the user's Downloads.
-    resp['Content-Disposition'] = f'attachment; filename="{fname}"'
-    # Hint the browser to keep the file out of bfcache — fresh download
-    # each click.
-    resp['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    # inline: the browser opens the PDF in its native viewer. Because this
+    # is served from a real HTTPS URL (/invoice/<ref>/pdf/) — not a blob:
+    # URL — the address bar shows the normal padlock, no "Not Secure"
+    # warning. The customer can save from the viewer's download button.
+    resp['Content-Disposition'] = f'inline; filename="{fname}"'
+    resp['Content-Length'] = str(len(pdf_bytes))
     return resp
 
 
@@ -1283,7 +1280,7 @@ def invoice_pdf(request, reference):
 def payment_attempt(request):
     """
     Lightweight endpoint hit by the frontend the moment a customer clicks any
-    payment button (Paystack popup, PayPal Smart Button, or M-Pesa "Send STK").
+    payment button (Paystack popup or M-Pesa "Send STK").
     Stamps `payment_attempt_at` so the reminder cron skips this booking — the
     customer is actively in checkout, no need to nag them.
     """
@@ -1333,10 +1330,6 @@ def payment_process(request):
             result = PaystackBackend.verify(
                 booking, cd.get('paystack_ref', ''))
 
-        elif method == 'paypal':
-            result = PayPalBackend.capture_order(
-                booking, cd.get('paypal_order_id', ''))
-
         elif method == 'mpesa':
             result = MpesaBackend.stk_push(booking, cd.get('mpesa_phone', ''))
             if result['success']:
@@ -1360,7 +1353,7 @@ def payment_process(request):
             else:
                 return _json_error(result.get('message', 'M-Pesa push failed.'))
 
-        # Synchronous result (Paystack / PayPal)
+        # Synchronous result (Paystack)
         PaymentLog.objects.create(
             booking      = booking,
             method       = method,
@@ -1521,27 +1514,6 @@ def paystack_webhook(request):
         return HttpResponse(status=400)
 
     return HttpResponse(status=200)
-
-
-# ─────────────────────────────────────────────────────────────
-#  PAYPAL CREATE ORDER
-# ─────────────────────────────────────────────────────────────
-@require_POST
-def paypal_create_order(request):
-    try:
-        booking_id = request.session.get('pending_booking_id')
-        if not booking_id:
-            return _json_error('No pending booking.')
-        booking = Booking.objects.get(id=booking_id, status='pending')
-        result  = PayPalBackend.create_order(booking)
-        if result.get('success'):
-            return JsonResponse({'ok': True, 'orderID': result['order_id']})
-        return _json_error(result.get('message', 'PayPal error.'))
-    except Booking.DoesNotExist:
-        return _json_error('Booking not found.', 404)
-    except Exception as exc:
-        logger.error('paypal_create_order error: %s', exc)
-        return _json_error(str(exc), 500)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -2018,7 +1990,6 @@ def vehicle_detail(request, slug):
         'related':          related,
         'whatsapp_number':  getattr(settings, 'WHATSAPP_NUMBER', '254727745907'),
         'paystack_pk':      getattr(settings, 'PAYSTACK_PUBLIC_KEY', ''),
-        'paypal_client_id': getattr(settings, 'PAYPAL_CLIENT_ID', ''),
     })
 
 
@@ -2056,7 +2027,7 @@ def _location_context(location_key):
             'h1': 'Car Hire at Jomo Kenyatta International Airport (JKIA)',
             'tagline': 'Free meet-and-greet at JKIA — your car waits the moment you land.',
             'title': 'Car Rental at JKIA Airport Nairobi | Free Meet-and-Greet | Munwan Car Rental',
-            'meta_description': 'Car rental at Jomo Kenyatta International Airport (JKIA) Nairobi. Free meet-and-greet at Terminals 1 & 2. Book safari 4x4s and saloons from $28/day. Pay by card, M-Pesa or PayPal.',
+            'meta_description': 'Car rental at Jomo Kenyatta International Airport (JKIA) Nairobi. Free meet-and-greet at Terminals 1 & 2. Book safari 4x4s and saloons from $28/day. Pay by card, M-Pesa or Apple Pay.',
             'url_name': 'location_jkia',
             'hero_icon': '✈️',
             'intro_p1': 'Booking a car for pickup at <strong>Jomo Kenyatta International Airport (JKIA)</strong>? Munwan Car Rental offers <strong>free meet-and-greet at both Terminal 1 (international) and Terminal 2 (domestic)</strong>, 24 hours a day. A Munwan Car Rental representative waits at the arrivals exit holding a name board the moment you clear customs.',
@@ -2080,7 +2051,7 @@ def _location_context(location_key):
             'h1': 'Car Rental in Mombasa, Kenya',
             'tagline': 'Coastal car hire — from Mombasa Airport to Diani Beach and Nyali.',
             'title': 'Car Rental in Mombasa Kenya | Airport Pickup | Diani Beach | Munwan Car Rental',
-            'meta_description': 'Affordable car rental in Mombasa, Kenya. Free pickup at Moi International Airport. Drive to Diani Beach, Nyali, Watamu or Malindi. Self-drive or with driver. M-Pesa, card & PayPal accepted.',
+            'meta_description': 'Affordable car rental in Mombasa, Kenya. Free pickup at Moi International Airport. Drive to Diani Beach, Nyali, Watamu or Malindi. Self-drive or with driver. M-Pesa, card & Apple Pay accepted.',
             'url_name': 'location_mombasa',
             'hero_icon': '🏖️',
             'intro_p1': 'Planning a trip to Kenya\'s stunning coastal region? <strong>Munwan Car Rental offers car rental in Mombasa</strong> with free pickup at Moi International Airport. Whether you\'re heading to the white sands of <strong>Diani Beach</strong>, the coral reefs of <strong>Watamu</strong>, or the historic Old Town of Mombasa itself, we have the right vehicle.',
@@ -2104,7 +2075,7 @@ def _location_context(location_key):
             'h1': 'Car Rental in Diani Beach, Kenya',
             'tagline': 'Explore Kenya\'s most beautiful coastline on your own schedule.',
             'title': 'Car Rental Diani Beach Kenya | Self Drive Car Hire | Munwan Car Rental',
-            'meta_description': 'Car rental in Diani Beach, Kenya. Perfect for exploring the South Coast — Galu Beach, Tiwi, Shimba Hills National Reserve. Free hotel delivery. Pay by M-Pesa, card or PayPal.',
+            'meta_description': 'Car rental in Diani Beach, Kenya. Perfect for exploring the South Coast — Galu Beach, Tiwi, Shimba Hills National Reserve. Free hotel delivery. Pay by M-Pesa, card or Apple Pay.',
             'url_name': 'location_diani',
             'hero_icon': '🌴',
             'intro_p1': 'Diani Beach is Kenya\'s premier coastal holiday destination — 25 km of powder-white sand, turquoise ocean, and world-class hotels. <strong>Munwan Car Rental offers car rental in Diani Beach</strong> with free delivery to any hotel, villa, or Airbnb along the coast.',

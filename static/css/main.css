@@ -664,65 +664,41 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .pay-summary-total>span{font-weight:800;font-size:.9rem}
 .pay-total-usd{font-weight:800;font-size:1.15rem;color:var(--blue);display:block}
 .pay-total-kes{font-size:.72rem;color:var(--muted);display:block}
-.pay-method-label{font-size:.66rem;font-weight:800;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--muted);margin:14px 0 10px}
-.pay-method-tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 
 /* ──────────────────────────────────────────────────────────────────
    DESKTOP: tighten payment-step vertical spacing so the whole step
-   fits in the modal without scrolling. We compress:
-     - summary card padding (16→12)
-     - row gaps (8→4)
-     - method-label/tabs margins
-     - pay button padding
-   Mobile keeps the comfy default spacing.
+   fits in the modal without scrolling.
    ────────────────────────────────────────────────────────────────── */
 @media (min-width: 768px) {
   #fs2 .pay-summary-card{padding:12px 16px;margin-bottom:12px}
   #fs2 .pay-summary-title{margin-bottom:8px}
   #fs2 .pay-summary-row{margin-bottom:4px}
   #fs2 .pay-summary-total{padding-top:8px;margin-top:2px}
-  #fs2 .pay-method-label{margin:8px 0 6px}
-  #fs2 .pay-method-tabs{margin-bottom:10px;gap:8px}
-  #fs2 .pay-tab{padding:10px 12px}
-  #fs2 .pay-tab-top{margin-bottom:4px}
-  #fs2 .fw-pay-btn{padding:11px;margin-top:4px}
-  #fs2 .pay-fineprint{font-size:.72rem;margin-top:6px}
-  /* The modal body lets content scroll only if it exceeds 94vh. The
-     compression above puts a typical payment step well under that. */
+  #fs2 .fw-pay-btn{padding:13px;margin-top:4px}
+  #fs2 .pay-accepted{margin-top:12px}
+  #fs2 .pay-fineprint{font-size:.72rem;margin-top:8px}
 }
-.pay-tab{border:2px solid var(--border);border-radius:var(--radius-lg);
-  padding:13px 14px;cursor:pointer;transition:all .2s;background:var(--white)}
-.pay-tab:hover{border-color:var(--blue-light)}
-.pay-tab.active{border-color:var(--blue);background:rgba(26,107,245,.05);
-  box-shadow:0 0 0 3px rgba(26,107,245,.12)}
-.pay-tab-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.pay-tab-name{font-size:.84rem;font-weight:700;color:var(--ink)}
-.pay-tab.active .pay-tab-name{color:var(--blue)}
-.pay-tab-logos{display:flex;gap:5px;flex-wrap:wrap}
 .plogo{padding:2px 7px;border-radius:4px;font-size:.72rem;font-weight:800;border:1px solid var(--border);background:var(--white)}
 .plogo-visa{color:#1a1f71}.plogo-mc{color:#eb001b}.plogo-mpesa{color:#00a550;border-color:#00a550}
-.plogo-paypal{color:#003087}.plogo-fw{color:#F5A623}
+.plogo-apple{color:#000;border-color:#000;display:inline-flex;align-items:center}
 .pay-panel{animation:fadeUp .22s ease}
-.fw-sub-tabs{display:flex;gap:8px;margin-bottom:14px}
-.fw-sub{flex:1;padding:10px;border:1.5px solid var(--border);border-radius:8px;
-  font-family:'Poppins',sans-serif;font-size:.83rem;font-weight:700;
-  color:var(--muted);cursor:pointer;background:var(--white);transition:all .2s}
-.fw-sub:hover{border-color:var(--blue-light);color:var(--ink)}
-.fw-sub.active{border-color:var(--blue);background:rgba(26,107,245,.06);color:var(--blue)}
-.fw-pay-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));
+.fw-pay-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));
   color:var(--white);border:none;border-radius:var(--radius);
-  font-family:'Poppins',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;
+  font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;
   box-shadow:0 4px 16px rgba(26,107,245,.35);transition:opacity .2s,transform .15s;margin-top:2px}
 .fw-pay-btn:hover{opacity:.9;transform:translateY(-1px)}
 .fw-pay-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
-.fw-mpesa-btn{background:linear-gradient(135deg,#00A550,#00833f)}
-.fw-mpesa-btn:hover{opacity:.94}
 
-/* Cleaner caption under each pay button — replaces the bulky info boxes */
+/* "We accept" logo strip below the single Pay button */
+.pay-accepted{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:16px}
+.pay-accepted-label{font-size:.7rem;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted)}
+.pay-accepted-logos{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
+.pay-accepted-logos .plogo{padding:4px 9px;font-size:.74rem}
+
+/* Cleaner caption under the pay button — replaces the bulky info boxes */
 .pay-fineprint{margin-top:10px;text-align:center;font-size:.78rem;
   color:var(--muted);line-height:1.5}
-.paypal-note{font-size:.75rem;color:var(--muted);text-align:center;margin-top:10px}
 .confirm-wrap{text-align:center;padding:10px 0}
 .confirm-icon{font-size:3.2rem;margin-bottom:13px}
 .confirm-title{font-size:1.45rem;font-weight:800;color:var(--ink);margin-bottom:7px}
@@ -1315,7 +1291,6 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   .s-card-title{font-size:.86rem}
   .s-card-val{font-size:.76rem}
 
-  .pay-method-tabs{grid-template-columns:1fr 1fr}
 
   .modal{border-radius:var(--radius-lg);max-height:88vh;width:100%;max-width:420px}
   .modal-overlay{align-items:center;padding:14px}
@@ -1414,8 +1389,6 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   .modal .pay-total-line{padding:7px 0;font-size:.94rem}
   .modal .pay-total-usd{font-size:.94rem}
   .modal .pay-total-kes{font-size:.7rem}
-  .pay-method-tabs{grid-template-columns:1fr 1fr;gap:6px}
-  .pay-tab{padding:10px 8px;font-size:.78rem}
   .ptbadges{flex-wrap:wrap;gap:4px}
   .ptbadge{font-size:.72rem;padding:2px 6px}
 

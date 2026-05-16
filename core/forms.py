@@ -215,13 +215,10 @@ class BookingStep1Form(forms.Form):
 class BookingPaymentForm(forms.Form):
     payment_method = forms.ChoiceField(choices=[
         ('paystack', 'Card / Bank / Mobile Money (Paystack)'),
-        ('paypal',   'PayPal'),
         ('mpesa',    'M-Pesa (Direct STK Push)'),
     ])
     # Paystack — popup returns a transaction reference after successful payment
     paystack_ref   = forms.CharField(required=False, widget=forms.HiddenInput())
-    # PayPal — JS SDK returns order_id
-    paypal_order_id = forms.CharField(required=False, widget=forms.HiddenInput())
     # M-Pesa — customer enters Safaricom number for STK push
     mpesa_phone    = forms.CharField(max_length=15, required=False,
                                      widget=forms.TextInput(attrs={'placeholder': '+254 7XX XXX XXX'}))

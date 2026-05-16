@@ -248,9 +248,8 @@ class Booking(models.Model):
         ('other', '📍 Choose Location'),
     ]
     PAYMENT_METHOD_CHOICES = [
-        ('stripe', 'Card (Stripe)'),
-        ('paypal', 'PayPal'),
-        ('mpesa',  'M-Pesa'),
+        ('paystack', 'Card / Apple Pay (Paystack)'),
+        ('mpesa',    'M-Pesa'),
     ]
     STATUS_CHOICES = [
         ('pending',   'Pending Payment'),
@@ -336,8 +335,8 @@ class Booking(models.Model):
     payment_status  = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='unpaid')
     payment_reminder_sent = models.BooleanField(default=False, help_text='Customer has been emailed the "complete payment" reminder')
     payment_attempt_at = models.DateTimeField(null=True, blank=True,
-                        help_text='Set when the customer initiates a payment (Paystack/PayPal/M-Pesa). Used to suppress reminders for in-progress checkouts.')
-    payment_ref     = models.CharField(max_length=200, blank=True)  # Stripe/PayPal/M-Pesa txn id
+                        help_text='Set when the customer initiates a payment (Paystack/M-Pesa). Used to suppress reminders for in-progress checkouts.')
+    payment_ref     = models.CharField(max_length=200, blank=True)  # Paystack/M-Pesa txn id
 
     # Invoice (corporate hire). Created when payment_status='invoiced'.
     # Format: INV-2026-XXXXXX. Unique. Used in the public invoice URL.

@@ -47,7 +47,6 @@ urlpatterns = [
     # ── Payments ──────────────────────────────────────────────
     path('payments/attempt/',            views.payment_attempt,      name='payment_attempt'),
     path('payments/process/',            views.payment_process,      name='payment_process'),
-    path('payments/paypal/create/',      views.paypal_create_order,  name='paypal_create_order'),
     path('payments/mpesa/callback/',     views.mpesa_callback,       name='mpesa_callback'),
     path('payments/paystack/webhook/',   views.paystack_webhook,     name='paystack_webhook'),
 
