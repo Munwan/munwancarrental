@@ -7,7 +7,6 @@
 
   {% if not debug %}
   <!-- ═══ GOOGLE ANALYTICS 4 ═══ -->
-  <!-- Replace G-XXXXXXXXXX with your actual Measurement ID from analytics.google.com -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-3Z32E16397"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -35,7 +34,8 @@
   <meta name="theme-color" content="#1565FF"/>
 
   <!-- ═══ SEO META ═══ -->
-  <meta name="description" content="{% block meta_description %}Munwan Car Rental – Premium car hire in Nairobi, Mombasa & across Kenya. Self-drive, with driver, safari packages. M-Pesa,Bank transfer, card & Apple pay. Full insurance included.{% endblock %}"/>
+  <!-- Meta description kept under 160 chars so Google doesn't truncate it -->
+  <meta name="description" content="{% block meta_description %}Hire a car in Kenya from $28/day. Free JKIA airport pickup, full insurance & GPS included. Self-drive or with driver. Pay by M-Pesa, card or Apple Pay.{% endblock %}"/>
   <meta name="keywords" content="car hire Kenya, car rental Nairobi, self drive Kenya, hire a car Nairobi, car hire Mombasa, safari car hire, car hire JKIA, premium car rental Kenya, Kenya self drive rental, car hire with driver Kenya"/>
   <meta name="robots" content="index, follow"/>
   <link rel="canonical" href="{% block canonical %}https://munwancarrental.com{% endblock %}"/>
@@ -43,17 +43,17 @@
   <!-- Open Graph -->
   <meta property="og:type"        content="website"/>
   <meta property="og:site_name"   content="Munwan Car Rental"/>
-  <meta property="og:title"       content="{% block og_title %}Munwan Car Rental – Car Hire for Everyone in Kenya{% endblock %}"/>
+  <meta property="og:title"       content="{% block og_title %}Car Hire in Kenya from $28/day | Munwan Car Rental{% endblock %}"/>
   <meta property="og:description" content="{% block og_desc %}Hire a car in Kenya from $28/day. Airport pickup, full insurance, GPS. Pay by M-Pesa, card or Apple Pay.{% endblock %}"/>
   <meta property="og:image"       content="{% block og_image %}https://munwancarrental.com/static/images/og-cover.jpg{% endblock %}"/>
   <meta property="og:url"         content="{% block og_url %}https://munwancarrental.com{% endblock %}"/>
 
   <!-- Twitter Card -->
   <meta name="twitter:card"        content="summary_large_image"/>
-  <meta name="twitter:title"       content="{% block tw_title %}Munwan Car Rental – Car Hire for Everyone in Kenya{% endblock %}"/>
+  <meta name="twitter:title"       content="{% block tw_title %}Car Hire in Kenya from $28/day | Munwan Car Rental{% endblock %}"/>
   <meta name="twitter:description" content="{% block tw_desc %}Hire a car in Kenya from $28/day. Airport pickup, full insurance, M-Pesa accepted.{% endblock %}"/>
 
-  <!-- JSON-LD Structured Data -->
+  <!-- JSON-LD: CarRental business -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -82,9 +82,39 @@
   }
   </script>
 
+  <!-- JSON-LD: Organization identity (logo + social profiles for GEO/identity schema) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Munwan Car Rental",
+    "url": "https://munwancarrental.com",
+    "logo": "https://munwancarrental.com/static/images/logo.png",
+    "image": "https://munwancarrental.com/static/images/og-cover.jpg",
+    "description": "Premium car hire in Nairobi, Mombasa and across Kenya — self-drive, chauffeur-driven and safari packages.",
+    "telephone": "+254727745907",
+    "email": "info@munwancarrental.com",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Westlands",
+      "addressLocality": "Nairobi",
+      "addressCountry": "KE"
+    },
+    "sameAs": [
+      "https://www.instagram.com/munwan_carrental"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+254727745907",
+      "contactType": "customer service",
+      "areaServed": "KE",
+      "availableLanguage": ["English", "Swahili"]
+    }
+  }
+  </script>
+
   <meta name="csrf-token" content="{{ csrf_token }}"/>
-  <title>{% block title %}Munwan Car Rental – Car Hire for Everyone in Kenya{% endblock %}</title>
-  {% load static %}
+  <title>{% block title %}Car Hire in Kenya from $28/day | Munwan Car Rental{% endblock %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="{% static 'css/main.css' %}"/>
   {% block extra_head %}{% endblock %}

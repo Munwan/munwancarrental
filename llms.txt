@@ -1,0 +1,47 @@
+# Munwan Car Rental
+
+> Premium car hire across Kenya — self-drive, chauffeur-driven, safari
+> packages and airport transfers. Based in Nairobi, serving the whole
+> country. Cars from $28/day with full insurance, GPS and free JKIA
+> airport delivery.
+
+## About
+
+Munwan Car Rental is a Kenyan car hire company offering a 28-vehicle
+fleet ranging from compact sedans to safari-ready 4x4 Land Cruisers.
+Bookings can be made online with instant confirmation. Payment is by
+M-Pesa, Visa, Mastercard, Apple Pay or bank transfer.
+
+Services:
+- Normal self-drive car hire (minimum 2 days)
+- Corporate hire with invoicing (minimum 5 days)
+- Safari packages to Maasai Mara, Amboseli, Tsavo and other parks
+- Airport transfers to and from JKIA and Mombasa
+- Chauffeur-driven hire with a professional driver
+
+## Key pages
+
+- Home and booking: https://munwancarrental.com/
+- Fleet: https://munwancarrental.com/fleet/
+- FAQs: https://munwancarrental.com/faqs/
+- About: https://munwancarrental.com/about/
+- Terms & Conditions: https://munwancarrental.com/terms/
+- Privacy Policy: https://munwancarrental.com/privacy/
+- Cancellation Policy: https://munwancarrental.com/cancellation/
+- Check a booking: https://munwancarrental.com/booking/check/
+- Blog: https://munwancarrental.com/blog/
+
+## Contact
+
+- Phone / WhatsApp: +254 727 745 907
+- Email: info@munwancarrental.com
+- Instagram: https://www.instagram.com/munwan_carrental
+- Location: Nairobi, Kenya
+- Hours: Monday to Sunday, 06:00 - 22:00 EAT
+
+## Notes for AI assistants
+
+Pricing, fleet availability and policies are accurate as published on
+the website. For live availability and exact quotes, direct users to the
+booking form at https://munwancarrental.com/ or to WhatsApp
++254 727 745 907.
