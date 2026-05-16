@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}{{ vehicle.name }} for Hire in Nairobi Kenya | ${{ vehicle.price_usd }}/day | Munwan Car Rental{% endblock %}
-{% block meta_description %}Hire {{ vehicle.name }} in Nairobi from ${{ vehicle.price_usd }}/day. {{ vehicle.seats }}-seater {{ vehicle.get_fuel_display|default:"fuel-efficient" }} car with full insurance, GPS &amp; free JKIA airport delivery. Perfect for {% if 'Prado' in vehicle.name or 'Cruiser' in vehicle.name or 'X-Trail' in vehicle.name or 'Forester' in vehicle.name or 'Rav4' in vehicle.name %}Maasai Mara safaris{% else %}city &amp; road trips in Kenya{% endif %}. Book with M-Pesa, card or PayPal.{% endblock %}
+{% block meta_description %}Hire {{ vehicle.name }} in Nairobi from ${{ vehicle.price_usd }}/day. {{ vehicle.seats }}-seater {{ vehicle.get_fuel_display|default:"fuel-efficient" }} car with full insurance, GPS &amp; free JKIA airport delivery. Perfect for {% if 'Prado' in vehicle.name or 'Cruiser' in vehicle.name or 'X-Trail' in vehicle.name or 'Forester' in vehicle.name or 'Rav4' in vehicle.name %}Maasai Mara safaris{% else %}city &amp; road trips in Kenya{% endif %}. Book with M-Pesa, card or Apple Pay.{% endblock %}
 {% block canonical %}https://munwancarrental.com{% url 'vehicle_detail' slug=vehicle.slug %}{% endblock %}
 {% block og_title %}{{ vehicle.name }} Rental in Kenya — ${{ vehicle.price_usd }}/day{% endblock %}
 {% block og_desc %}Hire a {{ vehicle.name }} in Nairobi with full insurance, GPS &amp; airport delivery. Self-drive or with driver.{% endblock %}
@@ -94,7 +94,7 @@
         <span>✅ Full insurance</span>
         <span>📍 Free GPS</span>
         <span>✈️ JKIA pickup</span>
-        <span>💳 M-Pesa &amp; PayPal</span>
+        <span>💳 M-Pesa & Card</span>
       </div>
     </div>
   </div>
@@ -154,7 +154,7 @@
       <ol class="vehicle-steps">
         <li><strong>Click "Book Now"</strong> — Select your pickup and return dates, and choose JKIA airport, hotel delivery, or Nairobi CBD.</li>
         <li><strong>Complete your details</strong> — Provide your name, contact, and driving licence information (International Driving Permit required for tourists).</li>
-        <li><strong>Pay securely</strong> — Use M-Pesa STK Push, Visa, Mastercard, Verve (via Paystack), or PayPal. Pay in USD, KES, EUR or GBP.</li>
+        <li><strong>Pay securely</strong> — Use M-Pesa STK Push, Visa, Mastercard, Verve, or Apple Pay (via Paystack). Pay in USD, KES, EUR or GBP.</li>
         <li><strong>Get instant confirmation</strong> — Receive your booking reference by email. Our team will WhatsApp you 24 hours before pickup to confirm details.</li>
       </ol>
     </section>
@@ -208,7 +208,6 @@
 </div>
 
 <input type="hidden" id="paystackPk" value="{{ paystack_pk }}"/>
-<input type="hidden" id="paypalClientId" value="{{ paypal_client_id }}"/>
 
 <script type="application/json" id="vehicleData">
 [{"id":{{ vehicle.id }},"name":"{{ vehicle.name }}","usd":{{ vehicle.price_usd }},"eur":{{ vehicle.price_eur }},"kes":{{ vehicle.price_kes }},"driver":{{ vehicle.driver_fee_usd }}}]
