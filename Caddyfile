@@ -28,18 +28,23 @@ munwancarrental.com, www.munwancarrental.com {
   header {
     Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
     X-Content-Type-Options    "nosniff"
+    # SAMEORIGIN (not DENY) so the Paystack payment popup can frame back
+    # to our own origin during checkout.
     X-Frame-Options           "SAMEORIGIN"
     Referrer-Policy           "strict-origin-when-cross-origin"
 
-    # ── Content Security Policy ──
-    # script-src/style-src include 'unsafe-inline' because the site uses
-    # onclick= handlers, inline <style> blocks, and JSON-LD. Paystack
-    # domains allowed for the payment popup. Cloudflare insights allowed
-    # since the site is CF-proxied.
-    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.paystack.co https://*.paystack.co https://*.paystack.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://*.paystack.co https://*.paystack.com; frame-src 'self' https://*.paystack.co https://*.paystack.com https://checkout.paystack.com; form-action 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'"
+    # ── Content Security Policy ──────────────────────────────────────
+    # script-src / style-src include 'unsafe-inline' because the site
+    # uses onclick= handlers, inline <style> blocks and JSON-LD.
+    # Allowed third parties:
+    #   - js.paystack.co / *.paystack.co / *.paystack.com  → payment popup
+    #   - paystack.com                                      → popup stylesheet
+    #   - static.cloudflareinsights.com                     → CF analytics
+    #   - googletagmanager.com / google-analytics.com       → Google Analytics
+    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.paystack.co https://*.paystack.co https://*.paystack.com https://static.cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://paystack.com https://*.paystack.co; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://*.paystack.co https://*.paystack.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://*.paystack.co https://*.paystack.com https://checkout.paystack.com; form-action 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'"
 
-    # ── Permissions Policy ──
-    # Disables APIs the site doesn't use. payment=(self) lets the
+    # ── Permissions Policy ───────────────────────────────────────────
+    # Disables device APIs the site doesn't use. payment=(self) lets the
     # Paystack same-origin payment bridge work.
     Permissions-Policy "geolocation=(self), camera=(), microphone=(), payment=(self), usb=(), magnetometer=(), accelerometer=(), gyroscope=(), interest-cohort=()"
 
