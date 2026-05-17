@@ -690,13 +690,13 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .fw-pay-btn:hover{opacity:.9;transform:translateY(-1px)}
 .fw-pay-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
 
-/* Accepted-payment logo strip below the single Pay button */
-.pay-accepted{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:16px}
+/* Accepted-payment logo strip — sits ABOVE the Pay Securely button */
+.pay-accepted{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:14px}
 .pay-accepted-logos{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
 .pay-accepted-logos .plogo{padding:4px 9px;font-size:.74rem}
 
 @media (max-width: 600px) {
-  .pay-accepted{margin-top:12px}
+  .pay-accepted{margin-bottom:12px}
 }
 
 /* Cleaner caption under the pay button — replaces the bulky info boxes */

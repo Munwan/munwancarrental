@@ -40,6 +40,9 @@
         <label>Password</label>
         <input type="password" name="password" placeholder="Your password" required autocomplete="current-password"/>
         {% if form.password.errors %}<div class="ferr">{{ form.password.errors.0 }}</div>{% endif %}
+        <div style="text-align:right;margin-top:6px">
+          <a href="{% url 'password_reset' %}" style="font-size:.82rem;color:var(--blue);font-weight:600">Forgot password?</a>
+        </div>
       </div>
       {% if form.non_field_errors %}<div class="ferr" style="margin-bottom:14px">{{ form.non_field_errors.0 }}</div>{% endif %}
       <button type="submit" class="auth-btn">Sign In</button>

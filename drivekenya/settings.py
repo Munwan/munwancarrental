@@ -152,21 +152,12 @@ ADMIN_BOOKING_EMAIL = os.environ.get('ADMIN_BOOKING_EMAIL', 'info@munwancarrenta
 
 # ── Paystack ──────────────────────────────────────────────────────────────────
 # Get from: https://dashboard.paystack.com/#/settings/developers
+# Paystack handles ALL payment channels inside its popup — card, M-Pesa,
+# Apple Pay, bank transfer — so it is the only payment integration the
+# site needs. (PayPal and the standalone M-Pesa Daraja integration were
+# removed; Paystack covers their use cases.)
 PAYSTACK_PUBLIC_KEY = os.environ.get('PAYSTACK_PUBLIC_KEY', 'pk_test_REPLACE_ME')
 PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY', 'sk_test_REPLACE_ME')
-
-# ── PayPal ────────────────────────────────────────────────────────────────────
-PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', 'REPLACE_ME')
-PAYPAL_SECRET    = os.environ.get('PAYPAL_SECRET',    'REPLACE_ME')
-PAYPAL_MODE      = os.environ.get('PAYPAL_MODE',      'sandbox')
-
-# ── M-Pesa ────────────────────────────────────────────────────────────────────
-MPESA_CONSUMER_KEY    = os.environ.get('MPESA_CONSUMER_KEY',    'REPLACE_ME')
-MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', 'REPLACE_ME')
-MPESA_SHORTCODE       = os.environ.get('MPESA_SHORTCODE',       '174379')
-MPESA_PASSKEY         = os.environ.get('MPESA_PASSKEY',         'REPLACE_ME')
-MPESA_CALLBACK_URL    = os.environ.get('MPESA_CALLBACK_URL',    'https://munwancarrental.com/payments/mpesa/callback/')
-MPESA_ENV             = os.environ.get('MPESA_ENV',             'sandbox')
 
 # ── Site config ───────────────────────────────────────────────────────────────
 WHATSAPP_NUMBER = os.environ.get('WHATSAPP_NUMBER', '254727745907')
@@ -194,7 +185,9 @@ if not DEBUG:
     # Content
     SECURE_BROWSER_XSS_FILTER      = True
     SECURE_CONTENT_TYPE_NOSNIFF    = True
-    X_FRAME_OPTIONS                = 'DENY'
+    # SAMEORIGIN (not DENY) so the Paystack payment popup can frame back
+    # to our own origin during checkout. Matches the Caddyfile header.
+    X_FRAME_OPTIONS                = 'SAMEORIGIN'
     SECURE_REFERRER_POLICY         = 'strict-origin-when-cross-origin'
     # Sessions: 14-day expiry, refreshed on activity. Cookie age 24h.
     SESSION_EXPIRE_AT_BROWSER_CLOSE = False
@@ -263,3 +256,36 @@ LOGGING = {
         },
     },
 }
+
+# ── ERROR MONITORING (GlitchTip) ──────────────────────────────────────────────
+# GlitchTip is an open-source, Sentry-API-compatible error tracker. It uses
+# the standard sentry-sdk — only the DSN differs (it points at GlitchTip,
+# not sentry.io). Captures every unhandled exception with a full stack
+# trace. Active only in production (DEBUG=False) AND when GLITCHTIP_DSN is
+# set, so local development is never affected.
+#
+# Setup:
+#   1. Create a free project at app.glitchtip.com, platform: Django
+#   2. Copy the DSN it gives you
+#   3. Add to .env on the server:  GLITCHTIP_DSN=https://...glitchtip.com/...
+#   4. Add to requirements.txt:    sentry-sdk[django]>=2.0
+#   5. Rebuild:  docker compose up -d --build
+GLITCHTIP_DSN = os.environ.get('GLITCHTIP_DSN', '').strip()
+if GLITCHTIP_DSN and not DEBUG:
+    try:
+        import sentry_sdk
+        sentry_sdk.init(
+            dsn=GLITCHTIP_DSN,
+            environment='production',
+            # GlitchTip's free tier counts every event. traces_sample_rate=0.0
+            # means errors-only (no performance traces) — keeps you well
+            # inside the monthly quota. Bump to 0.1 if you self-host.
+            traces_sample_rate=0.0,
+            # Do NOT send personal data (names, emails, IPs) to GlitchTip.
+            send_default_pii=False,
+            release=os.environ.get('GLITCHTIP_RELEASE', None),
+        )
+    except ImportError:
+        # sentry-sdk not installed yet — fail silently so the site still
+        # boots. Install it via requirements.txt to activate monitoring.
+        pass

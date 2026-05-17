@@ -1,25 +1,25 @@
 """
 Payment backends for Munwan Car Rental.
 
-  PaystackBackend  – Card / Bank / Mobile Money via Paystack Inline popup
-                     (no card fields on our page — PCI-compliant)
-  MpesaBackend     – Direct Safaricom Daraja STK Push (native Kenyan M-Pesa)
-  PayPalBackend    – PayPal Orders API (international customers)
+  PaystackBackend  – Card / Bank / Mobile Money / Apple Pay via Paystack
+                     Inline popup (no card fields on our page — PCI-compliant)
+
+Paystack handles ALL payment channels inside its popup — Visa/Mastercard,
+M-Pesa, Apple Pay, bank transfer, USSD — so it is the only payment backend
+the site needs. (The standalone PayPal and M-Pesa Daraja integrations were
+removed: PayPal closed the business account, and Paystack already covers
+M-Pesa, so the direct Daraja STK integration was redundant.)
 
 SETUP
   pip install requests
   Add to .env:
     PAYSTACK_PUBLIC_KEY=pk_test_...            (or pk_live_... in production)
     PAYSTACK_SECRET_KEY=sk_test_...            (or sk_live_...)
-    PAYPAL_CLIENT_ID / PAYPAL_SECRET
-    MPESA_CONSUMER_KEY / MPESA_CONSUMER_SECRET / MPESA_SHORTCODE / MPESA_PASSKEY
 
 Get Paystack keys from: https://dashboard.paystack.com/#/settings/developers
 """
-import base64
 import json
 import logging
-from datetime import datetime
 
 from django.conf import settings
 
@@ -171,215 +171,3 @@ class PaystackBackend:
         except Exception as exc:
             logger.error('Paystack initialize error: %s', exc)
             return {'success': False, 'authorization_url': '', 'message': str(exc), 'raw': {}}
-
-
-# ─────────────────────────────────────────────────────────────
-#  PayPal
-# ─────────────────────────────────────────────────────────────
-class PayPalBackend:
-    BASE_URLS = {
-        'sandbox':    'https://api-m.sandbox.paypal.com',
-        'production': 'https://api-m.paypal.com',
-        'live':       'https://api-m.paypal.com',  # alias — PayPal's dashboard says "live"
-    }
-
-    @classmethod
-    def _base_url(cls):
-        # Accept both "production" and "live" — PayPal's dashboard says "live"
-        # while many integrations historically use "production". Either works.
-        mode = (getattr(settings, 'PAYPAL_MODE', 'sandbox') or 'sandbox').lower().strip()
-        return cls.BASE_URLS.get(mode, cls.BASE_URLS['sandbox'])
-
-    @classmethod
-    def _get_token(cls) -> str:
-        import requests
-        resp = requests.post(
-            f'{cls._base_url()}/v1/oauth2/token',
-            headers={'Accept': 'application/json'},
-            auth=(settings.PAYPAL_CLIENT_ID, settings.PAYPAL_SECRET),
-            data={'grant_type': 'client_credentials'},
-            timeout=15,
-        )
-        resp.raise_for_status()
-        return resp.json()['access_token']
-
-    @classmethod
-    def capture_order(cls, booking, paypal_order_id: str) -> dict:
-        try:
-            import requests
-            token = cls._get_token()
-            resp  = requests.post(
-                f'{cls._base_url()}/v2/checkout/orders/{paypal_order_id}/capture',
-                headers={
-                    'Content-Type':  'application/json',
-                    'Authorization': f'Bearer {token}',
-                },
-                timeout=20,
-            )
-            data = resp.json()
-            if data.get('status') == 'COMPLETED':
-                txn_id = data['purchase_units'][0]['payments']['captures'][0]['id']
-                logger.info('PayPal capture succeeded: %s → %s',
-                            booking.reference, txn_id)
-                return {'success': True, 'ref': txn_id,
-                        'message': 'PayPal payment completed', 'raw': data}
-            else:
-                return {'success': False, 'ref': paypal_order_id,
-                        'message': f'PayPal status: {data.get("status")}', 'raw': data}
-        except Exception as exc:
-            logger.error('PayPal capture error for %s: %s', booking.reference, exc)
-            return {'success': False, 'ref': '', 'message': str(exc), 'raw': {}}
-
-    @classmethod
-    def create_order(cls, booking) -> dict:
-        try:
-            import requests
-            token   = cls._get_token()
-            payload = {
-                'intent': 'CAPTURE',
-                'purchase_units': [{
-                    'reference_id': booking.reference,
-                    'description':  f'Munwan Car Rental – {booking.vehicle.name}',
-                    'amount': {
-                        'currency_code': 'USD',
-                        'value':         str(booking.total_usd),
-                    },
-                }],
-            }
-            resp = requests.post(
-                f'{cls._base_url()}/v2/checkout/orders',
-                headers={
-                    'Content-Type':  'application/json',
-                    'Authorization': f'Bearer {token}',
-                },
-                json=payload,
-                timeout=20,
-            )
-            data     = resp.json()
-            order_id = data.get('id')
-            return {'success': bool(order_id), 'order_id': order_id, 'raw': data}
-        except Exception as exc:
-            logger.error('PayPal create_order error: %s', exc)
-            return {'success': False, 'order_id': None,
-                    'message': str(exc), 'raw': {}}
-
-
-# ─────────────────────────────────────────────────────────────
-#  M-Pesa (Daraja API – STK Push)
-# ─────────────────────────────────────────────────────────────
-class MpesaBackend:
-    BASE_URLS = {
-        'sandbox':    'https://sandbox.safaricom.co.ke',
-        'production': 'https://api.safaricom.co.ke',
-    }
-
-    @classmethod
-    def _base_url(cls):
-        return cls.BASE_URLS.get(
-            getattr(settings, 'MPESA_ENV', 'sandbox'),
-            cls.BASE_URLS['sandbox'])
-
-    @classmethod
-    def _get_token(cls) -> str:
-        import requests
-        credentials = base64.b64encode(
-            f'{settings.MPESA_CONSUMER_KEY}:{settings.MPESA_CONSUMER_SECRET}'.encode()
-        ).decode()
-        resp = requests.get(
-            f'{cls._base_url()}/oauth/v1/generate?grant_type=client_credentials',
-            headers={'Authorization': f'Basic {credentials}'},
-            timeout=15,
-        )
-        resp.raise_for_status()
-        return resp.json()['access_token']
-
-    @classmethod
-    def _generate_password(cls):
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        raw       = f'{settings.MPESA_SHORTCODE}{settings.MPESA_PASSKEY}{timestamp}'
-        password  = base64.b64encode(raw.encode()).decode()
-        return password, timestamp
-
-    @classmethod
-    def stk_push(cls, booking, phone: str) -> dict:
-        try:
-            import requests
-            phone = phone.strip().replace(' ', '').replace('-', '')
-            if phone.startswith('+'): phone = phone[1:]
-            if phone.startswith('0'): phone = '254' + phone[1:]
-
-            token              = cls._get_token()
-            password, timestamp = cls._generate_password()
-            amount             = max(1, int(float(booking.total_kes)))
-
-            payload = {
-                'BusinessShortCode': settings.MPESA_SHORTCODE,
-                'Password':          password,
-                'Timestamp':         timestamp,
-                'TransactionType':   'CustomerPayBillOnline',
-                'Amount':            amount,
-                'PartyA':            phone,
-                'PartyB':            settings.MPESA_SHORTCODE,
-                'PhoneNumber':       phone,
-                'CallBackURL':       settings.MPESA_CALLBACK_URL,
-                'AccountReference':  booking.reference,
-                'TransactionDesc':   f'Munwan Car Rental {booking.reference}',
-            }
-            resp = requests.post(
-                f'{cls._base_url()}/mpesa/stkpush/v1/processrequest',
-                headers={
-                    'Authorization': f'Bearer {token}',
-                    'Content-Type':  'application/json',
-                },
-                json=payload,
-                timeout=20,
-            )
-            data        = resp.json()
-            checkout_id = data.get('CheckoutRequestID', '')
-
-            if data.get('ResponseCode') == '0':
-                logger.info('M-Pesa STK push sent: %s → %s',
-                            booking.reference, checkout_id)
-                return {
-                    'success': True,
-                    'ref':     checkout_id,
-                    'message': 'STK push sent. Please check your phone.',
-                    'raw':     data,
-                }
-            else:
-                logger.warning('M-Pesa STK push failed: %s', data)
-                return {
-                    'success': False,
-                    'ref':     checkout_id,
-                    'message': data.get('errorMessage', 'M-Pesa push failed'),
-                    'raw':     data,
-                }
-        except Exception as exc:
-            logger.error('M-Pesa error for %s: %s', booking.reference, exc)
-            return {'success': False, 'ref': '', 'message': str(exc), 'raw': {}}
-
-    @classmethod
-    def handle_callback(cls, payload: dict) -> dict:
-        try:
-            body        = payload.get('Body', {}).get('stkCallback', {})
-            result_code = body.get('ResultCode')
-            checkout_id = body.get('CheckoutRequestID', '')
-            if result_code == 0:
-                items = body.get('CallbackMetadata', {}).get('Item', [])
-                meta  = {item['Name']: item.get('Value') for item in items}
-                return {
-                    'success':     True,
-                    'checkout_id': checkout_id,
-                    'mpesa_code':  meta.get('MpesaReceiptNumber', ''),
-                    'raw':         payload,
-                }
-            else:
-                return {
-                    'success':     False,
-                    'checkout_id': checkout_id,
-                    'message':     body.get('ResultDesc', 'Payment failed'),
-                    'raw':         payload,
-                }
-        except Exception as exc:
-            logger.error('M-Pesa callback parse error: %s', exc)
-            return {'success': False, 'message': str(exc), 'raw': payload}
