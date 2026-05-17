@@ -8,7 +8,9 @@
 {% block content %}
 
 <!-- FLEET PAGE HEADER -->
-<section class="section" id="fleet">
+<!-- padding-top clears the fixed navbar — pages without a hero section
+     start their content under #mainNav otherwise -->
+<section class="section" id="fleet" style="padding-top:120px">
   <div class="section-header">
     <div class="eyebrow">Our Fleet</div>
     <h1 class="section-title">A Car for Every Journey</h1>
@@ -44,7 +46,7 @@
               <div class="price-kes">≈ KES {{ v.price_kes }}/day</div>
             {% endif %}
           </div>
-          <a class="book-btn" href="{% url 'home' %}?book=1#booking">Book Now</a>
+          <a class="book-btn" href="{% url 'home' %}?book=1#booking" style="text-decoration:none">Book Now</a>
         </div>
       </div>
     </div>
