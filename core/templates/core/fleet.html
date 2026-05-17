@@ -1,0 +1,65 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Our Fleet — Car Hire in Kenya from $28/day | Munwan Car Rental{% endblock %}
+{% block meta_description %}Browse the Munwan Car Rental fleet — economy saloons, family SUVs and safari-ready 4x4s. All vehicles include full insurance, GPS and 24/7 roadside support. Hire from $28/day.{% endblock %}
+{% block canonical %}https://munwancarrental.com/fleet/{% endblock %}
+
+{% block content %}
+
+<!-- FLEET PAGE HEADER -->
+<section class="section" id="fleet">
+  <div class="section-header">
+    <div class="eyebrow">Our Fleet</div>
+    <h1 class="section-title">A Car for Every Journey</h1>
+    <p class="section-sub">All vehicles include full insurance, GPS tracking &amp; 24/7 roadside support. Hire self-drive or with a professional driver.</p>
+  </div>
+
+  <div class="fleet-grid">
+    {% for v in vehicles %}
+    <div class="car-card">
+      <div class="car-img">
+        <img src="{{ v.image_url }}" alt="{{ v.name }} car hire Kenya" loading="lazy"
+             onerror="this.src='{% static 'images/cars/placeholder.jpg' %}'"/>
+        <div class="car-chip chip-{{ v.badge }}">{{ v.get_badge_display }}</div>
+      </div>
+      <div class="car-info">
+        <div class="car-name">{{ v.name }}</div>
+        <div class="car-cat">{{ v.description }}</div>
+        <div class="car-specs">{% for spec in v.specs_display %}<span class="spec">{{ spec }}</span>{% endfor %}</div>
+        <div class="car-footer">
+          <div>
+            {% if v.category == 'safari' %}
+              {% with range=v.safari_price_range %}
+              <div class="price-usd">
+                ${{ range.0|floatformat:0 }}{% if range.0 != range.1 %}–${{ range.1|floatformat:0 }}{% endif %}
+                <span>/ day</span>
+              </div>
+              <div class="price-kes" style="font-size:.7rem">
+                Per-destination pricing · driver &amp; fuel included
+              </div>
+              {% endwith %}
+            {% else %}
+              <div class="price-usd">${{ v.price_usd }} <span>/ day</span> &nbsp;<span class="price-eur">€{{ v.price_eur }}</span></div>
+              <div class="price-kes">≈ KES {{ v.price_kes }}/day</div>
+            {% endif %}
+          </div>
+          <a class="book-btn" href="{% url 'home' %}?book=1#booking">Book Now</a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <p style="text-align:center;color:var(--muted);padding:40px 0;grid-column:1/-1">No vehicles available at the moment. Please check back soon or WhatsApp us at +254 727 745 907.</p>
+    {% endfor %}
+  </div>
+
+  <!-- Call to action below the grid -->
+  <div style="text-align:center;margin-top:36px">
+    <a class="search-btn" href="{% url 'home' %}?book=1#booking"
+       style="display:inline-block;text-decoration:none;padding:13px 32px">
+      🔍 Start Your Booking
+    </a>
+  </div>
+</section>
+
+{% endblock %}
