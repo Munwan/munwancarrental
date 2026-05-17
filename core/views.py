@@ -1280,7 +1280,7 @@ def invoice_pdf(request, reference):
 def payment_attempt(request):
     """
     Lightweight endpoint hit by the frontend the moment a customer clicks any
-    payment button (the Paystack popup).
+    payment button (Paystack popup or M-Pesa "Send STK").
     Stamps `payment_attempt_at` so the reminder cron skips this booking — the
     customer is actively in checkout, no need to nag them.
     """
@@ -1330,6 +1330,29 @@ def payment_process(request):
             result = PaystackBackend.verify(
                 booking, cd.get('paystack_ref', ''))
 
+        elif method == 'mpesa':
+            result = MpesaBackend.stk_push(booking, cd.get('mpesa_phone', ''))
+            if result['success']:
+                booking.payment_method = 'mpesa'
+                booking.payment_ref    = result['ref']
+                booking.save(update_fields=['payment_method', 'payment_ref'])
+                PaymentLog.objects.create(
+                    booking      = booking,
+                    method       = 'mpesa',
+                    gateway_ref  = result['ref'],
+                    amount_usd   = booking.total_usd,
+                    status       = 'stk_pending',
+                    raw_response = json.dumps(result.get('raw', {})),
+                )
+                return JsonResponse({
+                    'ok':        True,
+                    'async':     True,
+                    'reference': booking.reference,
+                    'message':   result['message'],
+                })
+            else:
+                return _json_error(result.get('message', 'M-Pesa push failed.'))
+
         # Synchronous result (Paystack)
         PaymentLog.objects.create(
             booking      = booking,
@@ -1371,6 +1394,39 @@ def payment_process(request):
         return _json_error('Server error during payment. Please try again.', 500)
 
 
+# ─────────────────────────────────────────────────────────────
+#  M-PESA CALLBACK
+# ─────────────────────────────────────────────────────────────
+@csrf_exempt
+@require_POST
+def mpesa_callback(request):
+    try:
+        payload = json.loads(request.body)
+        result  = MpesaBackend.handle_callback(payload)
+        if result['success']:
+            try:
+                booking = Booking.objects.get(
+                    payment_ref=result.get('checkout_id', ''))
+                booking.payment_status = 'paid'
+                booking.status         = 'confirmed'
+                booking.save(update_fields=['payment_status', 'status'])
+                PaymentLog.objects.filter(
+                    booking=booking, method='mpesa').update(
+                    status='success', gateway_ref=result.get('mpesa_code', ''))
+                send_booking_confirmation(booking)
+            except Booking.DoesNotExist:
+                logger.warning('M-Pesa callback: booking not found for %s',
+                               result.get('checkout_id'))
+        else:
+            logger.info('M-Pesa callback failed: %s', result.get('message'))
+    except Exception as exc:
+        logger.error('M-Pesa callback error: %s', exc)
+    return HttpResponse('OK')
+
+
+# ─────────────────────────────────────────────────────────────
+#  PAYSTACK WEBHOOK
+# ─────────────────────────────────────────────────────────────
 # ─────────────────────────────────────────────────────────────
 #  PAYSTACK WEBHOOK
 # ─────────────────────────────────────────────────────────────
