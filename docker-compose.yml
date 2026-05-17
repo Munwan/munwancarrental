@@ -13,6 +13,13 @@
 #    docker compose down                     # stop everything (data persists)
 #    docker compose down -v                  # stop AND wipe volumes (danger)
 # ─────────────────────────────────────────────────────────────────────────────
+#
+#  LOG ROTATION
+#    Every service uses the json-file log driver capped at 3 × 10 MB.
+#    Without this, container logs grow unbounded and can fill the disk —
+#    which takes the whole site down. 30 MB/container is plenty to debug
+#    a recent problem; older log data rotates out automatically.
+# ─────────────────────────────────────────────────────────────────────────────
 
 services:
 
@@ -34,6 +41,11 @@ services:
     # Don't expose 5432 publicly — only the web container needs it
     expose:
       - "5432"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ─── Django app ────────────────────────────────────────────
   web:
@@ -53,6 +65,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ─── Caddy reverse proxy + automatic TLS ──────────────────
   # Caddy auto-provisions Let's Encrypt certs. Zero-config TLS.
@@ -71,6 +88,11 @@ services:
       - media_files:/srv/media:ro
     depends_on:
       - web
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ─── Cron worker — runs management commands on schedule ──
   # Replaces Appliku's "Scheduled Tasks". Same image, different command.
@@ -95,6 +117,11 @@ services:
         python manage.py send_payment_reminders;
         sleep 300;
       done"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 
 volumes:
