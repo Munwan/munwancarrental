@@ -57,6 +57,12 @@ def render_invoice_pdf(booking) -> bytes:
     # ── HEADER: brand left + invoice meta right ─────────────────────
     header_data = [[
         # Left cell — brand block
+        # "Munwan Car Rental" stays as the customer-facing brand name (h1).
+        # The legal entity ("Munwan Limited") and KRA PIN are shown below so
+        # the invoice identifies the registered company — required for a
+        # proper company invoice, and it ties the trading name to the
+        # registered entity for third parties (banks, Google, corporate
+        # clients' finance departments).
         [
             Paragraph('Munwan Car Rental', h1),
             Paragraph('Premium Car Rental · Self Drive &amp; Chauffeur Services', small),
@@ -65,6 +71,9 @@ def render_invoice_pdf(booking) -> bytes:
             Paragraph('+254 727 745 907', body),
             Paragraph('info@munwancarrental.com', body),
             Paragraph('munwancarrental.com', body),
+            Spacer(1, 6),
+            Paragraph('Munwan Car Rental is a trading name of Munwan Limited.', small),
+            Paragraph('KRA PIN: P052192369D', small),
         ],
         # Right cell — invoice meta
         [
