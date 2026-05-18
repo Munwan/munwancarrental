@@ -1,7 +1,7 @@
 {% extends 'core/base.html' %}
 {% load static %}
-{% block title %}Pro-forma Invoice {{ booking.invoice_number }} – Munwan Car Rental{% endblock %}
-{% block meta_description %}Pro-forma invoice for corporate hire booking {{ booking.reference }} – Munwan Car Rental.{% endblock %}
+{% block title %}Invoice {{ booking.invoice_number }} – Munwan Car Rental{% endblock %}
+{% block meta_description %}Invoice for corporate hire booking {{ booking.reference }} – Munwan Car Rental.{% endblock %}
 
 {% block content %}
 <div class="invoice-page">
@@ -20,7 +20,7 @@
         <div class="inv-brand-sub">Premium Car Rental · Nairobi, Kenya</div>
       </div>
       <div class="inv-meta">
-        <div class="inv-meta-label">PRO-FORMA INVOICE</div>
+        <div class="inv-meta-label">INVOICE</div>
         <div class="inv-meta-number">{{ booking.invoice_number|default:booking.reference }}</div>
         <div class="inv-meta-row">
           <span>Issued</span>
@@ -161,7 +161,7 @@
     <div class="inv-instructions">
       <h3>Payment Instructions</h3>
       <p>
-        <strong>Pay online:</strong> Click the <strong>Pay Now</strong>
+        <strong>Pay online:</strong> Click the <strong>Pay Invoice</strong>
         button above to settle by Visa, Mastercard, M-Pesa, or Apple Pay. Payment
         is due by <strong>{{ booking.invoice_due_date|date:"d M Y" }}</strong>
         — one day before vehicle pickup.
@@ -180,7 +180,7 @@
         Vehicle reservation is confirmed only after full payment is received.
         Late payment may result in the vehicle being released to another
         customer. Cancellations 48+ hours before pickup are refundable in
-        full; cancellations within 24 hours forfeit 20% of the booking value.
+        full; cancellations within 24 hours forfeit 20% of the invoice value.
       </p>
     </div>
 

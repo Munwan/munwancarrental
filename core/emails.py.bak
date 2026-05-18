@@ -794,11 +794,11 @@ def send_invoice_email(booking):
 
         # Build the HTML body using the same shell helpers as other emails
         body_html = ''.join([
-            _h1('Corporate Hire — Pro-forma Invoice'),
+            _h1('Corporate Hire Invoice'),
             _p(
                 f'Hi {greeting_name},'
                 '<br/><br/>'
-                + (f'This pro-forma invoice has been issued to <strong>{billed_party}</strong> '
+                + (f'This invoice has been issued to <strong>{billed_party}</strong> '
                    'for the corporate hire booked below. ' if is_corp and booking.company_name
                    else 'Thank you for choosing Munwan Car Rental for your corporate hire. ')
                 + f'A PDF copy is attached and is also available online below. '
@@ -806,7 +806,7 @@ def send_invoice_email(booking):
             ),
             _ref_pill(booking.reference),
             _details([
-                ('Pro-forma invoice number',  invoice_no),
+                ('Invoice number',  invoice_no),
                 (bill_to_label,     billed_party if is_corp and booking.company_name else None),
                 ('KRA PIN',         booking.company_kra_pin if is_corp and booking.company_kra_pin else None),
                 ('Representative',  f'{booking.first_name} {booking.last_name}' if is_corp and booking.company_name else None),
@@ -822,7 +822,7 @@ def send_invoice_email(booking):
             _cta('💳 Pay Invoice Online', pay_url),
             _p(
                 f'You can also <a href="{invoice_url}" '
-                f'style="color:#1565FF;font-weight:700">view your pro-forma invoice online</a> '
+                f'style="color:#1565FF;font-weight:700">view your invoice online</a> '
                 'at any time, or download the PDF copy attached.',
                 color='#6B7280'
             ),
@@ -837,18 +837,18 @@ def send_invoice_email(booking):
         ])
 
         html = _render_shell(
-            title=f'Pro-forma Invoice {invoice_no} – Munwan Car Rental',
-            preheader=f'Your corporate pro-forma invoice {invoice_no} – pay by {due_str}.',
+            title=f'Invoice {invoice_no} – Munwan Car Rental',
+            preheader=f'Your corporate invoice {invoice_no} – pay by {due_str}.',
             body_html=body_html,
         )
 
         # Plain-text fallback
         text_body = (
-            f'PRO-FORMA INVOICE {invoice_no}\n'
+            f'INVOICE {invoice_no}\n'
             f'Munwan Car Rental\n\n'
             f'Hi {booking.first_name},\n\n'
             f'Thank you for choosing Munwan Car Rental for your corporate hire.\n'
-            f'Your pro-forma invoice is attached as a PDF.\n\n'
+            f'Your invoice is attached as a PDF.\n\n'
             f'Booking ref: {booking.reference}\n'
             f'Vehicle: {booking.vehicle.name if booking.vehicle else "TBD"}\n'
             f'Pickup: {pickup_str}\n'
@@ -857,7 +857,7 @@ def send_invoice_email(booking):
             f'Total: ${booking.total_usd}\n'
             f'Due by: {due_str}\n\n'
             f'Pay online: {pay_url}\n'
-            f'View pro-forma invoice: {invoice_url}\n\n'
+            f'View invoice: {invoice_url}\n\n'
             f'For bank transfer, WhatsApp us at {_whatsapp_display()}.\n'
             f'Quote {invoice_no} as the reference.\n\n'
             f'Thank you,\nMunwan Car Rental Team\n'
@@ -866,7 +866,7 @@ def send_invoice_email(booking):
         # Build the email message manually so we can attach the PDF.
         # _send_html() doesn't take attachments, so we use EmailMessage directly.
         msg = EmailMessage(
-            subject=f'Pro-forma Invoice {invoice_no} – Munwan Car Rental',
+            subject=f'Invoice {invoice_no} – Munwan Car Rental',
             body=text_body,
             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None) or _info_email(),
             to=[booking.email],
@@ -878,7 +878,7 @@ def send_invoice_email(booking):
         # Use EmailMultiAlternatives pattern: switch class for HTML support
         from django.core.mail import EmailMultiAlternatives
         msg = EmailMultiAlternatives(
-            subject=f'Pro-forma Invoice {invoice_no} – Munwan Car Rental',
+            subject=f'Invoice {invoice_no} – Munwan Car Rental',
             body=text_body,
             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None) or _info_email(),
             to=[booking.email],
@@ -889,7 +889,7 @@ def send_invoice_email(booking):
         # Attach the PDF. If rendering fails, log it but still send the email.
         try:
             pdf_bytes = render_invoice_pdf(booking)
-            msg.attach(f'proforma-invoice-{invoice_no}.pdf', pdf_bytes, 'application/pdf')
+            msg.attach(f'invoice-{invoice_no}.pdf', pdf_bytes, 'application/pdf')
         except Exception:
             logger.exception('Invoice PDF attach failed for %s — sending email without attachment', invoice_no)
 

@@ -1,12 +1,12 @@
 {% extends 'core/base.html' %}
-{% block title %}Pro-forma Invoice Not Found – Munwan Car Rental{% endblock %}
+{% block title %}Invoice Not Found – Munwan Car Rental{% endblock %}
 {% block content %}
 <div class="invoice-page">
   <div class="invoice-card" style="text-align:center;padding:60px 30px">
     <div style="font-size:3rem;margin-bottom:14px">📄</div>
-    <h1 style="font-size:1.6rem;font-weight:800;color:var(--ink);margin-bottom:8px">Pro-forma Invoice Not Found</h1>
+    <h1 style="font-size:1.6rem;font-weight:800;color:var(--ink);margin-bottom:8px">Invoice Not Found</h1>
     <p style="color:var(--muted);max-width:380px;margin:0 auto 20px;line-height:1.6">
-      We couldn't find that pro-forma invoice. It may have been removed, or the link is incorrect.
+      We couldn't find that invoice. It may have been removed, or the link is incorrect.
       If you believe this is an error, please WhatsApp us at +254 727 745 907.
     </p>
     <a href="{% url 'home' %}" class="inv-btn inv-btn-secondary" style="display:inline-block">← Back to Home</a>
