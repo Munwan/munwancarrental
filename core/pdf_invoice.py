@@ -40,7 +40,7 @@ def render_invoice_pdf(booking) -> bytes:
         buf, pagesize=A4,
         leftMargin=18*mm, rightMargin=18*mm,
         topMargin=18*mm, bottomMargin=18*mm,
-        title=f'Invoice {booking.invoice_number or booking.reference}',
+        title=f'Pro-forma Invoice {booking.invoice_number or booking.reference}',
     )
     styles = getSampleStyleSheet()
     body  = ParagraphStyle('body',  parent=styles['Normal'], fontName='Helvetica',     fontSize=9.5, leading=13, textColor=INK)
@@ -58,11 +58,12 @@ def render_invoice_pdf(booking) -> bytes:
     header_data = [[
         # Left cell — brand block
         # "Munwan Car Rental" stays as the customer-facing brand name (h1).
-        # The legal entity ("Munwan Limited") and KRA PIN are shown below so
-        # the invoice identifies the registered company — required for a
-        # proper company invoice, and it ties the trading name to the
-        # registered entity for third parties (banks, Google, corporate
-        # clients' finance departments).
+        # The legal entity ("Munwan Limited") is shown below so the document
+        # identifies the registered company. NOTE: no KRA PIN is shown here —
+        # this PDF is a PRO-FORMA invoice, NOT a KRA eTIMS tax invoice. The
+        # official tax invoice is issued separately through KRA's eTIMS
+        # system. Putting a KRA PIN on a non-eTIMS document would wrongly
+        # imply it is a valid tax invoice.
         [
             Paragraph('Munwan Car Rental', h1),
             Paragraph('Premium Car Rental · Self Drive &amp; Chauffeur Services', small),
@@ -73,11 +74,10 @@ def render_invoice_pdf(booking) -> bytes:
             Paragraph('munwancarrental.com', body),
             Spacer(1, 6),
             Paragraph('Munwan Car Rental is a trading name of Munwan Limited.', small),
-            Paragraph('KRA PIN: P052192369D', small),
         ],
         # Right cell — invoice meta
         [
-            Paragraph('INVOICE', invlabel),
+            Paragraph('PRO-FORMA INVOICE', invlabel),
             Paragraph(booking.invoice_number or booking.reference, invvalue),
             Spacer(1, 8),
             Paragraph('Issued', invlabel),
@@ -269,7 +269,13 @@ def render_invoice_pdf(booking) -> bytes:
             'Vehicle reservation is confirmed only after full payment is received. '
             'Late payment may result in the vehicle being released to another customer. '
             'Cancellations 48+ hours before pickup are refundable in full; '
-            'cancellations within 24 hours forfeit 20% of the invoice value.',
+            'cancellations within 24 hours forfeit 20% of the booking value.',
+            small),
+        Spacer(1, 8),
+        Paragraph(
+            'This is a pro-forma invoice for booking and payment purposes only. '
+            'It is not a tax invoice. An official KRA eTIMS tax invoice will be '
+            'issued separately on request once payment is received.',
             small),
         Spacer(1, 14),
         Paragraph(
