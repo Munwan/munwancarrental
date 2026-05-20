@@ -1,0 +1,5 @@
+[33m8ec87cb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Restore hero-bg.jpg, modernise favicons, fallback og:image to logo
+[33maf0f14a[m Restore hero-bg.jpg accidentally removed in logo commit
+[33mdd3e0f7[m Update Munwan logo
+[33me671b90[m Relabel invoice PDF as pro-forma (not a tax invoice)
+[33m2e2eb93[m Relabel corporate invoice as pro-forma (PDF, page, dashboard, email)
