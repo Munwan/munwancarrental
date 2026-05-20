@@ -417,7 +417,7 @@ button.account-continue-btn:hover{
         <div class="account-booking-footer">
           <span class="account-booking-status {{ b.payment_status|default:b.status|default:'confirmed' }}">
             {% if b.payment_status == 'invoiced' %}
-              📄 Invoiced — Due {{ b.invoice_due_date|date:"d M Y"|default:"soon" }}
+              📄 Awaiting Payment — Due {{ b.invoice_due_date|date:"d M Y"|default:"soon" }}
             {% else %}
               {{ b.get_status_display|default:"Confirmed" }}
             {% endif %}
@@ -425,10 +425,10 @@ button.account-continue-btn:hover{
           {% if b.payment_status == 'invoiced' %}
             {# Corporate hire: show invoice actions, NOT the generic Continue Payment #}
             <a class="account-continue-btn account-continue-btn-secondary" href="{% url 'invoice_view' reference=b.reference %}">
-              📄 View Invoice
+              📄 View Pro-forma Invoice
             </a>
             <button class="account-continue-btn" onclick="continueBooking({{ b.id }}, '{{ b.reference }}')">
-              💳 Pay Invoice
+              💳 Pay Now
             </button>
           {% elif b.payment_status == 'unpaid' or b.status == 'pending' %}
             {# Non-corporate unpaid: show normal Continue Payment only #}
@@ -501,7 +501,7 @@ button.account-continue-btn:hover{
             {% endif %}
           </span>
           {% if b.payment_status == 'invoiced' %}
-            <a class="account-continue-btn" href="{% url 'invoice_view' reference=b.reference %}">📄 View Invoice</a>
+            <a class="account-continue-btn" href="{% url 'invoice_view' reference=b.reference %}">📄 View Pro-forma Invoice</a>
           {% elif b.payment_status == 'unpaid' or b.status == 'pending' %}
             <button class="account-continue-btn" onclick="continueBooking({{ b.id }}, '{{ b.reference }}')">
               💳 Continue Payment

@@ -819,7 +819,7 @@ def send_invoice_email(booking):
                 ('Total (KES)',     f'KES {booking.total_kes}' if booking.total_kes else None),
                 ('Due date',        due_str),
             ]),
-            _cta('💳 Pay Invoice Online', pay_url),
+            _cta('💳 Pay Now', pay_url),
             _p(
                 f'You can also <a href="{invoice_url}" '
                 f'style="color:#1565FF;font-weight:700">view your pro-forma invoice online</a> '
