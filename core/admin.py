@@ -1,6 +1,7 @@
 from django.contrib import admin, messages
 from .models import (Vehicle, Booking, PaymentLog, Review, SupportTicket,
-                     RateLimitEntry, SafariDestination, SafariPricing)
+                     RateLimitEntry, SafariDestination, SafariPricing,
+                     SafariPackage, SafariPackagePrice)
 
 
 @admin.register(Vehicle)
@@ -164,3 +165,53 @@ class SafariPricingAdmin(admin.ModelAdmin):
     list_editable = ['price_usd', 'notes']
     autocomplete_fields = ['destination', 'vehicle']
     list_select_related = ['destination', 'vehicle']
+
+
+# ─────────────────────────────────────────────────────────────
+#  SAFARI PACKAGES — curated itineraries and per-vehicle pricing
+# ─────────────────────────────────────────────────────────────
+class SafariPackagePriceInline(admin.TabularInline):
+    """
+    Inline pricing rows on the SafariPackage edit page. Lets the operator
+    set a price for each safari-ready vehicle on this package without
+    leaving the package view. Mirrors SafariPricingInline.
+    """
+    model = SafariPackagePrice
+    extra = 0
+    fields = ['vehicle', 'price_usd']
+    autocomplete_fields = ['vehicle']
+    verbose_name = 'Vehicle price for this package'
+    verbose_name_plural = 'Vehicle prices for this package (USD)'
+
+
+@admin.register(SafariPackage)
+class SafariPackageAdmin(admin.ModelAdmin):
+    list_display = ['order', 'name', 'duration_days', 'is_active', 'price_summary']
+    list_display_links = ['name']  # required since 'order' is first AND editable
+    list_editable = ['order', 'is_active']
+    list_filter = ['is_active']
+    search_fields = ['name', 'summary']
+    prepopulated_fields = {'slug': ('name',)}
+    ordering = ['order', 'name']
+    inlines = [SafariPackagePriceInline]
+    fieldsets = (
+        ('Package', {
+            'fields': ('name', 'slug', 'duration_days', 'summary', 'image'),
+        }),
+        ('Itinerary', {
+            'fields': ('itinerary', 'includes', 'excludes'),
+        }),
+        ('Display', {
+            'fields': ('is_active', 'order'),
+        }),
+    )
+
+    def price_summary(self, obj):
+        """Cheapest → most expensive across vehicles for this package."""
+        prices = list(obj.prices.values_list('price_usd', flat=True))
+        if not prices:
+            return '—'
+        if len(prices) == 1 or min(prices) == max(prices):
+            return f'${prices[0]}'
+        return f'${min(prices)}–${max(prices)}'
+    price_summary.short_description = 'Price range'

@@ -194,6 +194,73 @@ class SafariPricing(models.Model):
 
 
 # ─────────────────────────────────────────────────────────────
+#  SAFARI PACKAGES — curated itineraries & per-vehicle pricing
+# ─────────────────────────────────────────────────────────────
+class SafariPackage(models.Model):
+    """
+    A curated, pre-built safari itinerary (e.g. "3-Day Maasai Mara Classic"),
+    as opposed to the free-form destination picker in SafariDestination.
+    Pricing per vehicle lives in SafariPackagePrice, mirroring how
+    SafariPricing links SafariDestination + Vehicle.
+    """
+    name           = models.CharField(max_length=100, unique=True,
+                                      help_text='e.g. "3-Day Maasai Mara Classic"')
+    slug           = models.SlugField(unique=True, blank=True)
+    duration_days  = models.PositiveSmallIntegerField(
+        default=1, help_text='Total trip length in days.')
+    summary        = models.CharField(max_length=300, blank=True,
+                                      help_text='1-2 sentence hook shown on package listings.')
+    itinerary      = models.TextField(blank=True,
+                                      help_text='Day-by-day itinerary, freeform.')
+    includes       = models.TextField(blank=True,
+                                      help_text="What's included in the price.")
+    excludes       = models.TextField(blank=True,
+                                      help_text="What's NOT included — state accommodation here if it's excluded.")
+    image          = models.ImageField(upload_to='safari/packages/', blank=True, null=True)
+    is_active      = models.BooleanField(
+        default=True, help_text='Uncheck to hide from listings without deleting.')
+    order          = models.PositiveSmallIntegerField(
+        default=0, help_text='Lower = shown first.')
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            from django.utils.text import slugify
+            self.slug = slugify(self.name)[:50]
+        super().save(*args, **kwargs)
+
+
+class SafariPackagePrice(models.Model):
+    """
+    Price for a given vehicle on a given package. This is the cell in the
+    package pricing matrix — mirrors SafariPricing (destination × vehicle),
+    keyed on package instead of destination.
+    """
+    package    = models.ForeignKey(
+        SafariPackage, on_delete=models.CASCADE, related_name='prices')
+    vehicle    = models.ForeignKey(
+        Vehicle, on_delete=models.CASCADE, related_name='safari_package_prices',
+        limit_choices_to={'category': 'safari'})
+    price_usd  = models.DecimalField(
+        max_digits=8, decimal_places=2,
+        help_text='Total price for this vehicle on this package, USD.')
+
+    class Meta:
+        unique_together = [('package', 'vehicle')]
+        ordering = ['package__order', 'vehicle__order']
+        verbose_name = 'Safari package price'
+        verbose_name_plural = 'Safari package pricing'
+
+    def __str__(self):
+        return f'{self.package.name} × {self.vehicle.name} = ${self.price_usd}'
+
+
+# ─────────────────────────────────────────────────────────────
 #  BOOKING
 # ─────────────────────────────────────────────────────────────
 def make_reference():
