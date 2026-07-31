@@ -16,7 +16,7 @@ class StaticViewSitemap(Sitemap):
 
     def items(self):
         return [
-            'home', 'fleet', 'faqs', 'cancellation', 'terms', 'support',
+            'home', 'fleet', 'safari', 'faqs', 'cancellation', 'terms', 'support',
             'about', 'check_booking',
             'location_nairobi', 'location_jkia',
             'location_mombasa', 'location_diani',
@@ -32,6 +32,7 @@ class StaticViewSitemap(Sitemap):
             'fleet': 0.9,
             'location_nairobi': 0.9,
             'location_jkia': 0.9,
+            'safari': 0.8,
             'faqs': 0.8,
             'about': 0.7,
             'support': 0.6,

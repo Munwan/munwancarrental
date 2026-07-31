@@ -41,7 +41,8 @@ urlpatterns = [
     path('invoice/<str:reference>/',     views.invoice_view, name='invoice_view'),
     path('invoice/<str:reference>/pdf/', views.invoice_pdf,  name='invoice_pdf'),
 
-    # ── Safari Package: destinations & live quote ─────────────
+    # ── Safari Package: indexable page + destinations & live quote ──
+    path('safari/',               views.safari_page,         name='safari'),
     path('safari/destinations/', views.safari_destinations, name='safari_destinations'),
     path('safari/quote/',        views.safari_quote,        name='safari_quote'),
 

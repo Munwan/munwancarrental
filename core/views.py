@@ -150,8 +150,34 @@ def privacy(request):
 
 
 # ─────────────────────────────────────────────────────────────
-#  SAFARI — quote endpoint & destination list
+#  SAFARI — indexable page, quote endpoint & destination list
 # ─────────────────────────────────────────────────────────────
+def safari_page(request):
+    """
+    Standalone, indexable Safari Package page — presents the offering
+    (safari-ready vehicles, destinations, per-vehicle pricing) as real
+    crawlable content. Read-only: reuses the same SafariDestination/
+    SafariPricing data the booking modal already queries via
+    /safari/quote/. The CTA links back into the existing modal via the
+    established ?type=safari redirect — this page doesn't submit anything.
+    """
+    vehicles = Vehicle.objects.filter(is_available=True, category='safari').order_by('order', 'name')
+    destinations = (
+        SafariDestination.objects
+        .filter(is_active=True)
+        .order_by('order', 'name')
+        .prefetch_related('pricing__vehicle')
+    )
+    for d in destinations:
+        prices = [p.price_usd for p in d.pricing.all() if p.vehicle.is_available]
+        d.price_from = min(prices) if prices else None
+    return render(request, 'core/safari.html', {
+        'vehicles':         vehicles,
+        'destinations':     destinations,
+        'whatsapp_number':  getattr(settings, 'WHATSAPP_NUMBER', '254727745907'),
+    })
+
+
 def safari_destinations(request):
     """
     Returns the list of active safari destinations for the booking form.

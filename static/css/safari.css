@@ -1,0 +1,224 @@
+/* ═══════════════════════════════════════════════════════
+   DriveKenya – Safari Package Landing Page
+   Mirrors the visual language of location.css (hero / section /
+   grid / cta) with its own safari-* class names.
+   ═══════════════════════════════════════════════════════ */
+
+.safari-page { padding-top: 65px; min-height: 100vh; background: #F0F4FF; }
+
+/* Hero band */
+.safari-hero {
+  background: linear-gradient(135deg, #0D1A3A 0%, #1A2F6A 50%, #0D1A3A 100%);
+  padding: 64px 52px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.safari-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 40%, rgba(0,198,255,0.15), transparent 50%);
+  pointer-events: none;
+}
+.safari-hero-inner {
+  max-width: 880px;
+  margin: 0 auto;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.safari-hero-icon { font-size: 3.2rem; margin-bottom: 14px; }
+.safari-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #00C6FF;
+  margin-bottom: 12px;
+}
+.safari-hero h1 {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 900;
+  line-height: 1.15;
+  margin-bottom: 14px;
+}
+.safari-tagline {
+  color: rgba(255,255,255,0.78);
+  font-size: 1rem;
+  line-height: 1.6;
+  max-width: 640px;
+  margin: 0 auto 28px;
+}
+.safari-hero-cta { margin-bottom: 22px; }
+.safari-btn {
+  padding: 13px 26px;
+  border-radius: 10px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.safari-btn-primary {
+  background: linear-gradient(135deg, #1A6BF5, #1250C4);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(26,107,245,0.4);
+}
+.safari-btn-primary:hover {
+  opacity: 0.94;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(26,107,245,0.5);
+}
+.safari-btn-lg { font-size: 1rem; padding: 16px 32px; }
+.safari-hero-trust {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+}
+
+/* Content wrapper */
+.safari-content {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 44px 52px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.safari-section {
+  background: #fff;
+  border: 1px solid #D6E0F5;
+  border-radius: 16px;
+  padding: 30px 32px;
+}
+.safari-section h2 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0A0F1E;
+  margin-bottom: 14px;
+  line-height: 1.25;
+}
+.safari-section p {
+  font-size: 0.94rem;
+  color: #374151;
+  line-height: 1.75;
+  margin-bottom: 14px;
+}
+.safari-section p:last-child { margin-bottom: 0; }
+.safari-section strong { color: #0A0F1E; font-weight: 700; }
+
+/* Vehicle cards (mirrors fleet .car-card, simplified) */
+.safari-vehicle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+.safari-vehicle-card {
+  background: #F0F4FF;
+  border: 1px solid #D6E0F5;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.svc-img { aspect-ratio: 16/10; overflow: hidden; background: #fff; }
+.svc-img img { width: 100%; height: 100%; object-fit: cover; }
+.svc-body { padding: 14px 16px; }
+.svc-body strong { display: block; color: #0A0F1E; font-size: 0.95rem; margin-bottom: 4px; }
+.svc-price { font-size: 0.85rem; font-weight: 700; color: #1A6BF5; }
+.svc-price span { font-weight: 500; color: #7888A8; }
+
+/* Destination cards */
+.safari-dest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+.safari-dest-card {
+  padding: 18px;
+  background: #F0F4FF;
+  border-radius: 12px;
+  border: 1px solid #D6E0F5;
+}
+.sdc-name { font-weight: 700; color: #0A0F1E; font-size: 0.98rem; margin-bottom: 4px; }
+.sdc-meta { font-size: 0.78rem; color: #7888A8; font-weight: 600; margin-bottom: 8px; }
+.sdc-desc { font-size: 0.86rem; color: #374151; line-height: 1.6; margin-bottom: 10px; }
+.sdc-price { font-size: 0.86rem; font-weight: 700; color: #1A6BF5; }
+.sdc-price span { font-weight: 500; color: #7888A8; }
+
+/* How-to steps */
+.safari-steps {
+  list-style: none;
+  counter-reset: sstep;
+  padding: 0;
+  margin-top: 14px;
+}
+.safari-steps li {
+  counter-increment: sstep;
+  position: relative;
+  padding-left: 50px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  color: #374151;
+  line-height: 1.65;
+  min-height: 36px;
+}
+.safari-steps li::before {
+  content: counter(sstep);
+  position: absolute;
+  left: 0; top: 0;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1A6BF5, #00C6FF);
+  color: #fff;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.94rem;
+}
+
+/* Final CTA */
+.safari-final-cta {
+  background: linear-gradient(135deg, #0D1A3A, #1A2F6A);
+  border-radius: 20px;
+  padding: 42px 32px;
+  text-align: center;
+  color: #fff;
+}
+.safari-final-cta h2 { color: #fff; font-size: 1.5rem; margin-bottom: 10px; }
+.safari-final-cta p { color: rgba(255,255,255,0.72); font-size: 0.94rem; margin-bottom: 22px; }
+.safari-wa-link {
+  display: block;
+  margin-top: 18px;
+  color: #00C6FF;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+.safari-wa-link:hover { text-decoration: underline; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .safari-hero { padding: 48px 24px; }
+  .safari-content { padding: 32px 24px; }
+  .safari-section { padding: 24px 20px; }
+}
+@media (max-width: 600px) {
+  .safari-hero { padding: 40px 16px; }
+  .safari-hero h1 { font-size: 1.5rem; }
+  .safari-content { padding: 24px 16px; gap: 20px; }
+  .safari-section { padding: 20px 16px; }
+  .safari-final-cta { padding: 32px 20px; }
+}

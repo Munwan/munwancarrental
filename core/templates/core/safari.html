@@ -1,0 +1,136 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Safari Package Car Hire in Kenya — 4×4 Rentals with Driver | Munwan Car Rental{% endblock %}
+{% block meta_description %}Book a safari-ready 4×4 with professional driver for your Kenya trip. Per-destination pricing across Maasai Mara, Amboseli and more — driver and fuel included.{% endblock %}
+{% block canonical %}https://munwancarrental.com/safari/{% endblock %}
+
+{% block og_title %}Safari Package Car Hire in Kenya | Munwan Car Rental{% endblock %}
+{% block og_desc %}Safari-ready 4×4 rentals with professional driver. Per-destination pricing, driver and fuel included.{% endblock %}
+{% block og_url %}https://munwancarrental.com/safari/{% endblock %}
+
+{% block tw_title %}Safari Package Car Hire in Kenya | Munwan Car Rental{% endblock %}
+{% block tw_desc %}Safari-ready 4×4 rentals with professional driver. Per-destination pricing, driver and fuel included.{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/safari.css' %}?v=1"/>
+{% endblock %}
+
+{% block content %}
+<div class="safari-page">
+
+  <!-- Hero -->
+  <section class="safari-hero">
+    <div class="safari-hero-inner">
+      <div class="safari-hero-icon">🦁</div>
+      <div class="safari-eyebrow">Kenya Safari Car Hire</div>
+      <h1>Safari Package Car Hire in Kenya</h1>
+      <p class="safari-tagline">
+        A safari-ready 4×4 with a professional driver and fuel included —
+        priced by destination so you know the cost before you book.
+      </p>
+      <div class="safari-hero-cta">
+        <a href="{% url 'home' %}?book=1&type=safari#booking" class="safari-btn safari-btn-primary safari-btn-lg">
+          🦁 Start Your Safari Booking
+        </a>
+      </div>
+      <div class="safari-hero-trust">
+        <span>✅ Professional driver included</span>
+        <span>✅ Fuel included</span>
+        <span>✅ Per-destination pricing</span>
+        <span>✅ M-Pesa accepted</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="safari-content">
+
+    <!-- Intro -->
+    <section class="safari-section">
+      <h2>How Safari Package Pricing Works</h2>
+      <p>
+        Every Safari Package includes a <strong>professional driver and fuel</strong> —
+        there's no separate driver fee to add on. Pricing is set per destination and per vehicle,
+        so a trip to a nearby park costs less than a multi-day trip further afield.
+      </p>
+      <!-- REVIEW (Munwan): confirm insurance coverage and any excluded costs (e.g. park/conservancy
+           entry fees) for safari bookings before publishing — SafariPricing.price_usd's own
+           help text only documents "vehicle + driver + fuel" and explicitly excludes park fees;
+           it says nothing about insurance either way, so no claim about it is made here yet. -->
+      <p>
+        Pick your vehicle and destinations below to see indicative pricing, then start your booking —
+        you'll get an exact, itemised quote for your chosen route before you pay anything.
+      </p>
+    </section>
+
+    <!-- Vehicles -->
+    <section class="safari-section">
+      <h2>Safari-Ready Vehicles</h2>
+      <div class="safari-vehicle-grid">
+        {% for v in vehicles %}
+        <div class="safari-vehicle-card">
+          <div class="svc-img">
+            <img src="{{ v.image_url }}" alt="{{ v.name }} safari car hire Kenya" loading="lazy"
+                 onerror="this.src='{% static 'images/cars/placeholder.jpg' %}'"/>
+          </div>
+          <div class="svc-body">
+            <strong>{{ v.name }}</strong>
+            {% with range=v.safari_price_range %}
+            <div class="svc-price">
+              ${{ range.0|floatformat:0 }}{% if range.0 != range.1 %}–${{ range.1|floatformat:0 }}{% endif %}
+              <span>/ day, per destination</span>
+            </div>
+            {% endwith %}
+          </div>
+        </div>
+        {% empty %}
+        <p style="color:var(--muted)">Safari vehicles will be listed here shortly. WhatsApp us at +254 727 745 907 for current availability.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Destinations -->
+    <section class="safari-section">
+      <h2>Popular Safari Destinations</h2>
+      <div class="safari-dest-grid">
+        {% for d in destinations %}
+        <div class="safari-dest-card">
+          <div class="sdc-name">{{ d.name }}</div>
+          <div class="sdc-meta">{{ d.distance_km }} km from Nairobi · {{ d.recommended_days }} day{{ d.recommended_days|pluralize }} recommended</div>
+          {% if d.description %}<div class="sdc-desc">{{ d.description }}</div>{% endif %}
+          {% if d.price_from %}
+          <div class="sdc-price">From ${{ d.price_from|floatformat:0 }} <span>/ day</span></div>
+          {% endif %}
+        </div>
+        {% empty %}
+        <p style="color:var(--muted)">Safari destinations will be listed here shortly. WhatsApp us at +254 727 745 907 to discuss your route.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- How to book -->
+    <section class="safari-section">
+      <h2>How to Book Your Safari</h2>
+      <ol class="safari-steps">
+        <li><strong>Choose your vehicle</strong> — pick from our safari-ready fleet above.</li>
+        <li><strong>Pick your destinations &amp; days</strong> — build your route, one leg at a time.</li>
+        <li><strong>Review your quote</strong> — a full, itemised breakdown before you pay.</li>
+        <li><strong>Pay securely</strong> — M-Pesa, Visa, Mastercard or Apple Pay.</li>
+      </ol>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="safari-final-cta">
+      <h2>Ready to Plan Your Kenya Safari?</h2>
+      <p>Free cancellation up to 48 hours before pickup. No hidden fees.</p>
+      <a href="{% url 'home' %}?book=1&type=safari#booking" class="safari-btn safari-btn-primary safari-btn-lg">
+        🦁 Start Your Safari Booking
+      </a>
+      <a href="https://wa.me/{{ whatsapp_number }}" target="_blank" class="safari-wa-link">
+        💬 Or WhatsApp us: +254 727 745 907
+      </a>
+    </section>
+
+  </div>
+</div>
+{% endblock %}
