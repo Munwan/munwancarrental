@@ -125,7 +125,7 @@ def _render_shell(*, title, preheader, body_html):
     )
 
 
-def _send_html(*, subject, to, html_body, text_body, preheader):
+def _send_html(*, subject, to, html_body, text_body, preheader, attachments=None):
     try:
         full_html = _render_shell(title=subject, preheader=preheader, body_html=html_body)
         msg = EmailMultiAlternatives(
@@ -135,6 +135,8 @@ def _send_html(*, subject, to, html_body, text_body, preheader):
             to=[to] if isinstance(to, str) else list(to),
         )
         msg.attach_alternative(full_html, 'text/html')
+        for filename, content, mimetype in (attachments or []):
+            msg.attach(filename, content, mimetype)
         msg.send(fail_silently=False)
         return True
     except Exception as exc:
@@ -488,12 +490,25 @@ def send_booking_confirmation(booking):
         ]
         text = '\n'.join(text_lines) + '\n'
 
+        # Attach a PDF copy of this confirmation. If rendering fails, log it
+        # but still send the email — the PDF is a bonus, not a blocker.
+        attachments = []
+        try:
+            from .pdf_invoice import render_booking_confirmation_pdf
+            pdf_bytes = render_booking_confirmation_pdf(booking)
+            attachments.append(
+                (f'booking-confirmation-{booking.reference}.pdf', pdf_bytes, 'application/pdf')
+            )
+        except Exception:
+            logger.exception('Confirmation PDF render failed for %s — sending email without attachment', booking.reference)
+
         return _send_html(
             subject=f'Booking confirmed — {booking.reference}',
             to=booking.email,
             html_body=body,
             text_body=text,
             preheader=preheader,
+            attachments=attachments,
         )
     except Exception:
         logger.exception('send_booking_confirmation failed')

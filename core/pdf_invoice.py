@@ -290,3 +290,169 @@ def render_invoice_pdf(booking) -> bytes:
     pdf = buf.getvalue()
     buf.close()
     return pdf
+
+
+def render_booking_confirmation_pdf(booking) -> bytes:
+    """Build a downloadable PDF of the booking-confirmation email — same
+    branches (transfer / extension / normal), same fields, same wording.
+    Every value is read live off `booking`; nothing here is hardcoded."""
+    # Lazy import: avoids a module-scope circular import with emails.py
+    # (which imports this module inside its own functions).
+    from .emails import _is_transfer, _return_str
+
+    buf = BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        leftMargin=18*mm, rightMargin=18*mm,
+        topMargin=18*mm, bottomMargin=18*mm,
+        title=f'Booking Confirmation {booking.reference}',
+    )
+    styles = getSampleStyleSheet()
+    body   = ParagraphStyle('body',   parent=styles['Normal'], fontName='Helvetica',     fontSize=10.5, leading=16, textColor=INK)
+    small  = ParagraphStyle('small',  parent=styles['Normal'], fontName='Helvetica',     fontSize=8.5,  leading=11, textColor=MUTED)
+    h1     = ParagraphStyle('h1',     parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=20, textColor=INK, spaceAfter=2)
+    brandh = ParagraphStyle('brandh', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=18, textColor=NAVY, spaceAfter=2)
+    invlabel = ParagraphStyle('invlabel', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9,  textColor=MUTED, alignment=2)
+    invvalue = ParagraphStyle('invvalue', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, textColor=INK,   alignment=2)
+    seclabel = ParagraphStyle('seclabel', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9,  textColor=colors.HexColor('#9CA3AF'), spaceAfter=6)
+    reflabel = ParagraphStyle('reflabel', parent=styles['Normal'], fontName='Helvetica',      fontSize=9,  textColor=MUTED)
+    refvalue = ParagraphStyle('refvalue', parent=styles['Normal'], fontName='Courier-Bold',   fontSize=13, textColor=INK)
+    rowlabel = ParagraphStyle('rowlabel', parent=styles['Normal'], fontName='Helvetica',      fontSize=9.5, textColor=MUTED)
+    rowvalue = ParagraphStyle('rowvalue', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, textColor=INK, alignment=2)
+
+    story = []
+
+    # ── HEADER: brand left + document meta right ────────────────────
+    header_data = [[
+        [
+            Paragraph('Munwan Car Rental', brandh),
+            Paragraph('Premium Car Rental · Self Drive &amp; Chauffeur Services', small),
+            Spacer(1, 8),
+            Paragraph('Nairobi, Kenya', body),
+            Paragraph('+254 727 745 907', body),
+            Paragraph('info@munwancarrental.com', body),
+        ],
+        [
+            Paragraph('BOOKING CONFIRMATION', invlabel),
+            Paragraph(booking.reference, invvalue),
+            Spacer(1, 8),
+            Paragraph('Confirmed', invlabel),
+            Paragraph(booking.updated_at.strftime('%d %b %Y') if booking.updated_at else '—', invvalue),
+        ],
+    ]]
+    header = Table(header_data, colWidths=[100*mm, 70*mm])
+    header.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+    ]))
+    story.append(header)
+    story.append(Spacer(1, 12))
+
+    rule = Table([['']], colWidths=[174*mm], rowHeights=[2])
+    rule.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,-1), BLUE)]))
+    story.append(rule)
+    story.append(Spacer(1, 18))
+
+    # ── Branch: transfer / extension / normal — mirrors emails.py's
+    #    send_booking_confirmation exactly, field for field. ───────────
+    is_transfer   = _is_transfer(booking)
+    is_extension  = bool(getattr(booking, 'parent_booking_id', None))
+
+    if is_transfer:
+        route_label = booking.transfer_destination or booking.dropoff_location or '—'
+        if booking.transfer_direction == 'TO':
+            pickup_label, drop_label = route_label, 'JKIA'
+        else:
+            pickup_label, drop_label = 'JKIA', route_label
+        rows = [
+            ('Trip',       'Airport Transfer (one-way)'),
+            ('Pickup',     pickup_label),
+            ('Drop-off',   drop_label),
+            ('Zone',       booking.get_transfer_zone_display() if booking.transfer_zone else None),
+            ('Car class',  booking.get_transfer_car_type_display() if booking.transfer_car_type else None),
+            ('When',       f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
+            ('Night fare', 'Yes (+$8 surcharge)' if booking.is_night_surcharge else None),
+        ]
+        lead_h1 = f'Transfer confirmed, {booking.first_name}.'
+        lead_p  = ('Your airport transfer is locked in. '
+                   "We'll WhatsApp you with the driver's details before pickup.")
+    elif is_extension:
+        parent_ref = booking.parent_booking.reference if booking.parent_booking else '—'
+        rows = [
+            ('Vehicle',         booking.vehicle.name),
+            ('Hire type',       'Extension of ' + parent_ref),
+            ('Driver',          'With driver' if booking.with_driver else 'Self drive'),
+            ('Extends through', _return_str(booking)),
+            ('Additional days', str(booking.days or '—')),
+        ]
+        lead_h1 = f'Extension confirmed, {booking.first_name}.'
+        lead_p  = (f'Your {booking.vehicle.name} rental has been extended to '
+                   f'{_return_str(booking)}. Enjoy your additional days!')
+    else:
+        rows = [
+            ('Vehicle',   booking.vehicle.name),
+            ('Hire type', booking.get_hire_type_display()),
+            ('Driver',    'With driver' if booking.with_driver else 'Self drive'),
+            ('Pickup',    f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
+            ('Return',    _return_str(booking)),
+            ('Pickup at', booking.get_pickup_location_display()),
+            ('Hotel',     booking.hotel_address if booking.hotel_address else None),
+            ('Baby seat', 'Included' if booking.baby_seat else None),
+        ]
+        lead_h1 = f'Booking confirmed, {booking.first_name}.'
+        lead_p  = (f"Your {booking.vehicle.name} is locked in. "
+                   "We'll WhatsApp you 24 hours before pickup with final details.")
+
+    story.append(Paragraph(lead_h1, h1))
+    story.append(Paragraph(lead_p, body))
+    story.append(Spacer(1, 16))
+
+    # ── Reference box — blue left border, like the email's _ref_pill ──
+    ref_box = Table(
+        [[Paragraph('Booking reference', reflabel)],
+         [Paragraph(booking.reference, refvalue)]],
+        colWidths=[171*mm],
+    )
+    ref_box.setStyle(TableStyle([
+        ('BACKGROUND',   (0,0), (-1,-1), LIGHT),
+        ('LINEBEFORE',   (0,0), (0,-1), 3, BLUE),
+        ('LEFTPADDING',  (0,0), (-1,-1), 15),
+        ('RIGHTPADDING', (0,0), (-1,-1), 15),
+        ('TOPPADDING',   (0,0), (-1,0), 12),
+        ('BOTTOMPADDING',(0,0), (-1,0), 2),
+        ('TOPPADDING',   (0,1), (-1,1), 2),
+        ('BOTTOMPADDING',(0,1), (-1,1), 12),
+    ]))
+    story.append(ref_box)
+    story.append(Spacer(1, 20))
+
+    # ── Confirmed details — label/value rows, skipping empty values ───
+    story.append(Paragraph('CONFIRMED DETAILS', seclabel))
+    detail_rows = [
+        [Paragraph(label, rowlabel), Paragraph(str(value), rowvalue)]
+        for label, value in rows if value not in (None, '', False)
+    ]
+    details = Table(detail_rows, colWidths=[68*mm, 103*mm])
+    details.setStyle(TableStyle([
+        ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING',   (0,0), (-1,-1), 0),
+        ('RIGHTPADDING',  (0,0), (-1,-1), 0),
+        ('TOPPADDING',    (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('LINEBELOW',     (0,0), (-1,-1), 0.5, BORDER),
+    ]))
+    story.append(details)
+    story.append(Spacer(1, 22))
+
+    # ── Bring at pickup ────────────────────────────────────────────
+    story.append(Paragraph('BRING AT PICKUP', seclabel))
+    story.append(Paragraph(
+        'Passport or National ID, your driving licence (and IDP if visiting), '
+        'and the card or M-Pesa number you paid with.',
+        body))
+
+    doc.build(story)
+    pdf = buf.getvalue()
+    buf.close()
+    return pdf
