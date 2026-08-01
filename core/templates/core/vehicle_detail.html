@@ -210,7 +210,7 @@
 <input type="hidden" id="paystackPk" value="{{ paystack_pk }}"/>
 
 <script type="application/json" id="vehicleData">
-[{"id":{{ vehicle.id }},"name":"{{ vehicle.name }}","usd":{{ vehicle.price_usd }},"eur":{{ vehicle.price_eur }},"kes":{{ vehicle.price_kes }},"driver":{{ vehicle.driver_fee_usd }}}]
+[{"id":{{ vehicle.id }},"name":"{{ vehicle.name }}","category":"{{ vehicle.category }}","usd":{{ vehicle.price_usd }},"eur":{{ vehicle.price_eur }},"kes":{{ vehicle.price_kes }},"driver":{{ vehicle.driver_fee_usd }}}]
 </script>
 {% endblock %}
 

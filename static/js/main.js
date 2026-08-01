@@ -50,6 +50,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // hire-type tabs (top of homepage) open booking modal & sync to modal pills
   document.querySelectorAll('#hireTabs .tab').forEach(tab => {
     tab.addEventListener('click', () => {
+      // Safari now lives on its own indexable page — send it there instead
+      // of opening the modal. All other hire types are unchanged below.
+      if (tab.dataset.type === 'safari') { window.location.href = '/safari/'; return; }
       document.querySelectorAll('#hireTabs .tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       openBookingModal();
@@ -449,6 +452,17 @@ function openBookingModal() {
 }
 
 function openBookingModalPrefilled() {
+  // Safari vehicles can also be picked in the generic quick-search dropdown
+  // (#qs_vehicle isn't filtered by category) — detect and redirect before
+  // opening the modal, same fallback check as openBookingModalForCar.
+  const qsVehicleId = val('qs_vehicle');
+  const safariSel = $id('b_safari_vehicle');
+  const isSafariCar = !!(qsVehicleId && safariSel &&
+    Array.from(safariSel.options).some(o => o.value === String(qsVehicleId)));
+  if (isSafariCar) {
+    window.location.href = '/safari/';
+    return;
+  }
   openBookingModal();
   const map = {
     'b_vehicle':'qs_vehicle','b_pickup_location':'qs_pickup',
@@ -464,6 +478,25 @@ function openBookingModalPrefilled() {
 }
 
 function openBookingModalForCar(vehicleId) {
+  // Detect whether this is a safari-only car — checked FIRST, before the
+  // modal-presence redirect below, so this also works on pages (like the
+  // vehicle detail page) where the modal doesn't exist at all. Primary
+  // signal is VEHICLES[].category (works on any page); falls back to the
+  // safari select's options when category isn't available but the modal
+  // (and its #b_safari_vehicle select) happens to be present.
+  const v = (VEHICLES || []).find(x => String(x.id) === String(vehicleId));
+  let isSafariCar = !!(v && v.category === 'safari');
+  const safariSel = $id('b_safari_vehicle');
+  if (!isSafariCar && safariSel) {
+    isSafariCar = Array.from(safariSel.options).some(o => o.value === String(vehicleId));
+  }
+  if (isSafariCar) {
+    // Safari now lives on its own indexable page — send it there instead
+    // of pivoting the modal into Safari mode.
+    window.location.href = '/safari/';
+    return;
+  }
+
   // Vehicle detail page lives at /cars/<slug>/ — modal isn't there.
   // Redirect home with vehicle pre-selected.
   if (!$id('bookingOverlay')) {
@@ -472,31 +505,16 @@ function openBookingModalForCar(vehicleId) {
   }
   openBookingModal();
 
-  // Detect whether this is a safari-only car. Safari cars are hidden from
-  // the standard rental dropdown, so we need to pivot the modal into Safari
-  // mode before trying to pre-select.
-  const v = (VEHICLES || []).find(x => String(x.id) === String(vehicleId));
-  // Fallback to checking the safari select if VEHICLES doesn't have category
-  let isSafariCar = false;
-  const safariSel = $id('b_safari_vehicle');
-  if (safariSel) {
-    isSafariCar = Array.from(safariSel.options).some(o => o.value === String(vehicleId));
-  }
-
-  if (isSafariCar) {
-    if (typeof setHireType === 'function') setHireType('safari');
-    if (safariSel) {
-      safariSel.value = String(vehicleId);
-      if (typeof updateSafariQuote === 'function') updateSafariQuote();
-    }
-  } else {
-    const sel = $id('b_vehicle');
-    if (sel) { sel.value = String(vehicleId); updatePricingPreview(); }
-  }
+  const sel = $id('b_vehicle');
+  if (sel) { sel.value = String(vehicleId); updatePricingPreview(); }
 }
 
 // Service card helper — sets hire type and opens modal
 function openBookingModalWithType(type) {
+  // Safari now lives on its own indexable page — send it there instead of
+  // opening the modal, regardless of whether the modal exists on this page.
+  // All other types (normal/corporate/transfer) fall through unchanged.
+  if (type === 'safari') { window.location.href = '/safari/'; return; }
   // If modal isn't on this page, redirect home with type pre-selected
   if (!$id('bookingOverlay')) {
     window.location.href = '/?book=1&type=' + encodeURIComponent(type) + '#booking';
