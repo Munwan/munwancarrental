@@ -25,7 +25,8 @@ from .forms import (
 )
 from .middleware import get_client_ip
 from .models import (Booking, EmailOTP, PaymentLog, Review, SafariDestination,
-                     SafariPricing, SupportTicket, Vehicle, make_invoice_number)
+                     SafariPackage, SafariPackagePrice, SafariPricing,
+                     SupportTicket, Vehicle, make_invoice_number)
 from .payments import PaystackBackend
 
 # Module-level alias so booking_submit can call it with underscore prefix
@@ -171,9 +172,42 @@ def safari_page(request):
     for d in destinations:
         prices = [p.price_usd for p in d.pricing.all() if p.vehicle.is_available]
         d.price_from = min(prices) if prices else None
+
+    packages = (
+        SafariPackage.objects
+        .filter(is_active=True)
+        .order_by('order', 'name')
+        .prefetch_related('prices__vehicle')
+    )
+    for p in packages:
+        prices = [pr.price_usd for pr in p.prices.all() if pr.vehicle.is_available]
+        p.price_from = min(prices) if prices else None
+
     return render(request, 'core/safari.html', {
         'vehicles':         vehicles,
         'destinations':     destinations,
+        'packages':         packages,
+        'whatsapp_number':  getattr(settings, 'WHATSAPP_NUMBER', '254727745907'),
+    })
+
+
+def safari_package_detail(request, slug):
+    """
+    Individual safari package detail page — full itinerary, includes,
+    excludes and per-vehicle pricing, plus a WhatsApp enquiry CTA (no
+    on-site booking for packages yet). 404s for inactive or missing slugs
+    via the is_active filter baked into the lookup itself.
+    """
+    package = get_object_or_404(SafariPackage, slug=slug, is_active=True)
+    prices = (
+        SafariPackagePrice.objects
+        .filter(package=package, vehicle__is_available=True)
+        .select_related('vehicle')
+        .order_by('vehicle__order', 'vehicle__name')
+    )
+    return render(request, 'core/safari_package_detail.html', {
+        'package':          package,
+        'prices':           prices,
         'whatsapp_number':  getattr(settings, 'WHATSAPP_NUMBER', '254727745907'),
     })
 

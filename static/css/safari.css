@@ -157,6 +157,35 @@
 .sdc-price { font-size: 0.86rem; font-weight: 700; color: #1A6BF5; }
 .sdc-price span { font-weight: 500; color: #7888A8; }
 
+/* Package cards */
+.safari-package-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+.safari-package-card {
+  background: #F0F4FF;
+  border: 1px solid #D6E0F5;
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  display: block;
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+}
+.safari-package-card:hover {
+  box-shadow: 0 10px 26px rgba(26,107,245,0.12);
+  transform: translateY(-2px);
+  border-color: #1A6BF5;
+}
+.spc-img { aspect-ratio: 16/10; overflow: hidden; background: #fff; }
+.spc-img img { width: 100%; height: 100%; object-fit: cover; }
+.spc-body { padding: 14px 16px; }
+.spc-body strong { display: block; color: #0A0F1E; font-size: 0.95rem; margin-bottom: 4px; }
+.spc-meta { font-size: 0.78rem; color: #7888A8; font-weight: 600; margin-bottom: 6px; }
+.spc-summary { font-size: 0.84rem; color: #374151; line-height: 1.5; margin-bottom: 8px; }
+.spc-price { font-size: 0.85rem; font-weight: 700; color: #1A6BF5; }
+
 /* How-to steps */
 .safari-steps {
   list-style: none;
@@ -208,6 +237,41 @@
   font-size: 0.88rem;
 }
 .safari-wa-link:hover { text-decoration: underline; }
+
+/* Package detail page */
+.package-image-section { padding: 0; overflow: hidden; }
+.package-hero-img { width: 100%; max-height: 420px; object-fit: cover; display: block; }
+.package-itinerary { font-size: 0.92rem; color: #374151; line-height: 1.75; }
+.package-inc-exc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+.package-includes h3 { font-size: 1rem; color: #0A0F1E; margin-bottom: 10px; }
+.package-includes { font-size: 0.9rem; color: #374151; line-height: 1.65; }
+.package-excludes-callout {
+  background: #FEF6E7;
+  border: 1px solid #F3D9A4;
+  border-radius: 12px;
+  padding: 16px 18px;
+  font-size: 0.9rem;
+  color: #7A5B14;
+  line-height: 1.65;
+}
+.package-excludes-callout h3 { font-size: 1rem; color: #7A5B14; margin-bottom: 10px; }
+.package-price-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+.package-price-table th, .package-price-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #D6E0F5;
+}
+.package-price-table th { color: #7888A8; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.package-price-table td { color: #0A0F1E; font-weight: 600; }
 
 /* Responsive */
 @media (max-width: 900px) {

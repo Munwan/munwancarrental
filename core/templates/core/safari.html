@@ -108,6 +108,32 @@
       </div>
     </section>
 
+    {% if packages %}
+    <!-- Curated Packages -->
+    <section class="safari-section">
+      <h2>Curated Safari Packages</h2>
+      <div class="safari-package-grid">
+        {% for p in packages %}
+        <a href="{% url 'safari_package_detail' slug=p.slug %}" class="safari-package-card">
+          <div class="spc-img">
+            <img src="{% if p.image %}{{ p.image.url }}{% else %}{% static 'images/cars/placeholder.jpg' %}{% endif %}"
+                 alt="{{ p.name }}" loading="lazy"
+                 onerror="this.src='{% static 'images/cars/placeholder.jpg' %}'"/>
+          </div>
+          <div class="spc-body">
+            <strong>{{ p.name }}</strong>
+            <div class="spc-meta">{{ p.duration_days }} day{{ p.duration_days|pluralize }}</div>
+            {% if p.summary %}<div class="spc-summary">{{ p.summary }}</div>{% endif %}
+            {% if p.price_from %}
+            <div class="spc-price">From ${{ p.price_from|floatformat:0 }}</div>
+            {% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
     <!-- How to book -->
     <section class="safari-section">
       <h2>How to Book Your Safari</h2>

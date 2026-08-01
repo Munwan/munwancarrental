@@ -5,7 +5,7 @@ location pages. Submit this URL in Google Search Console.
 """
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
-from .models import Vehicle
+from .models import SafariPackage, Vehicle
 
 
 class StaticViewSitemap(Sitemap):
@@ -57,7 +57,21 @@ class VehicleSitemap(Sitemap):
         return getattr(obj, 'updated_at', None)
 
 
+class SafariPackageSitemap(Sitemap):
+    """One URL per active safari package."""
+    priority = 0.7
+    changefreq = 'monthly'
+    protocol = 'https'
+
+    def items(self):
+        return SafariPackage.objects.filter(is_active=True)
+
+    def location(self, obj):
+        return reverse('safari_package_detail', kwargs={'slug': obj.slug})
+
+
 sitemaps = {
-    'static':   StaticViewSitemap,
-    'vehicles': VehicleSitemap,
+    'static':         StaticViewSitemap,
+    'vehicles':       VehicleSitemap,
+    'safari_packages': SafariPackageSitemap,
 }
