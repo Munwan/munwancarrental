@@ -803,7 +803,9 @@ def booking_submit(request):
         vehicle     = cd['vehicle']
         pickup_date = cd['pickup_date']
         return_date = cd['return_date']
-        days        = (return_date - pickup_date).days or 1
+        # Calendar-day billing: both pickup and return dates count, floored
+        # to a 2-day minimum. Times are ignored — see Booking.calculate_totals.
+        days        = max((return_date - pickup_date).days + 1, 2)
 
         with_driver = bool(cd.get('with_driver', False))
         baby_seat   = bool(cd.get('baby_seat', False))

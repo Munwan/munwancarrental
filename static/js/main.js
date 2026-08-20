@@ -1123,8 +1123,11 @@ function updatePricingPreview() {
   if (!vehicleId || !pDate || !rDate) { if (preview) preview.style.display = 'none'; return; }
   const v = VEHICLES.find(x => x.id === vehicleId);
   if (!v) return;
-  let days = Math.ceil((new Date(rDate) - new Date(pDate)) / 86400000);
-  if (isNaN(days) || days < 1) days = 1;
+  // Calendar-day billing: both pickup and return dates count, floored to a
+  // 2-day minimum. Must stay identical to core/views.py's booking_submit().
+  let days = Math.round((new Date(rDate) - new Date(pDate)) / 86400000) + 1;
+  if (isNaN(days)) days = 2;
+  days = Math.max(days, 2);
   const base = parseFloat(v.usd) * days;
   const driverFee = withDriver ? parseFloat(v.driver) * days : 0;
   const babyFee   = babySeat ? 10 : 0;  // $10 flat for the whole trip
@@ -1370,20 +1373,18 @@ async function submitStep1() {
     }
   }
 
-  // ── Minimum 2-day rental duration ────────────────────────
-  // Compute days between pickup and return; reject if < 2.
-  if (fields.pickup_date && fields.return_date) {
-    const pd = new Date(fields.pickup_date + 'T' + (fields.pickup_time || '08:00'));
-    const rd = new Date(fields.return_date + 'T' + (fields.return_time || '08:00'));
-    const ms = rd - pd;
-    const days = Math.ceil(ms / (1000 * 60 * 60 * 24));
-    if (days < 2) {
-      toast('Minimum rental is 2 days. Please adjust your return date.', 'error');
-      showFieldError('return_date', 'Minimum rental period is 2 days.');
-      const rdEl = document.getElementById('b_return_date');
-      if (rdEl) rdEl.scrollIntoView({behavior:'smooth', block:'center'});
-      return;
-    }
+  // ── Return date must be after pick-up (normal/corporate only) ─────
+  // This code path is unreachable for Airport Transfer (branches into
+  // submitStep1Transfer() above) and Safari (submitStep1Safari()), so
+  // same-day transfers/safaris are unaffected. Minimum billed period is
+  // 2 calendar days (see core/forms.py's clean() and views.py's
+  // booking_submit()).
+  if (fields.pickup_date && fields.return_date && fields.return_date <= fields.pickup_date) {
+    toast('Return date must be after the pick-up date. Minimum rental is 2 days.', 'error');
+    showFieldError('return_date', 'Return date must be after the pick-up date.');
+    const rdEl = document.getElementById('b_return_date');
+    if (rdEl) rdEl.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
   }
 
   // ── Password validation when creating an account ─────────

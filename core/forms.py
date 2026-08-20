@@ -157,21 +157,14 @@ class BookingStep1Form(forms.Form):
                 'Pick-up date must be tomorrow or later. Same-day bookings aren\'t available — please WhatsApp us for urgent requests.')
 
         if pickup_date and return_date:
-            if return_date < pickup_date:
-                self.add_error('return_date', 'Return date must be after pick-up date.')
-            elif return_date == pickup_date:
-                # Same-day rental — always too short (minimum is 2 days)
-                self.add_error('return_date', 'Minimum rental period is 2 days. Please choose a later return date.')
+            if return_date <= pickup_date:
+                # Normal/Corporate hires require a later return date — same-day
+                # is not allowed (unlike Airport Transfer, which bypasses this
+                # form entirely via _booking_submit_transfer). Minimum billed
+                # period is 2 calendar days (see Booking.calculate_totals).
+                self.add_error('return_date',
+                    'Return date must be after pick-up date. Minimum rental period is 2 days.')
             else:
-                # Different dates — verify gap is at least 2 days
-                from datetime import datetime as _dt
-                pd = _dt.combine(pickup_date, pickup_time or _dt.min.time())
-                rd = _dt.combine(return_date, return_time or _dt.min.time())
-                hours = (rd - pd).total_seconds() / 3600
-                if hours < 24:  # Less than 1 full day
-                    self.add_error('return_date',
-                        'Minimum rental period is 2 days. Please choose a later return date.')
-
                 # Corporate Hire requires a 5-day minimum. Enforced here so a
                 # JS bypass (DevTools, automation, etc.) still gets blocked.
                 hire_type = cleaned.get('hire_type', '') or ''
