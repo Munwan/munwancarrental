@@ -46,8 +46,12 @@ munwancarrental.com, www.munwancarrental.com {
     #   - js.paystack.co / *.paystack.co / *.paystack.com  → payment popup
     #   - paystack.com                                      → popup stylesheet
     #   - static.cloudflareinsights.com                     → CF analytics
-    #   - googletagmanager.com / google-analytics.com       → Google Analytics
-    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.paystack.co https://*.paystack.co https://*.paystack.com https://static.cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://paystack.com https://*.paystack.co; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://*.paystack.co https://*.paystack.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://*.paystack.co https://*.paystack.com https://checkout.paystack.com; form-action 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'"
+    #   - googletagmanager.com / google-analytics.com       → GA tag loader
+    #   - www.google.com / analytics.google.com             → GA4 collect beacon
+    #     (GA4 sends its measurement pings to /g/collect on these two
+    #     domains, not just google-analytics.com — without them the
+    #     browser's CSP blocks every GA hit with "Refused to connect")
+    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.paystack.co https://*.paystack.co https://*.paystack.com https://static.cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://paystack.com https://*.paystack.co; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://*.paystack.co https://*.paystack.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://analytics.google.com; frame-src 'self' https://*.paystack.co https://*.paystack.com https://checkout.paystack.com; form-action 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'"
 
     # ── Permissions Policy ───────────────────────────────────────────
     # Disables device APIs the site doesn't use. payment=(self) lets the
