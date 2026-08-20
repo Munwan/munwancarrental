@@ -167,10 +167,13 @@ class BookingStep1Form(forms.Form):
             else:
                 # Corporate Hire requires a 5-day minimum. Enforced here so a
                 # JS bypass (DevTools, automation, etc.) still gets blocked.
+                # Billed days = (return-pickup).days + 1 (see views.py's
+                # booking_submit), so day_diff must be >= 4 for the actual
+                # billed period to reach 5 days.
                 hire_type = cleaned.get('hire_type', '') or ''
                 if hire_type == 'corporate':
                     day_diff = (return_date - pickup_date).days
-                    if day_diff < 5:
+                    if day_diff < 4:
                         self.add_error('return_date',
                             'Corporate Hire requires a minimum of 5 days. Please choose a later return date.')
 

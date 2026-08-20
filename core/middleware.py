@@ -32,10 +32,23 @@ logger = logging.getLogger('drivekenya.security')
 
 
 def get_client_ip(request):
-    """Extract real client IP, respecting X-Forwarded-For."""
-    xff = request.META.get('HTTP_X_FORWARDED_FOR')
-    if xff:
-        return xff.split(',')[0].strip()
+    """
+    Extract the real client IP.
+
+    Caddy's reverse_proxy block (Caddyfile) sets X-Real-IP to the actual
+    connecting address on every request, overwriting anything the client
+    sent — that's the only header we trust as authoritative.
+
+    X-Forwarded-For is NOT used as a fallback here: Caddy appends to that
+    header rather than replacing it, so a client that sends its own fake
+    X-Forwarded-For ends up as the FIRST entry — naive `.split(',')[0]`
+    parsing (the previous implementation) returns the attacker-controlled
+    value instead of the real IP Caddy appended, silently defeating every
+    IP-keyed rate limit in RateLimitMiddleware.
+    """
+    real_ip = request.META.get('HTTP_X_REAL_IP')
+    if real_ip:
+        return real_ip.strip()
     return request.META.get('REMOTE_ADDR', '0.0.0.0')
 
 
@@ -75,34 +88,65 @@ class RateLimitMiddleware:
                 ('POST', '/auth/register/'):    ('register', getattr(settings, 'RATE_LIMIT_REGISTER', 10)),
                 ('POST', '/payments/process/'): ('payment', 30),
                 ('POST', '/support/'):          ('support', 20),
-                # GET — booking-reference lookup has no ownership check by
-                # design (public "check my booking" feature), so without a
-                # limit here it's an unthrottled oracle for enumerating other
-                # customers' trip details by brute-forcing the reference.
+                # GET — both are ownership-check-free public reference
+                # lookups (by design — "check my booking" / resume payment),
+                # so without a limit here each is an unthrottled oracle for
+                # enumerating other customers' trip details.
                 ('GET', '/booking/check/'):     ('check_booking', getattr(settings, 'RATE_LIMIT_CHECK_BOOKING', 20)),
+                ('GET', '/booking/summary/'):   ('check_booking', getattr(settings, 'RATE_LIMIT_CHECK_BOOKING', 20)),
+                # Django admin has no brute-force protection of its own
+                # (unlike /auth/login/'s 5-fails/15-min lockout) — same
+                # login action/limit as the customer-facing login.
+                ('POST', '/admin/login/'):      ('login', getattr(settings, 'RATE_LIMIT_LOGIN', 10)),
             }
         return self._limits
 
+    # Prefix-matched rules for paths with a dynamic segment (e.g. the
+    # booking reference in /invoice/<ref>/), checked when no exact match
+    # is found. Same enumeration concern as /booking/check/ — invoice
+    # references are also just 6 random hex chars, and this endpoint
+    # reveals company name, KRA PIN, and billing totals.
+    def _prefix_limits(self):
+        return [
+            ('GET', '/invoice/', 'check_booking', getattr(settings, 'RATE_LIMIT_CHECK_BOOKING', 20)),
+        ]
+
+    # Actions that stay rate-limited even for authenticated users. Signing up
+    # only costs an email + OTP round-trip, so "authenticated" isn't a real
+    # barrier against someone using an account purely to dodge the
+    # enumeration limit on the reference-lookup endpoints above.
+    _NO_AUTH_EXEMPT = {'check_booking'}
+
     def _is_enabled(self, request) -> bool:
-        """Gate the whole middleware."""
+        """Gate the whole middleware (kill switch / DEBUG only — auth
+        exemption is handled per-rule in __call__, since a couple of rules
+        must still apply to authenticated users)."""
         # Explicit kill switch
         if getattr(settings, 'RATE_LIMIT_ENABLED', None) is False:
             return False
         # DEBUG defaults off, unless RATE_LIMIT_ENABLED=True overrides
         if getattr(settings, 'DEBUG', False) and not getattr(settings, 'RATE_LIMIT_ENABLED', False):
             return False
-        # Exempt authenticated users unless explicitly disabled
-        if getattr(settings, 'RATE_LIMIT_EXEMPT_AUTHED', True):
-            user = getattr(request, 'user', None)
-            if user is not None and user.is_authenticated:
-                return False
         return True
+
+    def _is_authed_exempt(self, request) -> bool:
+        if not getattr(settings, 'RATE_LIMIT_EXEMPT_AUTHED', True):
+            return False
+        user = getattr(request, 'user', None)
+        return bool(user is not None and user.is_authenticated)
 
     def __call__(self, request):
         if self._is_enabled(request):
             rule = self._get_limits().get((request.method, request.path))
+            if rule is None:
+                for method, prefix, action, limit in self._prefix_limits():
+                    if request.method == method and request.path.startswith(prefix):
+                        rule = (action, limit)
+                        break
             if rule:
                 action, limit = rule
+                if action not in self._NO_AUTH_EXEMPT and self._is_authed_exempt(request):
+                    return self.get_response(request)
                 ip = get_client_ip(request)
                 # Don't rate-limit yourself on localhost / LAN
                 if not _is_private_or_localhost(ip):

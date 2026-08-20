@@ -16,8 +16,28 @@ try:
 except ImportError:
     pass  # dotenv not installed — env vars must come from the OS
 
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY','change-me-in-production-use-a-long-random-string-50chars+')
-DEBUG        = os.environ.get('DEBUG', 'True') == 'True'
+# DEBUG defaults to False (fail-safe) — an unset DEBUG env var on a real
+# deployment should never silently turn on stack traces / settings dumps.
+# Local dev always sets DEBUG=True explicitly in .env, so this default
+# only matters as a safety net if that ever goes missing.
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+
+_secret_key = os.environ.get('DJANGO_SECRET_KEY', '').strip()
+if not _secret_key:
+    if DEBUG:
+        # Fine for local dev only — never reaches a real deployment because
+        # the check below refuses to boot without a real key when DEBUG=False.
+        _secret_key = 'django-insecure-local-dev-only-do-not-use-in-production'
+    else:
+        # A hardcoded placeholder that's committed to the repo must never be
+        # used to sign sessions/CSRF tokens/password-reset links in
+        # production — that would let anyone forge them. Fail loudly instead.
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured(
+            'DJANGO_SECRET_KEY is not set. Refusing to start with DEBUG=False '
+            'and no secret key — set DJANGO_SECRET_KEY in the environment.'
+        )
+SECRET_KEY = _secret_key
 
 # ALLOWED_HOSTS: tolerant of comma, space, or mixed separators in .env.
 # Examples that all work:

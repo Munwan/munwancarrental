@@ -16,6 +16,7 @@ Functions:
   send_payment_admin_alert(booking)     – Admin: payment succeeded
   send_support_notification(ticket)     – Admin: new support ticket
 """
+import html
 import logging
 
 from django.conf import settings
@@ -167,6 +168,21 @@ def _ref_pill(reference):
     )
 
 
+class _SafeText(str):
+    """
+    Marks a string as pre-approved literal HTML for _details() — everything
+    else gets escaped. Only use this for hardcoded markup we wrote (e.g. the
+    "Paid" status badge below), never for anything derived from user input
+    (company_name, transfer_destination, dropoff_location, etc. all flow
+    through here unescaped otherwise and are attacker-controlled).
+    """
+    pass
+
+
+def _esc(value):
+    return value if isinstance(value, _SafeText) else html.escape(str(value))
+
+
 def _details(rows):
     body = ''
     for label, value in rows:
@@ -174,8 +190,8 @@ def _details(rows):
             continue
         body += (
             f'<tr>'
-            f'<td style="padding:10px 0;border-bottom:1px solid #EEF1F6;font-size:14px;color:#6B7280;width:40%;vertical-align:top;">{label}</td>'
-            f'<td style="padding:10px 0;border-bottom:1px solid #EEF1F6;font-size:14px;color:#0A0F1E;font-weight:500;text-align:right;">{value}</td>'
+            f'<td style="padding:10px 0;border-bottom:1px solid #EEF1F6;font-size:14px;color:#6B7280;width:40%;vertical-align:top;">{_esc(label)}</td>'
+            f'<td style="padding:10px 0;border-bottom:1px solid #EEF1F6;font-size:14px;color:#0A0F1E;font-weight:500;text-align:right;">{_esc(value)}</td>'
             f'</tr>'
         )
     return f'<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:20px 0;">{body}</table>'
@@ -344,7 +360,7 @@ def send_booking_received(booking):
             )
 
         body = (
-            _h1(f'Hi {booking.first_name}, please complete your payment')
+            _h1(f'Hi {_esc(booking.first_name)}, please complete your payment')
             + _p(lead)
             + _cta('Complete Payment →', _payment_url(booking))
             + _ref_pill(booking.reference)
@@ -412,7 +428,7 @@ def send_booking_confirmation(booking):
                 ('When',       f'{booking.pickup_date} at {booking.pickup_time.strftime("%H:%M")}'),
                 ('Night fare', 'Yes (+$8 surcharge)' if booking.is_night_surcharge else None),
             ])
-            lead_h1   = f'Transfer confirmed, {booking.first_name}.'
+            lead_h1   = f'Transfer confirmed, {_esc(booking.first_name)}.'
             lead_p    = ('Your airport transfer is locked in. '
                          'We\'ll WhatsApp you with the driver\'s details before pickup.')
             preheader = f'Your airport transfer is locked in for {booking.pickup_date}.'
@@ -430,7 +446,7 @@ def send_booking_confirmation(booking):
                     ('Extends through', _return_str(booking)),
                     ('Additional days', str(booking.days or '—')),
                 ])
-                lead_h1   = f'Extension confirmed, {booking.first_name}.'
+                lead_h1   = f'Extension confirmed, {_esc(booking.first_name)}.'
                 lead_p    = (f'Your <strong>{booking.vehicle.name}</strong> rental '
                              f'has been extended to <strong>{_return_str(booking)}</strong>. '
                              f'Enjoy your additional days!')
@@ -446,7 +462,7 @@ def send_booking_confirmation(booking):
                     ('Hotel',     booking.hotel_address if booking.hotel_address else None),
                     ('Baby seat', 'Included' if booking.baby_seat else None),
                 ])
-                lead_h1   = f'Booking confirmed, {booking.first_name}.'
+                lead_h1   = f'Booking confirmed, {_esc(booking.first_name)}.'
                 lead_p    = (f'Your <strong>{booking.vehicle.name}</strong> is locked in. '
                              f'We\'ll WhatsApp you 24 hours before pickup with final details.')
                 preheader = f'Your {booking.vehicle.name} is locked in for {booking.pickup_date}.'
@@ -532,7 +548,7 @@ def send_payment_receipt(booking):
             ).strip(' ·')
             details = _details([
                 ('Reference', booking.reference),
-                ('Status',    '<span style="color:#06A66D;">Paid</span>'),
+                ('Status',    _SafeText('<span style="color:#06A66D;">Paid</span>')),
                 ('Method',    getattr(booking, 'payment_method', '') or 'Card'),
                 ('Service',   service_label),
                 ('When',      f'{booking.pickup_date} (one-way)'),
@@ -540,7 +556,7 @@ def send_payment_receipt(booking):
         else:
             details = _details([
                 ('Reference', booking.reference),
-                ('Status',    '<span style="color:#06A66D;">Paid</span>'),
+                ('Status',    _SafeText('<span style="color:#06A66D;">Paid</span>')),
                 ('Method',    getattr(booking, 'payment_method', '') or 'Card'),
                 ('Vehicle',   booking.vehicle.name if booking.vehicle else '—'),
                 ('Dates',     (f'{booking.pickup_date} → {booking.return_date}'
@@ -551,7 +567,7 @@ def send_payment_receipt(booking):
         body = (
             _h1('Payment received')
             + _p(
-                f'Hi {booking.first_name}, we\'ve received <strong>${booking.total_usd}</strong> '
+                f'Hi {_esc(booking.first_name)}, we\'ve received <strong>${booking.total_usd}</strong> '
                 f'for booking <strong>{booking.reference}</strong>. Keep this email as your receipt.'
             )
             + _section_label('Receipt')
@@ -653,7 +669,7 @@ def send_new_booking_admin_alert(booking):
             to=_admin_email(),
             html_body=body,
             text_body=text,
-            preheader=f'{booking.first_name} {booking.last_name} — ${booking.total_usd}',
+            preheader=f'{_esc(booking.first_name)} {_esc(booking.last_name)} — ${booking.total_usd}',
         )
     except Exception:
         logger.exception('send_new_booking_admin_alert failed')
@@ -687,7 +703,7 @@ def send_payment_admin_alert(booking):
             to=_admin_email(),
             html_body=body,
             text_body=text,
-            preheader=f'${booking.total_usd} from {booking.first_name} {booking.last_name}',
+            preheader=f'${booking.total_usd} from {_esc(booking.first_name)} {_esc(booking.last_name)}',
         )
     except Exception as exc:
         logger.exception('send_payment_admin_alert failed')
@@ -698,7 +714,7 @@ def send_support_notification(ticket):
     """Admin: new support ticket."""
     try:
         details = _details([
-            ('From',    f'{ticket.name} &lt;{ticket.email}&gt;'),
+            ('From',    f'{ticket.name} <{ticket.email}>'),
             ('Phone',   getattr(ticket, 'phone', None)),
             ('Subject', ticket.subject),
         ])
@@ -803,7 +819,13 @@ def send_invoice_email(booking):
         # the billed party; the first/last name fields are the company
         # representative. Falls back gracefully if company_name is blank.
         is_corp        = (booking.hire_type == 'corporate')
-        billed_party   = (booking.company_name or '').strip() or f'{booking.first_name} {booking.last_name}'
+        # company_name has no form-level cleaning (unlike first_name/last_name,
+        # which are html.escape()'d in BookingStep1Form) — escape it here since
+        # it's interpolated raw into _p() below, outside _details()'s escaping.
+        # Wrapped as _SafeText so the _details() row further down (which also
+        # calls _esc()) doesn't double-escape an already-escaped string.
+        billed_party   = _SafeText(_esc(
+            (booking.company_name or '').strip() or f'{booking.first_name} {booking.last_name}'))
         greeting_name  = booking.first_name or 'there'
         bill_to_label  = 'Company' if is_corp and booking.company_name else 'Billed to'
 

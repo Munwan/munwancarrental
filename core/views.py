@@ -930,11 +930,20 @@ def booking_submit(request):
                         first_name = cd['first_name'],
                         last_name  = cd['last_name'],
                     )
+                    # Inactive until OTP-verified — mirrors auth_register() and
+                    # _booking_submit_transfer(). Without this, anyone could type
+                    # a stranger's email here, get logged in as an account tied
+                    # to it, and (via claim_orphan_bookings) inherit that
+                    # person's entire guest-booking history in their dashboard.
+                    new_user.is_active = False
+                    new_user.save(update_fields=['is_active'])
                     booking.user = new_user
                     booking.save(update_fields=['user'])
-                    # Explicit backend — required when multiple AUTHENTICATION_BACKENDS
-                    # are configured. Without it, Django raises ValueError.
-                    login(request, new_user, backend='core.auth_backends.EmailOrUsernameBackend')
+                    try:
+                        _create_and_send_otp(new_user)
+                        request.session['otp_user_pk'] = new_user.pk
+                    except Exception:
+                        logger.exception('Booking-flow OTP send failed for %s', cd['email'])
                     account_created = True
                 except Exception as exc:
                     logger.exception('Account creation failed')
@@ -1497,6 +1506,20 @@ def paystack_webhook(request):
                     if len(parts) == 2 and 4 <= len(parts[1]) <= 10:
                         booking = Booking.objects.filter(reference=parts[0]).first()
 
+                if booking and booking.payment_status != 'paid' and not PaystackBackend.amount_covers(
+                    booking, data.get('amount', 0), data.get('currency', ''),
+                ):
+                    logger.warning(
+                        'Paystack webhook amount mismatch: booking=%s ref=%s amount=%s currency=%s '
+                        'booking_usd=%s booking_kes=%s — booking NOT marked paid',
+                        booking.reference, reference, data.get('amount'), data.get('currency'),
+                        booking.total_usd, booking.total_kes,
+                    )
+                    # 200: acknowledge receipt so Paystack stops retrying — the
+                    # amount mismatch won't resolve itself on retry, and a
+                    # non-200 here just makes Paystack hammer the endpoint.
+                    return HttpResponse(status=200)
+
                 if booking and booking.payment_status != 'paid':
                     booking.payment_status = 'paid'
                     booking.status         = 'confirmed'
@@ -1626,7 +1649,13 @@ def auth_login(request):
             cache.delete(lockout_key)
             login(request, user)
             next_url = request.GET.get('next', '').strip()
-            if next_url and next_url.startswith('/'):
+            # startswith('/') alone doesn't block protocol-relative URLs like
+            # "//evil.com" (browsers resolve that as https://evil.com) — use
+            # Django's own open-redirect guard instead.
+            from django.utils.http import url_has_allowed_host_and_scheme
+            if next_url and url_has_allowed_host_and_scheme(
+                next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure(),
+            ):
                 return redirect(next_url)
             return redirect('dashboard')
         else:
@@ -1636,7 +1665,10 @@ def auth_login(request):
     return render(request, 'core/auth/login.html', {'form': form})
 
 
+@require_POST
 def auth_logout(request):
+    # POST-only: a GET-triggerable logout is forgeable via a plain <img>/<a>
+    # on any third-party page, force-logging-out a visitor mid-session.
     logout(request)
     return redirect('home')
 
@@ -1837,6 +1869,11 @@ def dashboard(request):
         'total_spent':     f"{total_spent:.2f}",
         'active_tab':      request.GET.get('tab', 'active'),
         'whatsapp_number': getattr(settings, 'WHATSAPP_NUMBER', '254727745907'),
+        # Single source of truth for the extend-booking JS preview — see
+        # airport_transfer.py. Passing these in avoids yet another hardcoded
+        # copy of the conversion rate silently drifting from the real one.
+        'kes_per_usd':     float(KES_PER_USD),
+        'eur_per_usd':     float(EUR_PER_USD),
     })
 
 

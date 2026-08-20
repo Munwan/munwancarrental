@@ -56,6 +56,25 @@ class PaystackBackend:
         }
 
     @classmethod
+    def amount_covers(cls, booking, amount_minor, currency) -> bool:
+        """
+        True if `amount_minor` (smallest currency unit — kobo/cents) covers
+        what `booking` actually costs. Shared by verify() (client-callback
+        path) and the paystack_webhook view, so both entry points that can
+        mark a booking paid agree on what "enough money" means — a webhook
+        that skipped this check would let anyone edit the popup's `amount`
+        client-side, pay a token amount, and still get the booking confirmed.
+        """
+        currency = (currency or '').upper()
+        if currency == 'KES':
+            expected_minor = float(booking.total_kes) * 100
+        elif currency == 'USD':
+            expected_minor = float(booking.total_usd) * 100
+        else:
+            expected_minor = float(booking.total_kes) * 100  # fallback
+        return float(amount_minor) >= expected_minor * 0.99
+
+    @classmethod
     def verify(cls, booking, reference: str) -> dict:
         """
         Verify a completed Paystack transaction server-side.
@@ -85,14 +104,7 @@ class PaystackBackend:
             amount_minor = float(payload.get('amount', 0))
             currency     = (payload.get('currency') or '').upper()
 
-            if currency == 'KES':
-                expected_minor = float(booking.total_kes) * 100
-            elif currency == 'USD':
-                expected_minor = float(booking.total_usd) * 100
-            else:
-                expected_minor = float(booking.total_kes) * 100  # fallback
-
-            if status == 'success' and amount_minor >= expected_minor * 0.99:
+            if status == 'success' and cls.amount_covers(booking, amount_minor, currency):
                 logger.info('Paystack verified: %s → %s (%s %.2f)',
                             booking.reference, reference, currency, amount_minor / 100)
                 return {
@@ -103,8 +115,8 @@ class PaystackBackend:
                 }
             else:
                 logger.warning(
-                    'Paystack verify failed: status=%s amount=%s expected=%s currency=%s',
-                    status, amount_minor, expected_minor, currency,
+                    'Paystack verify failed: status=%s amount=%s currency=%s booking_usd=%s booking_kes=%s',
+                    status, amount_minor, currency, booking.total_usd, booking.total_kes,
                 )
                 return {
                     'success': False,

@@ -251,6 +251,22 @@ document.addEventListener('DOMContentLoaded', function () {
   } catch (_) {}
 });
 
+// ── Logout ───────────────────────────────────────────────
+// POST via fetch, not a plain <a href> GET — the server now requires POST
+// (@require_POST) so a third-party page can't force-logout a visitor just
+// by loading an <img src=".../auth/logout/">. Links keep their href as a
+// no-JS fallback target, but click is intercepted to POST instead.
+async function doLogout(e) {
+  if (e) e.preventDefault();
+  try {
+    await fetch('/auth/logout/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCsrf() },
+    });
+  } catch (_) {}
+  window.location.href = '/';
+}
+
 // ── CSRF ─────────────────────────────────────────────────
 function getCsrf() {
   const el = document.getElementById('csrfToken');
@@ -368,7 +384,7 @@ function applyLoggedInNav() {
       const div  = mobileMenu.querySelector('.mob-divider');
       const html =
         '<a href="' + accountUrl + '" onclick="closeMobileMenu()">👤 My Account</a>' +
-        '<a href="' + logoutUrl  + '" onclick="closeMobileMenu()">🚪 Sign Out</a>';
+        '<a href="' + logoutUrl  + '" onclick="doLogout(event); closeMobileMenu()">🚪 Sign Out</a>';
       if (div) div.insertAdjacentHTML('afterend', html);
       else     mobileMenu.insertAdjacentHTML('beforeend', html);
     }
@@ -694,7 +710,8 @@ function setHireType(type) {
 
 // Corporate Hire requires a minimum rental period of 5 days. We enforce
 // this in 3 places:
-//  (1) The return-date input's `min` attribute becomes pickup + 5 days
+//  (1) The return-date input's `min` attribute becomes pickup + 4 days
+//      (which bills as 5 days — see updatePricingPreview's +1 day-count)
 //  (2) A hint appears below the return-date field
 //  (3) The server rejects sub-5-day corporate bookings (forms.py)
 // Called from setHireType and from any onChange of pickup_date.
@@ -720,7 +737,9 @@ function _enforceCorporateMinDays() {
     return;
   }
 
-  // Compute: pickup + 5 days. If pickup not set yet, use tomorrow + 5.
+  // Billed days = (return-pickup)+1 (see updatePricingPreview / views.py),
+  // so the minimum return date for a 5-billed-day corporate hire is
+  // pickup + 4 days, not +5. If pickup not set yet, use tomorrow + 4.
   let baseDate;
   if (pickupEl && pickupEl.value) {
     baseDate = new Date(pickupEl.value + 'T00:00:00');
@@ -728,7 +747,7 @@ function _enforceCorporateMinDays() {
     baseDate = new Date();
     baseDate.setDate(baseDate.getDate() + 1);
   }
-  baseDate.setDate(baseDate.getDate() + 5);
+  baseDate.setDate(baseDate.getDate() + 4);
   const minISO = baseDate.getFullYear() + '-' +
     String(baseDate.getMonth() + 1).padStart(2, '0') + '-' +
     String(baseDate.getDate()).padStart(2, '0');
@@ -1179,9 +1198,15 @@ function updatePricingPreview() {
   } else {
     if (bRow) bRow.style.display = 'none';
   }
-  setText('pp_total', `$${total.toFixed(2)} / €${(total*0.92).toFixed(2)} / KES ${Math.round(total*130).toLocaleString()}`);
+  // Same conversion constants the server actually bills with (dumped from
+  // airport_transfer.py via TRANSFER_CONSTS) — hardcoding a different rate
+  // here is exactly the bug that made the EUR preview drift from the real
+  // total earlier (0.92 here vs 0.93 server-side).
+  const eurRate = TRANSFER_CONSTS.eur_per_usd || 0.93;
+  const kesRate = TRANSFER_CONSTS.kes_per_usd || 130;
+  setText('pp_total', `$${total.toFixed(2)} / €${(total*eurRate).toFixed(2)} / KES ${Math.round(total*kesRate).toLocaleString()}`);
   // Update M-Pesa amount display
-  setText('mpesa_amount_disp', `KES ${Math.round(total*130).toLocaleString()}`);
+  setText('mpesa_amount_disp', `KES ${Math.round(total*kesRate).toLocaleString()}`);
 }
 
 // ── Step UI ───────────────────────────────────────────────
@@ -1500,8 +1525,9 @@ async function submitStep1() {
         currentStep = 2; updateStepUI();
       }
       if (data.account_created) {
-        applyLoggedInNav();
-        toast('Account created! You\'re now signed in.', 'success');
+        // Account is created but inactive until the OTP is verified — it is
+        // NOT a logged-in session yet, so don't flip the nav to "signed in".
+        toast('Account created! We emailed you a verification code — check your inbox to finish signing in.', 'success');
       }
     } else {
       if (data.errors) {

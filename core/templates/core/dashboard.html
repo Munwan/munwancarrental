@@ -337,7 +337,7 @@ button.account-continue-btn:hover{
         <h1>{% if user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}{% if user.last_name %} {{ user.last_name }}{% endif %}</h1>
         <p>{{ user.email }} · <span class="account-stat">{{ bookings|length }} booking{{ bookings|length|pluralize }}</span></p>
       </div>
-      <a href="{% url 'logout' %}" class="account-hero-signout">🚪 Sign Out</a>
+      <a href="{% url 'logout' %}" class="account-hero-signout" onclick="doLogout(event)">🚪 Sign Out</a>
     </div>
   </div>
 
@@ -1107,10 +1107,11 @@ function closeExtendModal() {
 // makes "1" feel uneditable. We only normalise the *displayed cost*.
 // Real clamping happens on blur and on submit.
 //
-// Currency conversion rates match the backend (core/views.py).
-// If you change them server-side, change them here too.
-var _EXT_KES_PER_USD = 130;
-var _EXT_EUR_PER_USD = 0.93;
+// Currency conversion rates — passed in from the view (core/airport_transfer.py
+// is the single source of truth), not hardcoded, so this can't silently drift
+// from what the server actually bills.
+var _EXT_KES_PER_USD = {{ kes_per_usd }};
+var _EXT_EUR_PER_USD = {{ eur_per_usd }};
 
 function updateExtendCost() {
   var input = document.getElementById('extendDays');
