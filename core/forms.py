@@ -206,27 +206,20 @@ class BookingStep1Form(forms.Form):
 #  Booking Step 2 – Payment
 # ─────────────────────────────────────────────────────────────
 class BookingPaymentForm(forms.Form):
+    # Paystack is the only payment method — it handles Card / Bank / Mobile
+    # Money (including M-Pesa) inside its own popup. The standalone M-Pesa
+    # Daraja STK-push integration was retired; see core/payments.py.
     payment_method = forms.ChoiceField(choices=[
         ('paystack', 'Card / Bank / Mobile Money (Paystack)'),
-        ('mpesa',    'M-Pesa (Direct STK Push)'),
     ])
     # Paystack — popup returns a transaction reference after successful payment
     paystack_ref   = forms.CharField(required=False, widget=forms.HiddenInput())
-    # M-Pesa — customer enters Safaricom number for STK push
-    mpesa_phone    = forms.CharField(max_length=15, required=False,
-                                     widget=forms.TextInput(attrs={'placeholder': '+254 7XX XXX XXX'}))
 
     def clean(self):
         cleaned = super().clean()
         method = cleaned.get('payment_method')
         if method == 'paystack' and not cleaned.get('paystack_ref'):
             self.add_error('paystack_ref', 'Payment reference is required. Please complete the Paystack popup.')
-        if method == 'mpesa':
-            phone = cleaned.get('mpesa_phone', '').strip()
-            if not phone:
-                self.add_error('mpesa_phone', 'M-Pesa phone number is required.')
-            elif not PHONE_RE.match(phone):
-                self.add_error('mpesa_phone', 'Enter a valid M-Pesa phone number.')
         return cleaned
 
 

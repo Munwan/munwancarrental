@@ -17,6 +17,7 @@ Override via settings.py:
   RATE_LIMIT_EXEMPT_AUTHED = False # stop exempting logged-in users
   RATE_LIMIT_BOOKING = 30          # per window
   RATE_LIMIT_LOGIN   = 10
+  RATE_LIMIT_CHECK_BOOKING = 20    # GET /booking/check/ — reference lookup
   RATE_LIMIT_WINDOW  = 3600        # seconds
 """
 import ipaddress
@@ -68,12 +69,17 @@ class RateLimitMiddleware:
             # codes shouldn't count toward the registration limit; that route
             # has its own internal 60-second cooldown inside the view.
             self._limits = {
-                '/booking/submit/':   ('booking', getattr(settings, 'RATE_LIMIT_BOOKING', 30)),
-                '/booking/resume/':   ('booking', 30),
-                '/auth/login/':       ('login',   getattr(settings, 'RATE_LIMIT_LOGIN',   10)),
-                '/auth/register/':    ('register', getattr(settings, 'RATE_LIMIT_REGISTER', 10)),
-                '/payments/process/': ('payment', 30),
-                '/support/':          ('support', 20),
+                ('POST', '/booking/submit/'):   ('booking', getattr(settings, 'RATE_LIMIT_BOOKING', 30)),
+                ('POST', '/booking/resume/'):   ('booking', 30),
+                ('POST', '/auth/login/'):       ('login',   getattr(settings, 'RATE_LIMIT_LOGIN',   10)),
+                ('POST', '/auth/register/'):    ('register', getattr(settings, 'RATE_LIMIT_REGISTER', 10)),
+                ('POST', '/payments/process/'): ('payment', 30),
+                ('POST', '/support/'):          ('support', 20),
+                # GET — booking-reference lookup has no ownership check by
+                # design (public "check my booking" feature), so without a
+                # limit here it's an unthrottled oracle for enumerating other
+                # customers' trip details by brute-forcing the reference.
+                ('GET', '/booking/check/'):     ('check_booking', getattr(settings, 'RATE_LIMIT_CHECK_BOOKING', 20)),
             }
         return self._limits
 
@@ -93,8 +99,8 @@ class RateLimitMiddleware:
         return True
 
     def __call__(self, request):
-        if request.method == 'POST' and self._is_enabled(request):
-            rule = self._get_limits().get(request.path)
+        if self._is_enabled(request):
+            rule = self._get_limits().get((request.method, request.path))
             if rule:
                 action, limit = rule
                 ip = get_client_ip(request)

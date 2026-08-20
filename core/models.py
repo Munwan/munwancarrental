@@ -4,6 +4,11 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.utils import timezone
 
+# Single source of truth for currency conversion — shared with the safari,
+# transfer, and extension pricing paths in views.py. Import from here rather
+# than re-declaring, or the rates silently drift between hire types.
+from .airport_transfer import KES_PER_USD, EUR_PER_USD
+
 
 # ─────────────────────────────────────────────────────────────
 #  VEHICLE
@@ -435,6 +440,18 @@ class Booking(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        constraints = [
+            # A paid transaction reference must fund exactly one booking —
+            # blocks replaying the same Paystack reference across bookings
+            # even under a race that slips past the application-level check
+            # in views.payment_process. Blank refs (unpaid bookings) are
+            # excluded so they don't collide with each other.
+            models.UniqueConstraint(
+                fields=['payment_ref'],
+                condition=models.Q(payment_status='paid') & ~models.Q(payment_ref=''),
+                name='unique_payment_ref_when_paid',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.reference} – {self.first_name} {self.last_name}'
@@ -502,11 +519,10 @@ class Booking(models.Model):
         self.driver_fee_usd = q(driver_fee * days) if self.with_driver else Decimal('0.00')
         self.total_usd      = q(self.base_price_usd + self.driver_fee_usd + baby_seat_fee)
 
-        # Currency conversions — use Decimal-safe constants
-        usd_to_kes = Decimal('130.00')
-        usd_to_eur = Decimal('0.92')
-        self.total_kes = q(self.total_usd * usd_to_kes)
-        self.total_eur = q(self.total_usd * usd_to_eur)
+        # Currency conversions — shared constants (see module import), so
+        # every hire type quotes EUR/KES at the same rate.
+        self.total_kes = q(self.total_usd * KES_PER_USD)
+        self.total_eur = q(self.total_usd * EUR_PER_USD)
 
     def pricing_breakdown(self):
         """Human-readable pricing breakdown for emails/receipts."""

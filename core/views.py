@@ -28,6 +28,7 @@ from .models import (Booking, EmailOTP, PaymentLog, Review, SafariDestination,
                      SafariPackage, SafariPackagePrice, SafariPricing,
                      SupportTicket, Vehicle, make_invoice_number)
 from .payments import PaystackBackend
+from .airport_transfer import KES_PER_USD, EUR_PER_USD
 
 # Module-level alias so booking_submit can call it with underscore prefix
 # (keeping the public name in models.py clean while marking internal use here).
@@ -281,8 +282,6 @@ def safari_quote(request):
     # Build the breakdown
     breakdown = []
     total_usd = Decimal('0')
-    KES_PER_USD = Decimal('130')
-    EUR_PER_USD = Decimal('0.93')
 
     for d in ordered:
         try:
@@ -420,8 +419,6 @@ def _booking_submit_safari(request):
     # Compute price (server is source of truth, mirrors safari_quote)
     breakdown = []
     total_usd = Decimal('0')
-    KES_PER_USD = Decimal('130')
-    EUR_PER_USD = Decimal('0.93')
 
     for d in ordered:
         try:
@@ -570,7 +567,7 @@ def _booking_submit_transfer(request):
     - Price comes from airport_transfer.quote() based on zone + car type
     - Vehicle is auto-assigned from the chosen transfer_car_type
     """
-    from .airport_transfer import detect_zone, is_night_pickup, quote, KES_PER_USD
+    from .airport_transfer import detect_zone, is_night_pickup, quote
 
     # ── Field extraction with light validation ───────────────
     P = request.POST
@@ -1206,8 +1203,6 @@ def booking_extend(request):
         return _json_error('Could not determine daily rate. Contact support.', 500)
 
     extra_usd = (daily * Decimal(extra_days)).quantize(Decimal('0.01'))
-    KES_PER_USD = Decimal('130')
-    EUR_PER_USD = Decimal('0.93')
     extra_kes = (extra_usd * KES_PER_USD).quantize(Decimal('1'))
     extra_eur = (extra_usd * EUR_PER_USD).quantize(Decimal('0.01'))
 
@@ -1389,31 +1384,20 @@ def payment_process(request):
 
         if method == 'paystack':
             # Paystack popup posts back a `reference` after the user pays
-            result = PaystackBackend.verify(
-                booking, cd.get('paystack_ref', ''))
-
-        elif method == 'mpesa':
-            result = MpesaBackend.stk_push(booking, cd.get('mpesa_phone', ''))
-            if result['success']:
-                booking.payment_method = 'mpesa'
-                booking.payment_ref    = result['ref']
-                booking.save(update_fields=['payment_method', 'payment_ref'])
-                PaymentLog.objects.create(
-                    booking      = booking,
-                    method       = 'mpesa',
-                    gateway_ref  = result['ref'],
-                    amount_usd   = booking.total_usd,
-                    status       = 'stk_pending',
-                    raw_response = json.dumps(result.get('raw', {})),
-                )
-                return JsonResponse({
-                    'ok':        True,
-                    'async':     True,
-                    'reference': booking.reference,
-                    'message':   result['message'],
-                })
-            else:
-                return _json_error(result.get('message', 'M-Pesa push failed.'))
+            paystack_ref = cd.get('paystack_ref', '')
+            # Reject reuse: a reference that already paid for a DIFFERENT
+            # booking must not be replayable to mark further bookings paid
+            # for free. Paystack's verify() only confirms the transaction is
+            # real — it has no idea whether we've already spent it here.
+            if paystack_ref and Booking.objects.filter(
+                payment_ref=paystack_ref, payment_status='paid',
+            ).exclude(pk=booking.pk).exists():
+                logger.warning(
+                    'Paystack reference reuse blocked: ref=%s booking=%s',
+                    paystack_ref, booking.reference)
+                return _json_error(
+                    'This payment reference has already been used for another booking.', 400)
+            result = PaystackBackend.verify(booking, paystack_ref)
 
         # Synchronous result (Paystack)
         PaymentLog.objects.create(
@@ -1456,39 +1440,6 @@ def payment_process(request):
         return _json_error('Server error during payment. Please try again.', 500)
 
 
-# ─────────────────────────────────────────────────────────────
-#  M-PESA CALLBACK
-# ─────────────────────────────────────────────────────────────
-@csrf_exempt
-@require_POST
-def mpesa_callback(request):
-    try:
-        payload = json.loads(request.body)
-        result  = MpesaBackend.handle_callback(payload)
-        if result['success']:
-            try:
-                booking = Booking.objects.get(
-                    payment_ref=result.get('checkout_id', ''))
-                booking.payment_status = 'paid'
-                booking.status         = 'confirmed'
-                booking.save(update_fields=['payment_status', 'status'])
-                PaymentLog.objects.filter(
-                    booking=booking, method='mpesa').update(
-                    status='success', gateway_ref=result.get('mpesa_code', ''))
-                send_booking_confirmation(booking)
-            except Booking.DoesNotExist:
-                logger.warning('M-Pesa callback: booking not found for %s',
-                               result.get('checkout_id'))
-        else:
-            logger.info('M-Pesa callback failed: %s', result.get('message'))
-    except Exception as exc:
-        logger.error('M-Pesa callback error: %s', exc)
-    return HttpResponse('OK')
-
-
-# ─────────────────────────────────────────────────────────────
-#  PAYSTACK WEBHOOK
-# ─────────────────────────────────────────────────────────────
 # ─────────────────────────────────────────────────────────────
 #  PAYSTACK WEBHOOK
 # ─────────────────────────────────────────────────────────────
