@@ -759,27 +759,34 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
   border-radius:8px;padding:11px 13px;font-size:.82rem;color:#DC2626;margin-top:12px}
 
 /* ── COOKIE CONSENT BANNER ───────────────────────────────── */
-.cookie-banner{position:fixed;left:0;right:0;bottom:0;z-index:500;
+/* Compact floating card, not a full-width bar — sits bottom-left on
+   desktop (WhatsApp FAB owns the bottom-right corner). */
+.cookie-banner{position:fixed;z-index:500;
+  left:24px;bottom:24px;right:auto;
+  width:340px;max-width:calc(100vw - 40px);
   background:var(--navy);color:var(--white);
-  padding:16px 20px;display:flex;flex-wrap:wrap;gap:14px 20px;
-  align-items:center;justify-content:space-between;
-  box-shadow:0 -6px 24px rgba(10,15,30,.25)}
-.cookie-banner-text{margin:0;font-size:.86rem;line-height:1.5;color:rgba(255,255,255,.88);
-  max-width:640px;flex:1 1 320px}
+  border-radius:var(--radius-lg);
+  padding:18px 20px;display:flex;flex-direction:column;gap:14px;
+  box-shadow:0 14px 40px rgba(10,15,30,.35)}
+.cookie-banner-text{margin:0;font-size:.8rem;line-height:1.5;color:rgba(255,255,255,.88)}
 .cookie-banner-text a{color:var(--blue-light);text-decoration:underline}
-.cookie-banner-actions{display:flex;gap:10px;flex:0 0 auto}
-.cookie-btn{border:none;padding:10px 20px;border-radius:var(--radius);
-  font-family:'Poppins',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer;
+.cookie-banner-actions{display:flex;gap:10px;justify-content:flex-end}
+.cookie-btn{border:none;padding:9px 18px;border-radius:var(--radius-sm);
+  font-family:'Poppins',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;
   transition:transform .15s,opacity .15s}
 .cookie-btn:hover{transform:translateY(-1px)}
-.cookie-btn-decline{background:transparent;color:rgba(255,255,255,.85);
+.cookie-btn-decline{background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);
   border:1.5px solid rgba(255,255,255,.35)}
 .cookie-btn-decline:hover{border-color:rgba(255,255,255,.6)}
 .cookie-btn-accept{background:var(--blue);color:var(--white)}
 .cookie-btn-accept:hover{opacity:.94}
 @media(max-width:600px){
-  .cookie-banner{flex-direction:column;align-items:stretch;text-align:center}
-  .cookie-banner-actions{justify-content:center}
+  /* Small wrapped card inset from the edges — not a full-width sheet —
+     and lifted clear of the circular mobile WhatsApp FAB (bottom:18px). */
+  .cookie-banner{right:12px;left:12px;bottom:80px;width:auto;max-width:none;
+    padding:16px}
+  .cookie-banner-actions{justify-content:stretch}
+  .cookie-btn{flex:1}
 }
 
 /* ── WHATSAPP FAB ─────────────────────────────────────── */
