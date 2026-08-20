@@ -18,7 +18,15 @@ function cookieConsentInit() {
   const choice = localStorage.getItem('cookie_consent');
   if (choice === 'accepted' || choice === 'declined') return;  // already decided
   const banner = document.getElementById('cookieBanner');
-  if (banner) banner.style.display = '';
+  if (!banner) return;
+  banner.style.display = '';
+
+  // Mobile: auto-hide after 5s of no interaction so it doesn't linger over
+  // content on a small screen. No choice is recorded on timeout — this just
+  // dismisses the UI, and the banner will show again on the next visit.
+  if (window.matchMedia('(max-width:600px)').matches) {
+    setTimeout(() => { banner.style.display = 'none'; }, 5000);
+  }
 }
 
 function cookieConsentChoice(choice) {
