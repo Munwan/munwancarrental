@@ -9,8 +9,29 @@ let currentFwSub   = 'card';
 let VEHICLES       = [];
 let TRANSFER_CONSTS = {};   // populated from #transferConstants script tag
 
+// ── Cookie consent ───────────────────────────────────────
+// GA (loaded conditionally in base.html's <head> via _loadGA()) is the only
+// non-essential cookie we set — session/CSRF cookies are exempt and always
+// active. Choice is remembered in localStorage, not a cookie, so declining
+// doesn't itself require a cookie to persist.
+function cookieConsentInit() {
+  const choice = localStorage.getItem('cookie_consent');
+  if (choice === 'accepted' || choice === 'declined') return;  // already decided
+  const banner = document.getElementById('cookieBanner');
+  if (banner) banner.style.display = '';
+}
+
+function cookieConsentChoice(choice) {
+  localStorage.setItem('cookie_consent', choice);
+  const banner = document.getElementById('cookieBanner');
+  if (banner) banner.style.display = 'none';
+  if (choice === 'accepted' && typeof _loadGA === 'function') _loadGA();
+}
+
 // ── Boot ─────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
+  cookieConsentInit();
+
   try {
     const el = document.getElementById('vehicleData');
     if (el) VEHICLES = JSON.parse(el.textContent || '[]');

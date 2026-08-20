@@ -6,16 +6,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
   {% if not debug %}
-  <!-- ═══ GOOGLE ANALYTICS 4 ═══ -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-3Z32E16397"></script>
+  <!-- ═══ GOOGLE ANALYTICS 4 — consent-gated ═══ -->
+  <!-- GA cookies are non-essential, so the script only loads once the
+       visitor has accepted the cookie banner (or already did on a past
+       visit). See cookieConsentInit() in main.js for the banner logic. -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-3Z32E16397', {
-      'anonymize_ip': true,
-      'cookie_flags': 'SameSite=None;Secure'
-    });
+    function _loadGA() {
+      if (window._gaLoaded) return;
+      window._gaLoaded = true;
+      var s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=G-3Z32E16397';
+      document.head.appendChild(s);
+      gtag('js', new Date());
+      gtag('config', 'G-3Z32E16397', {
+        'anonymize_ip': true,
+        'cookie_flags': 'SameSite=None;Secure'
+      });
+    }
+    if (localStorage.getItem('cookie_consent') === 'accepted') _loadGA();
   </script>
   {% endif %}
 
@@ -177,6 +188,19 @@
 </main>
 
 {% block footer %}{% endblock %}
+
+<!-- COOKIE CONSENT BANNER -->
+<div id="cookieBanner" class="cookie-banner" style="display:none" role="dialog" aria-live="polite" aria-label="Cookie consent">
+  <p class="cookie-banner-text">
+    We use essential cookies to run this site (login, bookings) and, with your permission,
+    Google Analytics to understand how visitors use it. Read our
+    <a href="{% url 'privacy' %}#sec-cookies">Cookie Policy</a>.
+  </p>
+  <div class="cookie-banner-actions">
+    <button type="button" class="cookie-btn cookie-btn-decline" onclick="cookieConsentChoice('declined')">Decline</button>
+    <button type="button" class="cookie-btn cookie-btn-accept" onclick="cookieConsentChoice('accepted')">Accept</button>
+  </div>
+</div>
 
 <!-- WhatsApp FAB -->
 <a href="https://wa.me/{{ whatsapp_number|default:'254727745907' }}?text=Hello%20Munwan Car Rental%2C%20I%20need%20help%20with%20car%20hire."
