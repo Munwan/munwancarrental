@@ -9,37 +9,8 @@ let currentFwSub   = 'card';
 let VEHICLES       = [];
 let TRANSFER_CONSTS = {};   // populated from #transferConstants script tag
 
-// ── Cookie consent ───────────────────────────────────────
-// GA (loaded conditionally in base.html's <head> via _loadGA()) is the only
-// non-essential cookie we set — session/CSRF cookies are exempt and always
-// active. Choice is remembered in localStorage, not a cookie, so declining
-// doesn't itself require a cookie to persist.
-function cookieConsentInit() {
-  const choice = localStorage.getItem('cookie_consent');
-  if (choice === 'accepted' || choice === 'declined') return;  // already decided
-  const banner = document.getElementById('cookieBanner');
-  if (!banner) return;
-  banner.style.display = '';
-
-  // Mobile: auto-hide after 5s of no interaction so it doesn't linger over
-  // content on a small screen. No choice is recorded on timeout — this just
-  // dismisses the UI, and the banner will show again on the next visit.
-  if (window.matchMedia('(max-width:600px)').matches) {
-    setTimeout(() => { banner.style.display = 'none'; }, 5000);
-  }
-}
-
-function cookieConsentChoice(choice) {
-  localStorage.setItem('cookie_consent', choice);
-  const banner = document.getElementById('cookieBanner');
-  if (banner) banner.style.display = 'none';
-  if (choice === 'accepted' && typeof _loadGA === 'function') _loadGA();
-}
-
 // ── Boot ─────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
-  cookieConsentInit();
-
   try {
     const el = document.getElementById('vehicleData');
     if (el) VEHICLES = JSON.parse(el.textContent || '[]');
@@ -2129,6 +2100,18 @@ async function finalisePayment(method, extra) {
       } else {
         setText('confirmIcon','🎉'); setText('confirmTitle','Booking Confirmed!');
         setText('confirmSub','Your vehicle is reserved. A confirmation email has been sent.');
+        // GA4 purchase event — fires only on a real, confirmed payment (not
+        // the M-Pesa STK-push-sent branch, which isn't a completed payment
+        // yet). Google Ads imports this as a conversion action; value/
+        // currency come from the booking total already held client-side
+        // from Step 1, keyed to the same reference the server just confirmed.
+        if (typeof gtag === 'function' && pendingBooking) {
+          gtag('event', 'purchase', {
+            transaction_id: res.reference,
+            value:          parseFloat(pendingBooking.total_usd) || 0,
+            currency:       'USD',
+          });
+        }
       }
       // Payment succeeded — remove the pending-booking flag so a future
       // back-nav doesn't restore a paid booking's data into the form.

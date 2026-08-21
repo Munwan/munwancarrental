@@ -758,39 +758,6 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 .check-error{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);
   border-radius:8px;padding:11px 13px;font-size:.82rem;color:#DC2626;margin-top:12px}
 
-/* ── COOKIE CONSENT BANNER ───────────────────────────────── */
-/* Compact floating card, not a full-width bar — sits bottom-left on
-   desktop (WhatsApp FAB owns the bottom-right corner). */
-.cookie-banner{position:fixed;z-index:500;
-  left:24px;bottom:24px;right:auto;
-  width:340px;max-width:calc(100vw - 40px);
-  background:var(--navy);color:var(--white);
-  border-radius:var(--radius-lg);
-  padding:18px 20px;display:flex;flex-direction:column;gap:14px;
-  box-shadow:0 14px 40px rgba(10,15,30,.35)}
-.cookie-banner-text{margin:0;font-size:.8rem;line-height:1.5;color:rgba(255,255,255,.88)}
-.cookie-banner-text a{color:var(--blue-light);text-decoration:underline}
-.cookie-banner-actions{display:flex;gap:10px;justify-content:flex-end}
-.cookie-btn{border:none;padding:9px 18px;border-radius:var(--radius-sm);
-  font-family:'Poppins',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;
-  transition:transform .15s,opacity .15s}
-.cookie-btn:hover{transform:translateY(-1px)}
-.cookie-btn-decline{background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);
-  border:1.5px solid rgba(255,255,255,.35)}
-.cookie-btn-decline:hover{border-color:rgba(255,255,255,.6)}
-.cookie-btn-accept{background:var(--blue);color:var(--white)}
-.cookie-btn-accept:hover{opacity:.94}
-@media(max-width:600px){
-  /* Small card, not a full-width sheet — sits bottom-left beside the
-     circular WhatsApp FAB (which owns bottom-right, bottom:18px;right:14px). */
-  .cookie-banner{left:10px;right:auto;bottom:18px;
-    width:auto;max-width:200px;
-    padding:14px;gap:10px}
-  .cookie-banner-text{font-size:.72rem;line-height:1.4}
-  .cookie-banner-actions{justify-content:stretch;gap:8px}
-  .cookie-btn{flex:1;padding:8px 10px;font-size:.72rem}
-}
-
 /* ── WHATSAPP FAB ─────────────────────────────────────── */
 .whatsapp-fab{position:fixed;bottom:26px;right:26px;z-index:400;background:#25D366;
   color:white;text-decoration:none;display:flex;align-items:center;gap:9px;
