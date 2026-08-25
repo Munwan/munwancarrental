@@ -1,0 +1,50 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}Reply to {{ ticket.name }} | Munwan Admin{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; <a href="{% url 'admin:core_supportticket_changelist' %}">Support tickets</a>
+  &rsaquo; Reply to {{ ticket.name }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+
+  {% if messages %}
+    {% for message in messages %}
+      <ul class="messagelist"><li class="{{ message.tags }}">{{ message }}</li></ul>
+    {% endfor %}
+  {% endif %}
+
+  <div class="module" style="margin-bottom:20px;padding:12px 14px;background:#f8f8f8;border:1px solid #eee;">
+    <p style="margin:0 0 6px;"><strong>{{ ticket.name }}</strong> &lt;{{ ticket.email }}&gt;
+       {% if ticket.phone %}&middot; {{ ticket.phone }}{% endif %}</p>
+    <p style="margin:0 0 6px;"><strong>Subject:</strong> {{ ticket.subject }}
+       {% if ticket.booking_ref %}&middot; Ref: {{ ticket.booking_ref }}{% endif %}</p>
+    <p style="margin:0;white-space:pre-wrap;color:#555;">{{ ticket.message }}</p>
+  </div>
+
+  <p>Sends a reply email in the site's real template — your message, followed by the customer's
+     original message quoted for context.</p>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <fieldset class="module aligned">
+      <div class="form-row{% if form.message.errors %} errors{% endif %}">
+        {{ form.message.errors }}
+        <div>
+          <label for="{{ form.message.id_for_label }}" class="required">Reply:</label>
+          {{ form.message }}
+        </div>
+      </div>
+    </fieldset>
+    <div class="submit-row">
+      <input type="submit" value="Send Reply" class="default">
+    </div>
+  </form>
+
+</div>
+{% endblock %}

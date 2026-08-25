@@ -92,4 +92,8 @@ urlpatterns = [
 
     # ── Support ───────────────────────────────────────────────
     path('support/',            views.support,           name='support'),
+
+    # ── Staff tools (admin-only, linked from the Django admin) ────
+    path('staff/send-quote/',              views.admin_send_quote,  name='admin_send_quote'),
+    path('staff/reply-ticket/<int:ticket_id>/', views.admin_reply_ticket, name='admin_reply_ticket'),
 ]

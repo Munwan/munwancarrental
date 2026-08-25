@@ -1,0 +1,22 @@
+{% extends "admin/index.html" %}
+
+{% block content %}
+<div class="module" style="margin-bottom:20px;">
+  <table>
+    <caption>
+      <span>Staff tools</span>
+    </caption>
+    <tbody>
+      <tr>
+        <th scope="row"><a href="{% url 'admin_send_quote' %}">Send a Quote</a></th>
+        <td>Email a rental quote to a customer, styled like the site's real emails.</td>
+      </tr>
+      <tr>
+        <th scope="row"><a href="{% url 'admin:core_supportticket_changelist' %}">Support tickets</a></th>
+        <td>Each ticket has a "Reply by email" button — same email template, quotes their original message.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{{ block.super }}
+{% endblock %}

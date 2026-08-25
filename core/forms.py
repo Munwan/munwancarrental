@@ -397,3 +397,35 @@ class CheckBookingForm(forms.Form):
                 'Invalid reference format. Examples: DK-2026-ABC123 or INV-2026-ABC123'
             )
         return ref
+
+
+# ─────────────────────────────────────────────────────────────
+#  Staff tools (admin-only — quotes & support replies)
+# ─────────────────────────────────────────────────────────────
+class StaffQuoteForm(forms.Form):
+    vehicle = forms.ModelChoiceField(queryset=Vehicle.objects.filter(is_available=True))
+    pickup_date     = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    return_date     = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    with_driver     = forms.BooleanField(required=False)
+    baby_seat       = forms.BooleanField(required=False)
+    recipient_name  = forms.CharField(max_length=120, required=False,
+                        widget=forms.TextInput(attrs={'placeholder': 'Customer name (optional)'}))
+    recipient_email = forms.EmailField(widget=forms.EmailInput(attrs={'placeholder': 'customer@example.com'}))
+    note            = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 3,
+                        'placeholder': 'Optional note added to the quote email'}))
+
+    def clean(self):
+        cleaned = super().clean()
+        pickup = cleaned.get('pickup_date')
+        ret = cleaned.get('return_date')
+        # Same rule as the live booking form — same-day not allowed, calendar
+        # days only. Keeps quotes consistent with what the site would
+        # actually charge if the customer books through the site itself.
+        if pickup and ret and ret <= pickup:
+            self.add_error('return_date', 'Return date must be after pick-up date.')
+        return cleaned
+
+
+class StaffReplyForm(forms.Form):
+    message = forms.CharField(widget=forms.Textarea(attrs={
+        'rows': 8, 'placeholder': 'Type your reply — the customer\'s original message is quoted automatically below it.'}))

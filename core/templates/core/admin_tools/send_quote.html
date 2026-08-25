@@ -1,0 +1,98 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Send a Quote | Munwan Admin{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; Send a Quote
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+
+  {% if messages %}
+    {% for message in messages %}
+      <ul class="messagelist"><li class="{{ message.tags }}">{{ message }}</li></ul>
+    {% endfor %}
+  {% endif %}
+
+  <p>Sends a rental quote to a customer, styled exactly like the site's real booking-confirmation
+     emails. Pricing is computed with the same formula the live booking form uses (calendar days,
+     2-day minimum) — a quote will never promise a different price than the site would actually charge.</p>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <fieldset class="module aligned">
+
+      <div class="form-row{% if form.vehicle.errors %} errors{% endif %}">
+        {{ form.vehicle.errors }}
+        <div>
+          <label for="{{ form.vehicle.id_for_label }}" class="required">Vehicle:</label>
+          {{ form.vehicle }}
+        </div>
+      </div>
+
+      <div class="form-row{% if form.pickup_date.errors %} errors{% endif %}">
+        {{ form.pickup_date.errors }}
+        <div>
+          <label for="{{ form.pickup_date.id_for_label }}" class="required">Pickup date:</label>
+          {{ form.pickup_date }}
+        </div>
+      </div>
+
+      <div class="form-row{% if form.return_date.errors %} errors{% endif %}">
+        {{ form.return_date.errors }}
+        <div>
+          <label for="{{ form.return_date.id_for_label }}" class="required">Return date:</label>
+          {{ form.return_date }}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="checkbox-row">
+          {{ form.with_driver }}
+          <label for="{{ form.with_driver.id_for_label }}" class="vCheckboxLabel">With driver</label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="checkbox-row">
+          {{ form.baby_seat }}
+          <label for="{{ form.baby_seat.id_for_label }}" class="vCheckboxLabel">Baby seat (+$10 flat)</label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label for="{{ form.recipient_name.id_for_label }}">Recipient name:</label>
+          {{ form.recipient_name }}
+        </div>
+      </div>
+
+      <div class="form-row{% if form.recipient_email.errors %} errors{% endif %}">
+        {{ form.recipient_email.errors }}
+        <div>
+          <label for="{{ form.recipient_email.id_for_label }}" class="required">Recipient email:</label>
+          {{ form.recipient_email }}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label for="{{ form.note.id_for_label }}">Optional note:</label>
+          {{ form.note }}
+        </div>
+      </div>
+
+    </fieldset>
+
+    <div class="submit-row">
+      <input type="submit" value="Send Quote" class="default">
+    </div>
+  </form>
+
+</div>
+{% endblock %}

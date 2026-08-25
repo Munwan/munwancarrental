@@ -91,11 +91,18 @@ class ReviewAdmin(admin.ModelAdmin):
 
 @admin.register(SupportTicket)
 class SupportTicketAdmin(admin.ModelAdmin):
-    list_display  = ['name', 'email', 'subject', 'booking_ref', 'status', 'created_at']
+    list_display  = ['name', 'email', 'subject', 'booking_ref', 'status', 'created_at', 'reply_link']
     list_editable = ['status']
     list_filter   = ['status']
     search_fields = ['name', 'email', 'booking_ref', 'subject']
     readonly_fields = ['ip_address', 'created_at']
+
+    @admin.display(description='Reply')
+    def reply_link(self, obj):
+        from django.urls import reverse
+        from django.utils.html import format_html
+        url = reverse('admin_reply_ticket', args=[obj.pk])
+        return format_html('<a class="button" href="{}">Reply by email</a>', url)
 
 
 @admin.register(RateLimitEntry)

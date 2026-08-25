@@ -937,3 +937,105 @@ def send_invoice_email(booking):
     except Exception:
         logger.exception('send_invoice_email failed for booking %s', getattr(booking, 'reference', '?'))
         return False
+
+
+# ════════════════════════════════════════════════════════════════════
+#  STAFF TOOLS — quotes and support replies sent from the admin
+# ════════════════════════════════════════════════════════════════════
+
+def send_quote_email(*, to_email, to_name, vehicle, pickup_date, return_date, days,
+                      with_driver, baby_seat, base_usd, driver_fee_usd, total_usd,
+                      total_kes, total_eur, note=''):
+    """
+    Staff-initiated rental quote — same visual shell as every other
+    transactional email. to_name/note are staff-typed, not pre-validated
+    by a Django Form the way customer bookings are, so they're escaped
+    the same as any other untrusted field.
+    """
+    try:
+        safe_name = _esc(to_name) if to_name else 'there'
+        details = _details([
+            ('Vehicle',   vehicle.name),
+            ('Category',  vehicle.get_category_display() if hasattr(vehicle, 'get_category_display') else None),
+            ('Pickup',    pickup_date.strftime('%d %b %Y')),
+            ('Return',    return_date.strftime('%d %b %Y')),
+            ('Duration',  f'{days} day{"s" if days != 1 else ""}'),
+            ('Driver',    'With driver' if with_driver else 'Self-drive'),
+            ('Baby seat', 'Included' if baby_seat else None),
+        ])
+        pricing = _pricing(
+            base=base_usd, days=days, driver_fee=driver_fee_usd,
+            baby_seat=baby_seat, total_usd=total_usd, total_kes=total_kes,
+        )
+
+        body = (
+            _h1(f'Your {days}-day {_esc(vehicle.name)} quote')
+            + _p(f'Hi {safe_name}, thanks for your interest — here\'s your quote.')
+            + _section_label('Quote details')
+            + details
+            + _section_label('Price breakdown')
+            + pricing
+        )
+        if note:
+            body += _p(_esc(note), color='#6B7280')
+        body += (
+            _cta('Book This Vehicle →', _site_url() + f'/cars/{vehicle.slug}/')
+            + _p(
+                'Rates include full insurance and GPS tracking. Fuel and park fees '
+                'are not included. Reply to this email or WhatsApp us to confirm your '
+                'dates and lock in this price.',
+                color='#6B7280',
+            )
+        )
+
+        text = (
+            f'Hi {to_name or "there"},\n\n'
+            f'Your {days}-day quote for the {vehicle.name}:\n\n'
+            f'Pickup: {pickup_date.strftime("%d %b %Y")}\n'
+            f'Return: {return_date.strftime("%d %b %Y")}\n'
+            f'Driver: {"With driver" if with_driver else "Self-drive"}\n\n'
+            f'Total: ${total_usd} (KES {int(total_kes):,} / EUR {total_eur})\n\n'
+            + (f'{note}\n\n' if note else '')
+            + f'WhatsApp: {_whatsapp_display()}\n'
+            f'Email:    {_info_email()}\n'
+        )
+
+        return _send_html(
+            subject=f'Your {days}-Day {vehicle.name} Quote — Munwan Car Rental',
+            to=to_email,
+            html_body=body,
+            text_body=text,
+            preheader=f'{vehicle.name}, {days} days, from ${total_usd}.',
+        )
+    except Exception:
+        logger.exception('send_quote_email failed for %s', to_email)
+        return False
+
+
+def send_ticket_reply_email(*, ticket, message):
+    """Staff reply to a SupportTicket — quotes the original message back to
+    the customer for context, same visual shell as every other email."""
+    try:
+        body = (
+            _h1(f'Re: {_esc(ticket.subject)}')
+            + _p(f'Hi {_esc(ticket.name)},')
+            + _p(_esc(message).replace(chr(10), '<br/>'))
+            + _section_label('Your original message')
+            + f'<div style="background:#F4F6FA;border-radius:6px;padding:16px 20px;font-size:13px;line-height:1.6;color:#6B7280;white-space:pre-wrap;">{_esc(ticket.message)}</div>'
+        )
+        text = (
+            f'Hi {ticket.name},\n\n{message}\n\n'
+            f'--- Your original message ---\n{ticket.message}\n\n'
+            f'WhatsApp: {_whatsapp_display()}\n'
+            f'Email:    {_info_email()}\n'
+        )
+        return _send_html(
+            subject=f'Re: {ticket.subject}',
+            to=ticket.email,
+            html_body=body,
+            text_body=text,
+            preheader=f'A reply to your enquiry: {ticket.subject}',
+        )
+    except Exception:
+        logger.exception('send_ticket_reply_email failed for ticket %s', ticket.pk)
+        return False

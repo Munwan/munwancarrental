@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse, HttpResponse
@@ -2309,6 +2310,101 @@ def robots_txt(request):
         f"Sitemap: {site_url}/sitemap.xml\n"
     )
     return HttpResponse(content, content_type='text/plain')
+
+
+# ─────────────────────────────────────────────────────────────
+#  STAFF TOOLS (admin-only) — send a quote, reply to a support ticket
+# ─────────────────────────────────────────────────────────────
+@staff_member_required
+def admin_send_quote(request):
+    """
+    Staff tool: build and email a rental quote in the site's real email
+    style. Pricing uses the exact same formula as a live booking
+    (Booking.calculate_totals / booking_submit's day-count rule), so a
+    quote never promises a different price than the site would actually
+    charge for the same dates.
+    """
+    from decimal import Decimal, ROUND_HALF_UP
+    from .forms import StaffQuoteForm
+    from .emails import send_quote_email
+
+    def q(x):
+        return Decimal(str(x)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    sent = False
+    if request.method == 'POST':
+        form = StaffQuoteForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            vehicle = cd['vehicle']
+            days = max((cd['return_date'] - cd['pickup_date']).days + 1, 2)
+
+            price_usd  = Decimal(str(vehicle.price_usd))
+            driver_fee = Decimal(str(vehicle.driver_fee_usd))
+            baby_seat_fee = Decimal('10.00') if cd['baby_seat'] else Decimal('0.00')
+
+            base_usd = q(price_usd * days)
+            driver_fee_usd = q(driver_fee * days) if cd['with_driver'] else Decimal('0.00')
+            total_usd = q(base_usd + driver_fee_usd + baby_seat_fee)
+            total_kes = q(total_usd * KES_PER_USD)
+            total_eur = q(total_usd * EUR_PER_USD)
+
+            ok = send_quote_email(
+                to_email=cd['recipient_email'],
+                to_name=cd['recipient_name'],
+                vehicle=vehicle,
+                pickup_date=cd['pickup_date'],
+                return_date=cd['return_date'],
+                days=days,
+                with_driver=cd['with_driver'],
+                baby_seat=cd['baby_seat'],
+                base_usd=base_usd,
+                driver_fee_usd=driver_fee_usd,
+                total_usd=total_usd,
+                total_kes=total_kes,
+                total_eur=total_eur,
+                note=cd.get('note', ''),
+            )
+            if ok:
+                messages.success(request,
+                    f'Quote sent to {cd["recipient_email"]} — {vehicle.name}, '
+                    f'{days} days, ${total_usd}.')
+                sent = True
+                form = StaffQuoteForm()  # reset for the next quote
+            else:
+                messages.error(request, 'Could not send the quote email — check the server logs.')
+    else:
+        form = StaffQuoteForm()
+
+    return render(request, 'core/admin_tools/send_quote.html', {'form': form, 'sent': sent})
+
+
+@staff_member_required
+def admin_reply_ticket(request, ticket_id):
+    """Staff tool: reply to a SupportTicket by email, in the site's real
+    email style. Marks the ticket 'in_prog' on send so the admin list
+    reflects that someone has responded."""
+    from .forms import StaffReplyForm
+    from .emails import send_ticket_reply_email
+
+    ticket = get_object_or_404(SupportTicket, pk=ticket_id)
+
+    if request.method == 'POST':
+        form = StaffReplyForm(request.POST)
+        if form.is_valid():
+            ok = send_ticket_reply_email(ticket=ticket, message=form.cleaned_data['message'])
+            if ok:
+                if ticket.status == 'open':
+                    ticket.status = 'in_prog'
+                    ticket.save(update_fields=['status'])
+                messages.success(request, f'Reply sent to {ticket.email}.')
+                return redirect('admin:core_supportticket_changelist')
+            else:
+                messages.error(request, 'Could not send the reply — check the server logs.')
+    else:
+        form = StaffReplyForm()
+
+    return render(request, 'core/admin_tools/reply_ticket.html', {'form': form, 'ticket': ticket})
 
 
 # ─────────────────────────────────────────────────────────────
