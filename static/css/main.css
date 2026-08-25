@@ -23,7 +23,7 @@ html{scroll-behavior:smooth}
 body{font-family:'Poppins',sans-serif;background:var(--light);color:var(--ink);overflow-x:hidden}
 
 /* ── NAV ─────────────────────────────────────────────── */
-nav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:center;
+#mainNav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:center;
   justify-content:space-between;padding:14px 52px;
   background:rgba(10,15,30,0.95);backdrop-filter:blur(18px);
   border-bottom:1px solid rgba(26,107,245,0.2)}
@@ -1243,7 +1243,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 
 /* ── ≤1024px : iPad / small laptop ───────────────────── */
 @media(max-width:1024px){
-  nav{padding:13px 24px}
+  #mainNav{padding:13px 24px}
   .hero{padding:108px 32px 80px}
   .section,.why-section,.reviews-section{padding:64px 32px}
   .search-wrap{padding:30px 24px 36px}
@@ -1254,7 +1254,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 
 /* ── ≤900px : tablet portrait ────────────────────────── */
 @media(max-width:900px){
-  nav{padding:11px 20px}
+  #mainNav{padding:11px 20px}
   /* Show only Book Now in nav-right on mobile; hide Sign In */
   .nav-links{display:none}
   .nav-hide-mobile{display:none !important}
@@ -1319,7 +1319,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 
 /* ── ≤600px : large phone ────────────────────────────── */
 @media(max-width:600px){
-  nav{padding:10px 16px}
+  #mainNav{padding:10px 16px}
   .logo{font-size:1.2rem}
 
   .hero{padding:96px 18px 60px;min-height:72vh}
@@ -1432,7 +1432,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 
 /* ── ≤414px : iPhone Pro / standard ──────────────────── */
 @media(max-width:414px){
-  nav{padding:9px 13px}
+  #mainNav{padding:9px 13px}
   .logo{font-size:1.1rem}
   .nav-cta{padding:8px 14px;font-size:.78rem}
   .nav-burger{width:36px;height:36px;font-size:1.1rem}
@@ -1459,7 +1459,7 @@ footer{background:var(--ink);padding:32px 52px 18px;color:#fff}
 
 /* ── ≤360px : small phone (Galaxy A series, older iPhone SE) ── */
 @media(max-width:360px){
-  nav{padding:8px 11px}
+  #mainNav{padding:8px 11px}
   .logo{font-size:1rem}
   .nav-cta{padding:7px 12px;font-size:.74rem}
   .hero h1{font-size:1.4rem}
