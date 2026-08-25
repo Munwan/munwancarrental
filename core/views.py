@@ -19,7 +19,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 
-from .emails import send_booking_confirmation, send_support_notification, send_otp_email
+from .emails import send_booking_confirmation, send_support_notification, send_otp_email, send_booking_received
 from .forms import (
     BookingStep1Form, BookingPaymentForm,
     CheckBookingForm, LoginForm, RegisterForm, SupportForm,
@@ -2405,6 +2405,26 @@ def admin_reply_ticket(request, ticket_id):
         form = StaffReplyForm()
 
     return render(request, 'core/admin_tools/reply_ticket.html', {'form': form, 'ticket': ticket})
+
+
+@staff_member_required
+def admin_send_payment_reminder(request, booking_id):
+    """Staff tool: manually re-send the 'complete your payment' email for a
+    booking. The automated cron reminder (send_payment_reminders command)
+    only ever fires once per booking, so this covers the follow-up case —
+    a booking that's still unpaid days later, or an invoiced/corporate
+    booking that the automated reminder skips entirely."""
+    booking = get_object_or_404(Booking, pk=booking_id)
+
+    if request.method == 'POST':
+        ok = send_booking_received(booking)
+        if ok:
+            messages.success(request, f'Payment reminder sent to {booking.email}.')
+            return redirect('admin:core_booking_changelist')
+        else:
+            messages.error(request, 'Could not send the reminder — check the server logs.')
+
+    return render(request, 'core/admin_tools/send_payment_reminder.html', {'booking': booking})
 
 
 # ─────────────────────────────────────────────────────────────

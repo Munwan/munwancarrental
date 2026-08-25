@@ -15,6 +15,10 @@
         <th scope="row"><a href="{% url 'admin:core_supportticket_changelist' %}">Support tickets</a></th>
         <td>Each ticket has a "Reply by email" button — same email template, quotes their original message.</td>
       </tr>
+      <tr>
+        <th scope="row"><a href="{% url 'admin:core_booking_changelist' %}">Bookings</a></th>
+        <td>Unpaid and invoiced bookings have a "Send reminder" button — manual follow-up on top of the automatic one-time reminder.</td>
+      </tr>
     </tbody>
   </table>
 </div>

@@ -50,7 +50,8 @@ class VehicleAdmin(admin.ModelAdmin):
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
     list_display  = ['reference', 'full_name', 'vehicle', 'hire_type', 'pickup_date', 'return_date',
-                     'days', 'total_usd', 'payment_method', 'payment_status', 'status', 'created_at']
+                     'days', 'total_usd', 'payment_method', 'payment_status', 'status', 'created_at',
+                     'reminder_link']
     list_filter   = ['hire_type', 'status', 'payment_status', 'payment_method', 'pickup_date',
                      'transfer_zone', 'transfer_car_type']
     search_fields = ['reference', 'first_name', 'last_name', 'email', 'phone', 'transfer_destination']
@@ -71,6 +72,15 @@ class BookingAdmin(admin.ModelAdmin):
         ('Pricing', {'fields': ('days', 'base_price_usd', 'driver_fee_usd', 'total_usd')}),
         ('Meta', {'classes': ('collapse',), 'fields': ('ip_address', 'user_agent', 'created_at', 'updated_at')}),
     )
+
+    @admin.display(description='Reminder')
+    def reminder_link(self, obj):
+        from django.urls import reverse
+        from django.utils.html import format_html
+        if obj.payment_status not in ('unpaid', 'invoiced'):
+            return '—'
+        url = reverse('admin_send_payment_reminder', args=[obj.pk])
+        return format_html('<a class="button" href="{}">Send reminder</a>', url)
 
 
 @admin.register(PaymentLog)

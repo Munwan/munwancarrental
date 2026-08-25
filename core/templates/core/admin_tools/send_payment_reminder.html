@@ -1,0 +1,42 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}Send payment reminder — {{ booking.reference }} | Munwan Admin{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; <a href="{% url 'admin:core_booking_changelist' %}">Bookings</a>
+  &rsaquo; Send payment reminder
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+
+  {% if messages %}
+    {% for message in messages %}
+      <ul class="messagelist"><li class="{{ message.tags }}">{{ message }}</li></ul>
+    {% endfor %}
+  {% endif %}
+
+  <div class="module" style="margin-bottom:20px;padding:12px 14px;background:#f8f8f8;border:1px solid #eee;">
+    <p style="margin:0 0 6px;"><strong>{{ booking.full_name }}</strong> &lt;{{ booking.email }}&gt;</p>
+    <p style="margin:0 0 6px;"><strong>Booking:</strong> {{ booking.reference }} &middot; {{ booking.vehicle.name }}
+       &middot; {{ booking.pickup_date }}{% if booking.return_date %} → {{ booking.return_date }}{% endif %}</p>
+    <p style="margin:0;"><strong>Total:</strong> ${{ booking.total_usd }}
+       &middot; <strong>Payment status:</strong> {{ booking.get_payment_status_display }}</p>
+  </div>
+
+  <p>Sends the same "complete your payment" email the site sends automatically 10 minutes after
+     booking — useful as a manual follow-up for a booking that's still unpaid, since the automatic
+     reminder only ever sends once.</p>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="submit-row">
+      <input type="submit" value="Send Payment Reminder" class="default">
+    </div>
+  </form>
+
+</div>
+{% endblock %}
