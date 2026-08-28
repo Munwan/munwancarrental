@@ -2427,6 +2427,31 @@ def admin_send_payment_reminder(request, booking_id):
     return render(request, 'core/admin_tools/send_payment_reminder.html', {'booking': booking})
 
 
+@staff_member_required
+def admin_send_confirmation(request, booking_id):
+    """Staff tool: manually send the 'booking confirmed' + 'payment
+    receipt' emails for a booking. Covers the manual-booking flow — a
+    booking created directly in the admin for a customer who paid outside
+    the online checkout (bank transfer, cash, M-Pesa till, etc), so the
+    automatic post-payment emails never fired."""
+    from .emails import send_booking_confirmation, send_payment_receipt
+
+    booking = get_object_or_404(Booking, pk=booking_id)
+
+    if request.method == 'POST':
+        confirmation_ok = send_booking_confirmation(booking)
+        receipt_ok = send_payment_receipt(booking)
+        if confirmation_ok and receipt_ok:
+            messages.success(request, f'Booking confirmation and payment receipt sent to {booking.email}.')
+            return redirect('admin:core_booking_changelist')
+        elif confirmation_ok or receipt_ok:
+            messages.warning(request, 'Only one of the two emails could be sent — check the server logs.')
+        else:
+            messages.error(request, 'Could not send the emails — check the server logs.')
+
+    return render(request, 'core/admin_tools/send_confirmation.html', {'booking': booking})
+
+
 # ─────────────────────────────────────────────────────────────
 #  ERROR PAGES
 # ─────────────────────────────────────────────────────────────

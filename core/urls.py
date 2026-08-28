@@ -97,4 +97,5 @@ urlpatterns = [
     path('staff/send-quote/',              views.admin_send_quote,  name='admin_send_quote'),
     path('staff/reply-ticket/<int:ticket_id>/', views.admin_reply_ticket, name='admin_reply_ticket'),
     path('staff/send-payment-reminder/<int:booking_id>/', views.admin_send_payment_reminder, name='admin_send_payment_reminder'),
+    path('staff/send-confirmation/<int:booking_id>/', views.admin_send_confirmation, name='admin_send_confirmation'),
 ]

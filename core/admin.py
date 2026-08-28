@@ -51,7 +51,7 @@ class VehicleAdmin(admin.ModelAdmin):
 class BookingAdmin(admin.ModelAdmin):
     list_display  = ['reference', 'full_name', 'vehicle', 'hire_type', 'pickup_date', 'return_date',
                      'days', 'total_usd', 'payment_method', 'payment_status', 'status', 'created_at',
-                     'reminder_link']
+                     'reminder_link', 'send_confirmation_link']
     list_filter   = ['hire_type', 'status', 'payment_status', 'payment_method', 'pickup_date',
                      'transfer_zone', 'transfer_car_type']
     search_fields = ['reference', 'first_name', 'last_name', 'email', 'phone', 'transfer_destination']
@@ -81,6 +81,36 @@ class BookingAdmin(admin.ModelAdmin):
             return '—'
         url = reverse('admin_send_payment_reminder', args=[obj.pk])
         return format_html('<a class="button" href="{}">Send reminder</a>', url)
+
+    @admin.display(description='Confirm+Receipt')
+    def send_confirmation_link(self, obj):
+        from django.urls import reverse
+        from django.utils.html import format_html
+        if obj.payment_status != 'paid':
+            return '—'
+        url = reverse('admin_send_confirmation', args=[obj.pk])
+        return format_html('<a class="button" href="{}">Send confirmation</a>', url)
+
+    def save_model(self, request, obj, form, change):
+        """
+        total_kes/total_eur aren't in the Pricing fieldset (staff only enter
+        the USD figures) but both are required, non-null columns — without
+        this they're left as None and the INSERT 500s on PostgreSQL's
+        NOT NULL constraint. Derive them from total_usd the same way
+        Booking.calculate_totals() does for the online booking flow.
+        """
+        if obj.total_usd is not None:
+            from decimal import Decimal, ROUND_HALF_UP
+            from .airport_transfer import KES_PER_USD, EUR_PER_USD
+
+            def q(x):
+                return Decimal(str(x)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+            if obj.total_kes is None:
+                obj.total_kes = q(obj.total_usd * KES_PER_USD)
+            if obj.total_eur is None:
+                obj.total_eur = q(obj.total_usd * EUR_PER_USD)
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(PaymentLog)
