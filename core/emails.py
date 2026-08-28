@@ -212,7 +212,7 @@ def _is_transfer(booking):
     return getattr(booking, 'hire_type', '') == 'transfer'
 
 
-def _pricing(*, base, days, driver_fee, baby_seat, total_usd, total_kes):
+def _pricing(*, base, days, driver_fee, baby_seat, total_usd, total_kes, deposit_usd=None):
     rows = (
         f'<tr>'
         f'<td style="padding:8px 0;font-size:14px;color:#6B7280;">Base ({days} day{"s" if days != 1 else ""})</td>'
@@ -233,6 +233,17 @@ def _pricing(*, base, days, driver_fee, baby_seat, total_usd, total_kes):
             '<td style="padding:8px 0;font-size:14px;color:#0A0F1E;text-align:right;">$10.00</td>'
             '</tr>'
         )
+    deposit_row = ''
+    if deposit_usd and float(deposit_usd) > 0:
+        deposit_row = (
+            '<tr>'
+            '<td colspan="2" style="padding:12px 0 0 0;font-size:12px;color:#6B7280;">'
+            f'Refundable security deposit: <strong style="color:#0A0F1E;">${deposit_usd}</strong> '
+            '(equivalent to one day\'s rental — collected at pickup, refunded after the vehicle is '
+            'inspected on return, not included in the total above)'
+            '</td>'
+            '</tr>'
+        )
     return (
         f'<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:18px 0;">'
         f'{rows}'
@@ -244,6 +255,7 @@ def _pricing(*, base, days, driver_fee, baby_seat, total_usd, total_kes):
         f'<td></td>'
         f'<td style="padding:2px 0 0 0;font-size:12px;color:#9CA3AF;text-align:right;">≈ KES {int(float(total_kes)):,}</td>'
         f'</tr>'
+        f'{deposit_row}'
         f'</table>'
     )
 
@@ -534,11 +546,25 @@ def send_booking_confirmation(booking):
 def send_payment_receipt(booking):
     """Customer payment receipt — proof of payment."""
     try:
+        from decimal import Decimal, ROUND_HALF_UP
+
         is_transfer = _is_transfer(booking)
+
+        # Refundable security deposit, equivalent to one day's rental.
+        # Not applicable to one-way airport transfers — there's no vehicle
+        # in the customer's possession to hold a deposit against.
+        deposit_usd = None
+        if not is_transfer:
+            raw_deposit = Decimal(str(booking.daily_rate_usd or 0)).quantize(
+                Decimal('0.01'), rounding=ROUND_HALF_UP)
+            if raw_deposit > 0:
+                deposit_usd = raw_deposit
+
         pricing = _pricing(
             base=booking.base_price_usd, days=booking.days,
             driver_fee=booking.driver_fee_usd, baby_seat=booking.baby_seat,
             total_usd=booking.total_usd, total_kes=booking.total_kes,
+            deposit_usd=deposit_usd,
         )
 
         if is_transfer:
@@ -580,8 +606,10 @@ def send_payment_receipt(booking):
             f'Hi {booking.first_name},\n\n'
             f'Payment received for booking {booking.reference}.\n'
             f'Total: ${booking.total_usd} (KES {int(float(booking.total_kes)):,})\n'
-            f'Method: {getattr(booking, "payment_method", "Card") or "Card"}\n\n'
-            f'WhatsApp: {_whatsapp_display()}\n'
+            f'Method: {getattr(booking, "payment_method", "Card") or "Card"}\n'
+            + (f'Refundable security deposit: ${deposit_usd} (equivalent to one day\'s rental — '
+               f'collected at pickup, refunded after return)\n' if deposit_usd else '')
+            + f'\nWhatsApp: {_whatsapp_display()}\n'
         )
 
         return _send_html(
