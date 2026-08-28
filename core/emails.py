@@ -213,6 +213,9 @@ def _is_transfer(booking):
 
 
 def _pricing(*, base, days, driver_fee, baby_seat, total_usd, total_kes, deposit_usd=None):
+    from decimal import Decimal
+    from .airport_transfer import KES_PER_USD
+
     rows = (
         f'<tr>'
         f'<td style="padding:8px 0;font-size:14px;color:#6B7280;">Base ({days} day{"s" if days != 1 else ""})</td>'
@@ -233,29 +236,41 @@ def _pricing(*, base, days, driver_fee, baby_seat, total_usd, total_kes, deposit
             '<td style="padding:8px 0;font-size:14px;color:#0A0F1E;text-align:right;">$10.00</td>'
             '</tr>'
         )
-    deposit_row = ''
+
+    grand_total_usd = Decimal(str(total_usd))
+    grand_total_kes = Decimal(str(total_kes))
+    deposit_note = ''
     if deposit_usd and float(deposit_usd) > 0:
-        deposit_row = (
+        rows += (
             '<tr>'
-            '<td colspan="2" style="padding:12px 0 0 0;font-size:12px;color:#6B7280;">'
-            f'Refundable security deposit: <strong style="color:#0A0F1E;">${deposit_usd}</strong> '
-            '(equivalent to one day\'s rental — collected at pickup, refunded after the vehicle is '
-            'inspected on return, not included in the total above)'
+            '<td style="padding:8px 0;font-size:14px;color:#6B7280;">Security deposit (refundable)</td>'
+            f'<td style="padding:8px 0;font-size:14px;color:#0A0F1E;text-align:right;">${deposit_usd}</td>'
+            '</tr>'
+        )
+        grand_total_usd += Decimal(str(deposit_usd))
+        grand_total_kes += Decimal(str(deposit_usd)) * KES_PER_USD
+        deposit_note = (
+            '<tr>'
+            '<td colspan="2" style="padding:10px 0 0 0;font-size:12px;color:#9CA3AF;">'
+            f'Includes a refundable ${deposit_usd} security deposit (one day\'s vehicle rate) — '
+            'returned after the vehicle is inspected on return, minus any damage, fuel, or '
+            'traffic-fine deductions.'
             '</td>'
             '</tr>'
         )
+
     return (
         f'<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:18px 0;">'
         f'{rows}'
         f'<tr>'
         f'<td style="padding:14px 0 0 0;font-size:15px;font-weight:700;color:#0A0F1E;border-top:2px solid #0A0F1E;">Total</td>'
-        f'<td style="padding:14px 0 0 0;font-size:18px;font-weight:700;color:#0A0F1E;text-align:right;border-top:2px solid #0A0F1E;">${total_usd}</td>'
+        f'<td style="padding:14px 0 0 0;font-size:18px;font-weight:700;color:#0A0F1E;text-align:right;border-top:2px solid #0A0F1E;">${grand_total_usd.quantize(Decimal("0.01"))}</td>'
         f'</tr>'
         f'<tr>'
         f'<td></td>'
-        f'<td style="padding:2px 0 0 0;font-size:12px;color:#9CA3AF;text-align:right;">≈ KES {int(float(total_kes)):,}</td>'
+        f'<td style="padding:2px 0 0 0;font-size:12px;color:#9CA3AF;text-align:right;">≈ KES {int(grand_total_kes):,}</td>'
         f'</tr>'
-        f'{deposit_row}'
+        f'{deposit_note}'
         f'</table>'
     )
 
@@ -547,15 +562,17 @@ def send_payment_receipt(booking):
     """Customer payment receipt — proof of payment."""
     try:
         from decimal import Decimal, ROUND_HALF_UP
+        from .airport_transfer import KES_PER_USD
 
         is_transfer = _is_transfer(booking)
 
-        # Refundable security deposit, equivalent to one day's rental.
+        # Refundable security deposit — one day's rate for the vehicle alone
+        # (excludes driver fee), paid together with the rest of the total.
         # Not applicable to one-way airport transfers — there's no vehicle
         # in the customer's possession to hold a deposit against.
         deposit_usd = None
-        if not is_transfer:
-            raw_deposit = Decimal(str(booking.daily_rate_usd or 0)).quantize(
+        if not is_transfer and booking.vehicle:
+            raw_deposit = Decimal(str(booking.vehicle.price_usd or 0)).quantize(
                 Decimal('0.01'), rounding=ROUND_HALF_UP)
             if raw_deposit > 0:
                 deposit_usd = raw_deposit
@@ -566,6 +583,9 @@ def send_payment_receipt(booking):
             total_usd=booking.total_usd, total_kes=booking.total_kes,
             deposit_usd=deposit_usd,
         )
+
+        display_total_usd = (Decimal(str(booking.total_usd)) + (deposit_usd or Decimal('0.00'))) \
+            .quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
         if is_transfer:
             service_label = (
@@ -593,7 +613,7 @@ def send_payment_receipt(booking):
         body = (
             _h1('Payment received')
             + _p(
-                f'Hi {_esc(booking.first_name)}, we\'ve received <strong>${booking.total_usd}</strong> '
+                f'Hi {_esc(booking.first_name)}, we\'ve received <strong>${display_total_usd}</strong> '
                 f'for booking <strong>{booking.reference}</strong>. Keep this email as your receipt.'
             )
             + _section_label('Receipt')
@@ -605,10 +625,12 @@ def send_payment_receipt(booking):
         text = (
             f'Hi {booking.first_name},\n\n'
             f'Payment received for booking {booking.reference}.\n'
-            f'Total: ${booking.total_usd} (KES {int(float(booking.total_kes)):,})\n'
-            f'Method: {getattr(booking, "payment_method", "Card") or "Card"}\n'
-            + (f'Refundable security deposit: ${deposit_usd} (equivalent to one day\'s rental — '
-               f'collected at pickup, refunded after return)\n' if deposit_usd else '')
+            + (f'Rental: ${booking.total_usd}\n'
+               f'Security deposit (refundable): ${deposit_usd}\n'
+               f'Total paid: ${display_total_usd} (KES {int(float(booking.total_kes) + float(deposit_usd) * float(KES_PER_USD)):,})\n'
+               if deposit_usd else
+               f'Total: ${booking.total_usd} (KES {int(float(booking.total_kes)):,})\n')
+            + f'Method: {getattr(booking, "payment_method", "Card") or "Card"}\n'
             + f'\nWhatsApp: {_whatsapp_display()}\n'
         )
 
@@ -617,7 +639,7 @@ def send_payment_receipt(booking):
             to=booking.email,
             html_body=body,
             text_body=text,
-            preheader=f'Receipt for ${booking.total_usd}.',
+            preheader=f'Receipt for ${display_total_usd}.',
         )
     except Exception:
         logger.exception('send_payment_receipt failed')
