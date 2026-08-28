@@ -595,7 +595,7 @@ def send_payment_receipt(booking):
             details = _details([
                 ('Reference', booking.reference),
                 ('Status',    _SafeText('<span style="color:#06A66D;">Paid</span>')),
-                ('Method',    getattr(booking, 'payment_method', '') or 'Card'),
+                ('Method',    booking.get_payment_method_display() if booking.payment_method else 'Card'),
                 ('Service',   service_label),
                 ('When',      f'{booking.pickup_date} (one-way)'),
             ])
@@ -603,7 +603,7 @@ def send_payment_receipt(booking):
             details = _details([
                 ('Reference', booking.reference),
                 ('Status',    _SafeText('<span style="color:#06A66D;">Paid</span>')),
-                ('Method',    getattr(booking, 'payment_method', '') or 'Card'),
+                ('Method',    booking.get_payment_method_display() if booking.payment_method else 'Card'),
                 ('Vehicle',   booking.vehicle.name if booking.vehicle else '—'),
                 ('Dates',     (f'{booking.pickup_date} → {booking.return_date}'
                                if booking.return_date
@@ -630,7 +630,7 @@ def send_payment_receipt(booking):
                f'Total paid: ${display_total_usd} (KES {int(float(booking.total_kes) + float(deposit_usd) * float(KES_PER_USD)):,})\n'
                if deposit_usd else
                f'Total: ${booking.total_usd} (KES {int(float(booking.total_kes)):,})\n')
-            + f'Method: {getattr(booking, "payment_method", "Card") or "Card"}\n'
+            + f'Method: {booking.get_payment_method_display() if booking.payment_method else "Card"}\n'
             + f'\nWhatsApp: {_whatsapp_display()}\n'
         )
 
@@ -735,7 +735,7 @@ def send_payment_admin_alert(booking):
             ('Email',     booking.email),
             ('Phone',     booking.phone),
             ('Vehicle',   booking.vehicle.name),
-            ('Method',    getattr(booking, 'payment_method', '') or 'Unknown'),
+            ('Method',    booking.get_payment_method_display() if booking.payment_method else 'Unknown'),
             ('Amount',    f'${booking.total_usd} (KES {int(float(booking.total_kes)):,})'),
         ])
         body = (

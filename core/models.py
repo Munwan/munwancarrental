@@ -320,8 +320,10 @@ class Booking(models.Model):
         ('other', '📍 Choose Location'),
     ]
     PAYMENT_METHOD_CHOICES = [
-        ('paystack', 'Card / Apple Pay (Paystack)'),
-        ('mpesa',    'M-Pesa'),
+        ('paystack',      'Card / Apple Pay (Paystack)'),
+        ('mpesa',         'M-Pesa'),
+        ('card',          'Card (manual)'),
+        ('bank_transfer', 'Bank Transfer'),
     ]
     STATUS_CHOICES = [
         ('pending',   'Pending Payment'),
@@ -403,7 +405,7 @@ class Booking(models.Model):
     total_eur       = models.DecimalField(max_digits=10, decimal_places=2)
 
     # Payment
-    payment_method  = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, blank=True)
+    payment_method  = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, blank=True)
     payment_status  = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='unpaid')
     payment_reminder_sent = models.BooleanField(default=False, help_text='Customer has been emailed the "complete payment" reminder')
     payment_attempt_at = models.DateTimeField(null=True, blank=True,
@@ -547,7 +549,7 @@ class Booking(models.Model):
 # ─────────────────────────────────────────────────────────────
 class PaymentLog(models.Model):
     booking         = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='payment_logs')
-    method          = models.CharField(max_length=10)
+    method          = models.CharField(max_length=20)
     gateway_ref     = models.CharField(max_length=300, blank=True)
     amount_usd      = models.DecimalField(max_digits=10, decimal_places=2)
     status          = models.CharField(max_length=20)
