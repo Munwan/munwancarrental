@@ -1781,6 +1781,11 @@ def verify_email(request):
             user.save(update_fields=['is_active'])
             login(request, user, backend='core.auth_backends.EmailOrUsernameBackend')
             request.session.pop('otp_user_pk', None)
+            # One-shot flag — read (and cleared) by the dashboard view so the
+            # GA4/Google Ads "Sign Up" conversion event fires exactly once,
+            # right after a brand-new account is verified, never on a normal
+            # dashboard visit/login.
+            request.session['just_registered'] = True
             messages.success(request, f'Welcome aboard, {user.first_name}! Your email is verified.')
             return redirect('dashboard')
         else:
@@ -1870,6 +1875,7 @@ def dashboard(request):
         'total_spent':     f"{total_spent:.2f}",
         'active_tab':      request.GET.get('tab', 'active'),
         'whatsapp_number': getattr(settings, 'WHATSAPP_NUMBER', '254727745907'),
+        'just_registered': request.session.pop('just_registered', False),
         # Single source of truth for the extend-booking JS preview — see
         # airport_transfer.py. Passing these in avoids yet another hardcoded
         # copy of the conversion rate silently drifting from the real one.

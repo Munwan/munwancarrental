@@ -6,6 +6,19 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/account.css' %}?v=2"/>
+
+{% if just_registered and not debug %}
+<!-- Google Ads conversion — Sign Up. Fires exactly once, right after a
+     brand-new account is verified (see dashboard() / verify_email() in
+     views.py, which sets/pops the one-shot 'just_registered' session flag),
+     never on a normal login/dashboard revisit. -->
+<script>
+  gtag('event', 'ads_conversion_Sign_Up_1', {
+    // <event_parameters>
+  });
+</script>
+{% endif %}
+
 <style>
 /* Inline fallback — guarantees Continue Payment button renders correctly
    even if account.css is cached, missing, or overridden elsewhere */
